@@ -12,7 +12,10 @@ lazy val core: Project = (project in file("core"))
 lazy val selenium: Project = (project in file("selenium"))
   .settings(commonSettings)
   .settings(
-    name := "selenium"
+    name := "selenium",
+    libraryDependencies += "org.seleniumhq.selenium" % "selenium-java"           % "3.141.59",
+    libraryDependencies += "org.seleniumhq.selenium" % "selenium-support"        % "3.141.59",
+    libraryDependencies += "org.seleniumhq.selenium" % "selenium-firefox-driver" % "3.141.59",
   )
   .dependsOn(core)
 
