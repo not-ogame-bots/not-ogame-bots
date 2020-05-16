@@ -34,36 +34,33 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     }
   }
 
-  private def insetCredentials(): IO[Unit] = {
-    (for {
-      loginTab    <- OptionT(findLoginTab())
-      _           <- OptionT.liftF(loginTab.clickF())
-      email       <- OptionT(find(By.name("email")))
-      _           <- OptionT.liftF(email.typeText(credentials.login))
-      password    <- OptionT(find(By.name("password")))
-      _           <- OptionT.liftF(password.typeText(credentials.password))
-      _           <- OptionT.liftF(IO.sleep(700 milli))
-      loginButton <- OptionT(find(By.className("button-lg")))
-      _           <- OptionT.liftF(loginButton.clickF())
-      _           <- OptionT.liftF(waitForElement(By.id("joinGame")))
-    } yield ()).value.void
-  }
+  private def insetCredentials(): IO[Unit] =
+    for {
+      loginTab    <- findLoginTab()
+      _           <- loginTab.clickF()
+      email       <- find(By.name("email"))
+      _           <- email.typeText(credentials.login)
+      password    <- find(By.name("password"))
+      _           <- password.typeText(credentials.password)
+      _           <- IO.sleep(700 milli)
+      loginButton <- find(By.className("button-lg"))
+      _           <- loginButton.clickF()
+      _           <- waitForElement(By.id("joinGame"))
+    } yield ()
 
-  private def findLoginTab(): IO[Option[WebElement]] =
-    OptionT(find(By.id("loginRegisterTabs")))
-      .flatMapF(_.find(By.className("tabsList")))
-      .flatMapF(_.find(By.tagName("li")))
-      .value
+  private def findLoginTab(): IO[WebElement] =
+    find(By.id("loginRegisterTabs"))
+      .flatMap(_.find(By.className("tabsList")))
+      .flatMap(_.find(By.tagName("li")))
 
-  private def selectUniverse(): IO[Unit] = {
+  private def selectUniverse(): IO[Unit] =
     (for {
       _            <- OptionT.liftF(waitForElement(By.className("rt-tr")))
       list         <- OptionT.liftF(findMany(By.className("rt-tr")))
       universeText <- OptionT.fromOption[IO](list.find(_.getText.contains(credentials.universeName)))
-      universeBtn  <- OptionT(universeText.find(By.className("btn-primary")))
+      universeBtn  <- OptionT.liftF(universeText.find(By.className("btn-primary")))
       _            <- OptionT.liftF(universeBtn.clickF())
     } yield ()).value.void
-  }
 
   override def getFactories(planetId: String): IO[PlanetFactories] = IO.pure(PlanetFactories(1))
 }
