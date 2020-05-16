@@ -1,11 +1,8 @@
 package not.ogame.bots.selenium
 
-import java.util
-
 import cats.effect.IO
 import org.openqa.selenium.{By, WebDriver, WebElement}
 
-import scala.jdk.CollectionConverters._
 import scala.jdk.CollectionConverters._
 
 object WebDriverUtils {
@@ -17,11 +14,20 @@ object WebDriverUtils {
 
     def findMany(by: By): IO[List[WebElement]] =
       IO.delay(webElement.findElements(by).asScala.toList)
+
+    def typeText(keys: String): IO[Unit] = {
+      IO.delay(webElement.sendKeys(keys))
+    }
+
+    def clickF(): IO[Unit] = {
+      IO.delay(webElement.click())
+    }
   }
 }
 
 object WebDriverSyntax {
 
+  //TODO
   def waitForElement(by: By)(implicit webDriver: WebDriver): IO[WebElement] =
     IO.delay {
       val startTime = System.currentTimeMillis()
@@ -34,6 +40,7 @@ object WebDriverSyntax {
       webDriver.findElement(by)
     }
 
+  //TODO
   def waitForElements(by: By)(implicit webDriver: WebDriver): IO[List[WebElement]] = IO.delay {
     val startTime = System.currentTimeMillis()
     while (webDriver.findElements(by).isEmpty) {
@@ -55,13 +62,13 @@ object WebDriverSyntax {
     webDriver.switchTo().window(firstHandle)
   }
 
-  def safeUrl(url: String)(implicit webDriver: WebDriver): IO[Unit] = IO.delay {
-    webDriver.get(url)
-    if (webDriver.getCurrentUrl != url) {
-      webDriver.get(url)
-    }
-    if (webDriver.getCurrentUrl != url) {
-      webDriver.get(url)
+  def safeUrl(url: String)(implicit webDriver: WebDriver): IO[Unit] = {
+    (go to url).flatMap { _ =>
+      if (webDriver.getCurrentUrl != url) {
+        safeUrl(url)
+      } else {
+        IO.unit
+      }
     }
   }
 
