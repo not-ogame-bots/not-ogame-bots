@@ -18,6 +18,10 @@ object WebDriverUtils {
 
     def clickF(): IO[Unit] = IO.delay(webElement.click())
   }
+
+  implicit class RichWebDriver(webDriver: WebDriver) {
+    def closeF(): IO[Unit] = IO.delay(webDriver.close())
+  }
 }
 
 object WebDriverSyntax {

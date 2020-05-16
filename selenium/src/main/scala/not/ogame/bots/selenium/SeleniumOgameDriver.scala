@@ -21,7 +21,7 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       _                 <- selectUniverse()
       _                 <- switchToOtherTab()
       _                 <- waitForElement(By.className("OGameClock"))
-      _                 <- IO.delay(webDriver.close())
+      _                 <- webDriver.closeF()
       _                 <- switchToAnyOpenTab()
     } yield ()
   }
