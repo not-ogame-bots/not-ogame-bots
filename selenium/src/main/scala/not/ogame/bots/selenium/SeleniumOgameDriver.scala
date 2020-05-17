@@ -1,6 +1,5 @@
 package not.ogame.bots.selenium
 
-import cats.data.OptionT
 import cats.effect.{IO, Timer}
 import cats.implicits._
 import not.ogame.bots.selenium.WebDriverSyntax._
@@ -54,13 +53,14 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       .flatMap(_.find(By.tagName("li")))
 
   private def selectUniverse(): IO[Unit] =
-    (for {
-      _            <- OptionT.liftF(waitForElement(By.className("rt-tr")))
-      list         <- OptionT.liftF(findMany(By.className("rt-tr")))
-      universeText <- OptionT.fromOption[IO](list.find(_.getText.contains(credentials.universeName)))
-      universeBtn  <- OptionT.liftF(universeText.find(By.className("btn-primary")))
-      _            <- OptionT.liftF(universeBtn.clickF())
-    } yield ()).value.void
+    for {
+      list <- waitForElements(By.className("rt-tr"))
+      universeText <- list
+        .find(_.getText.contains(credentials.universeName))
+        .fold(IO.raiseError[WebElement](new IllegalStateException("Couldn't find universeText")))(IO.pure)
+      universeBtn <- universeText.find(By.className("btn-primary"))
+      _           <- universeBtn.clickF()
+    } yield ()
 
   override def getFactories(planetId: String): IO[PlanetFactories] = IO.pure(PlanetFactories(1))
 }
