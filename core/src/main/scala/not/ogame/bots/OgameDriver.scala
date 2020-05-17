@@ -1,7 +1,9 @@
 package not.ogame.bots
 
+import cats.effect.Resource
+
 trait OgameDriverCreator[F[_]] {
-  def create(credentials: Credentials) : OgameDriver[F]
+  def create(credentials: Credentials): Resource[F, OgameDriver[F]]
 }
 
 case class Credentials(login: String, password: String, universeName: String, universeId: String)
