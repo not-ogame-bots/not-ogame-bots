@@ -57,20 +57,21 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       _ <- universeBtn.clickF()
     } yield ()
 
-  override def getSuppliesLevels(planetId: String): IO[SuppliesLevels] = {
-    (go to s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId") >>
-      SuppliesBuilding.values.toList
+  override def getSuppliesLevels(planetId: String): IO[SuppliesLevels] =
+    for {
+      _ <- go to s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
+      suppliesLevels <- SuppliesBuilding.values.toList
         .map(suppliesBuilding => suppliesBuilding -> getBuildingLevel(suppliesBuilding))
         .traverse { case (a, b) => b.map(a -> _) }
         .map(list => SuppliesLevels(list.toMap))
-  }
+    } yield suppliesLevels
 
-  private def getBuildingLevel(suppliesBuilding: SuppliesBuilding.Value): IO[Int] = {
-    waitForElement(By.id("technologies"))
-      .flatMap(_.find(By.className(getComponentName(suppliesBuilding))))
-      .flatMap(_.find(By.className("level")))
-      .map(_.getText.toInt)
-  }
+  private def getBuildingLevel(suppliesBuilding: SuppliesBuilding.Value): IO[Int] =
+    for {
+      technologies <- waitForElement(By.id("technologies"))
+      buildingComponent <- technologies.find(By.className(getComponentName(suppliesBuilding)))
+      level <- buildingComponent.find(By.className("level"))
+    } yield level.getText.toInt
 
   private def getComponentName(suppliesBuilding: SuppliesBuilding.Value): String = {
     suppliesBuilding match {
