@@ -66,14 +66,14 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
         .map(list => SuppliesLevels(list.toMap))
     } yield suppliesLevels
 
-  private def getBuildingLevel(suppliesBuilding: SuppliesBuilding.Value): IO[Int] =
+  private def getBuildingLevel(suppliesBuilding: SuppliesBuilding): IO[Int] =
     for {
       technologies <- waitForElement(By.id("technologies"))
       buildingComponent <- technologies.find(By.className(getComponentName(suppliesBuilding)))
       level <- buildingComponent.find(By.className("level"))
     } yield level.getText.toInt
 
-  private def getComponentName(suppliesBuilding: SuppliesBuilding.Value): String = {
+  private def getComponentName(suppliesBuilding: SuppliesBuilding): String = {
     suppliesBuilding match {
       case SuppliesBuilding.METAL_MINE => "metalMine"
       case SuppliesBuilding.CRYSTAL_MINE => "crystalMine"
