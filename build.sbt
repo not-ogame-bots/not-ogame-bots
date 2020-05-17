@@ -1,3 +1,5 @@
+import sbt.Keys.libraryDependencies
+
 val seleniumVersion = "3.141.59"
 
 lazy val commonSettings = commonSmlBuildSettings ++ acyclicSettings ++ splainSettings ++ Seq(
@@ -8,7 +10,8 @@ lazy val core: Project = (project in file("core"))
   .settings(commonSettings)
   .settings(
     name := "core",
-    libraryDependencies += "org.typelevel" %% "cats-effect" % "2.1.3"
+    libraryDependencies += "org.typelevel" %% "cats-effect" % "2.1.3",
+    libraryDependencies += "com.beachape" %% "enumeratum" % "1.6.1"
   )
 
 val seleniumDeps = Seq(
