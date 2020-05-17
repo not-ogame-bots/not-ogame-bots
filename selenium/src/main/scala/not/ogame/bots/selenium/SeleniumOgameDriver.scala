@@ -12,52 +12,48 @@ import scala.concurrent.duration._
 class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDriver, timer: Timer[IO]) extends OgameDriver[IO] {
 
   override def login(): IO[Unit] = {
-    val url = "https://lobby.ogame.gameforge.com/pl_PL/accounts"
+    val universeListUrl = "https://lobby.ogame.gameforge.com/pl_PL/accounts"
     for {
-      _                 <- go to url
-      loginRegisterTabs <- findMany(By.id("loginRegisterTabs"))
-      _                 <- loginImpl(url, loginRegisterTabs)
-      _                 <- selectUniverse()
-      _                 <- switchToOtherTab()
-      _                 <- waitForElement(By.className("OGameClock"))
-      _                 <- webDriver.closeF()
-      _                 <- switchToAnyOpenTab()
+      _ <- go to universeListUrl
+      _ <- loginImpl(universeListUrl)
+      _ <- selectUniverse()
+      _ <- webDriver.closeF()
+      _ <- switchToAnyOpenTab()
+      _ <- waitForElement(By.className("OGameClock"))
     } yield ()
   }
 
-  private def loginImpl(url: String, loginRegisterTabs: List[WebElement]): IO[Unit] = {
-    if (loginRegisterTabs.nonEmpty) {
-      insetCredentials() >> (go to url)
-    } else {
+  private def loginImpl(universeListUrl: String): IO[Unit] = {
+    if (webDriver.getCurrentUrl == universeListUrl) {
       IO.unit
+    } else {
+      insetCredentials() >> (go to universeListUrl)
     }
   }
 
   private def insetCredentials(): IO[Unit] =
     for {
-      loginTab    <- findLoginTab()
-      _           <- loginTab.clickF()
-      email       <- find(By.name("email"))
-      _           <- email.typeText(credentials.login)
-      password    <- find(By.name("password"))
-      _           <- password.typeText(credentials.password)
-      _           <- IO.sleep(700 milli)
-      loginButton <- find(By.className("button-lg"))
-      _           <- loginButton.clickF()
-      _           <- waitForElement(By.id("joinGame"))
+      _ <- clickLoginTab()
+      _ <- find(By.name("email")).flatMap(_.typeText(credentials.login))
+      _ <- find(By.name("password")).flatMap(_.typeText(credentials.password))
+      _ <- IO.sleep(700 milli)
+      _ <- find(By.className("button-lg")).flatMap(_.clickF())
+      _ <- waitForElement(By.id("joinGame"))
     } yield ()
 
-  private def findLoginTab(): IO[WebElement] =
+  private def clickLoginTab(): IO[Unit] =
     find(By.id("loginRegisterTabs"))
       .flatMap(_.find(By.className("tabsList")))
       .flatMap(_.find(By.tagName("li")))
+      .flatMap(_.clickF())
 
   private def selectUniverse(): IO[Unit] =
     for {
       list <- waitForElements(By.className("rt-tr"))
       universeText <- list
         .find(_.getText.contains(credentials.universeName))
-        .fold(IO.raiseError[WebElement](new IllegalStateException("Couldn't find universeText")))(IO.pure)
+        .map(IO.pure)
+        .getOrElse(IO.raiseError[WebElement](new IllegalStateException("Couldn't find universeText")))
       universeBtn <- universeText.find(By.className("btn-primary"))
       _           <- universeBtn.clickF()
     } yield ()
