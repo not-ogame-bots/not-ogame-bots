@@ -10,8 +10,11 @@ lazy val core: Project = (project in file("core"))
   .settings(commonSettings)
   .settings(
     name := "core",
-    libraryDependencies += "org.typelevel" %% "cats-effect" % "2.1.3",
-    libraryDependencies += "com.beachape" %% "enumeratum" % "1.6.1"
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-effect" % "2.1.3",
+      "com.beachape" %% "enumeratum" % "1.6.1",
+      compilerPlugin("com.softwaremill.neme" %% "neme-plugin" % "0.0.5")
+    )
   )
 
 val seleniumDeps = Seq(
