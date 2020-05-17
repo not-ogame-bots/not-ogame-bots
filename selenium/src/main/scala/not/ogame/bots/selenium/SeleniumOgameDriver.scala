@@ -75,13 +75,13 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
 
   private def getComponentName(suppliesBuilding: SuppliesBuilding): String = {
     suppliesBuilding match {
-      case SuppliesBuilding.METAL_MINE => "metalMine"
-      case SuppliesBuilding.CRYSTAL_MINE => "crystalMine"
-      case SuppliesBuilding.DEUTERIUM_SYNTHESIZER => "deuteriumSynthesizer"
-      case SuppliesBuilding.SOLAR_PLANT => "solarPlant"
-      case SuppliesBuilding.METAL_STORAGE => "metalStorage"
-      case SuppliesBuilding.CRYSTAL_STORAGE => "crystalStorage"
-      case SuppliesBuilding.DEUTERIUM_STORAGE => "deuteriumStorage"
+      case SuppliesBuilding.MetalMine            => "metalMine"
+      case SuppliesBuilding.CrystalMine          => "crystalMine"
+      case SuppliesBuilding.DeuteriumSynthesizer => "deuteriumSynthesizer"
+      case SuppliesBuilding.SolarPlant           => "solarPlant"
+      case SuppliesBuilding.MetalStorage         => "metalStorage"
+      case SuppliesBuilding.CrystalStorage       => "crystalStorage"
+      case SuppliesBuilding.DeuteriumStorage     => "deuteriumStorage"
     }
   }
 }
