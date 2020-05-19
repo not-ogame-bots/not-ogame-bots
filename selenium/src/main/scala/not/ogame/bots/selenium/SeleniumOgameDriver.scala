@@ -1,5 +1,7 @@
 package not.ogame.bots.selenium
 
+import java.time.LocalDateTime
+
 import cats.effect.{IO, Timer}
 import cats.implicits._
 import not.ogame.bots._
@@ -66,7 +68,7 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
         .map(suppliesBuilding => suppliesBuilding -> getBuildingLevel(suppliesBuilding))
         .traverse { case (a, b) => b.map(a -> _) }
         .map(list => SuppliesBuildingLevels(list.toMap))
-    } yield SuppliesPageData(currentResources, currentProduction, suppliesLevels)
+    } yield SuppliesPageData(LocalDateTime.now(), currentResources, currentProduction, suppliesLevels, Option.empty)
 
   private def readCurrentResources: IO[Resources] =
     for {

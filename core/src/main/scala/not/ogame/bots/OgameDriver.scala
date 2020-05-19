@@ -1,4 +1,7 @@
 package not.ogame.bots
+
+import java.time.LocalDateTime
+
 import cats.effect.Resource
 import enumeratum._
 
@@ -16,11 +19,19 @@ trait OgameDriver[F[_]] {
   def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): F[Unit]
 }
 
-case class SuppliesPageData(currentResources: Resources, currentProduction: Resources, suppliesLevels: SuppliesBuildingLevels)
+case class SuppliesPageData(
+    timestamp: LocalDateTime,
+    currentResources: Resources,
+    currentProduction: Resources,
+    suppliesLevels: SuppliesBuildingLevels,
+    currentBuildingProgress: Option[BuildingProgress]
+)
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int)
 
 case class SuppliesBuildingLevels(map: Map[SuppliesBuilding, Int])
+
+case class BuildingProgress(finishTimestamp: LocalDateTime)
 
 sealed trait SuppliesBuilding extends EnumEntry
 
