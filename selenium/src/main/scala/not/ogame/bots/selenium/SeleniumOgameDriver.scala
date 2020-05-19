@@ -68,7 +68,8 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
         .map(suppliesBuilding => suppliesBuilding -> getBuildingLevel(suppliesBuilding))
         .traverse { case (a, b) => b.map(a -> _) }
         .map(list => SuppliesBuildingLevels(list.toMap))
-    } yield SuppliesPageData(LocalDateTime.now(), currentResources, currentProduction, suppliesLevels, Option.empty)
+      currentBuildingProgress <- readCurrentBuildingProgress
+    } yield SuppliesPageData(LocalDateTime.now(), currentResources, currentProduction, suppliesLevels, currentBuildingProgress)
 
   private def readCurrentResources: IO[Resources] =
     for {
@@ -83,6 +84,33 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       crystalProduction <- find(By.id("crystal_box")).map(_.getAttribute("title")).map(getProductionFromTooltip)
       deuteriumProduction <- find(By.id("deuterium_box")).map(_.getAttribute("title")).map(getProductionFromTooltip)
     } yield Resources(metalProduction, crystalProduction, deuteriumProduction)
+
+  private def readCurrentBuildingProgress: IO[Option[BuildingProgress]] =
+    for {
+      _ <- waitForElement(By.className("construction"))
+      buildingCountdown <- findMany(By.id("buildingCountdown")).map(_.headOption)
+      seconds = buildingCountdown.map(_.getText).map(timeTextToSeconds)
+      buildingProgress = seconds.map(s => BuildingProgress(LocalDateTime.now().plusSeconds(s)))
+    } yield buildingProgress
+
+  private def timeTextToSeconds(timeText: String): Int =
+    timeText.split(" ").map(parseTimeSection).sum
+
+  private def parseTimeSection(it: String): Int = {
+    val digits = it.filter(_.isDigit)
+    if (digits.isEmpty) {
+      0
+    } else {
+      val number = digits.toInt
+      if (it.contains("s")) {
+        number
+      } else if (it.contains("m")) {
+        number * 60
+      } else {
+        number * 60 * 60
+      }
+    }
+  }
 
   private def getProductionFromTooltip(text: String): Int = {
     text.linesIterator.toList

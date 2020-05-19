@@ -12,8 +12,11 @@ object Main extends IOApp {
       .create(Credentials("fire@fire.pl", "1qaz2wsx", "Mensa", "s165-pl"))
       .use(
         ogame =>
-          ogame.login() >> ogame.readSuppliesPage("33794124").map(println(_)) >> ogame
-            .buildSuppliesBuilding("33794124", MetalMine) >> IO.never
+          ogame.login() >>
+            ogame.readSuppliesPage("33794124").map(println(_)) >>
+            ogame.buildSuppliesBuilding("33794124", MetalMine) >>
+            ogame.readSuppliesPage("33794124").map(println(_)) >>
+            IO.never
       )
       .as(ExitCode.Success)
   }
