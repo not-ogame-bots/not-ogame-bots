@@ -16,7 +16,7 @@ trait OgameDriver[F[_]] {
   def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): F[Unit]
 }
 
-case class SuppliesPageData(currentResources: Resources, suppliesLevels: SuppliesBuildingLevels)
+case class SuppliesPageData(currentResources: Resources, currentProduction: Resources, suppliesLevels: SuppliesBuildingLevels)
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int)
 

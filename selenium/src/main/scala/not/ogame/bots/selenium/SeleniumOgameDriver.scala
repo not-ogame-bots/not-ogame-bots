@@ -61,11 +61,12 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     for {
       _ <- go to s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
       currentResources <- readCurrentResources
+      currentProduction <- readCurrentProduction
       suppliesLevels <- SuppliesBuilding.values.toList
         .map(suppliesBuilding => suppliesBuilding -> getBuildingLevel(suppliesBuilding))
         .traverse { case (a, b) => b.map(a -> _) }
         .map(list => SuppliesBuildingLevels(list.toMap))
-    } yield SuppliesPageData(currentResources, suppliesLevels)
+    } yield SuppliesPageData(currentResources, currentProduction, suppliesLevels)
 
   private def readCurrentResources: IO[Resources] =
     for {
@@ -73,6 +74,20 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       currentCrystal <- find(By.id("crystal_box")).map(_.getText.filter(_.isDigit).toInt)
       currentDeuterium <- find(By.id("deuterium_box")).map(_.getText.filter(_.isDigit).toInt)
     } yield Resources(currentMetal, currentCrystal, currentDeuterium)
+
+  private def readCurrentProduction: IO[Resources] =
+    for {
+      metalProduction <- find(By.id("metal_box")).map(_.getAttribute("title")).map(getProductionFromTooltip)
+      crystalProduction <- find(By.id("crystal_box")).map(_.getAttribute("title")).map(getProductionFromTooltip)
+      deuteriumProduction <- find(By.id("deuterium_box")).map(_.getAttribute("title")).map(getProductionFromTooltip)
+    } yield Resources(metalProduction, crystalProduction, deuteriumProduction)
+
+  private def getProductionFromTooltip(text: String): Int = {
+    text.linesIterator.toList
+      .map(_.trim)
+      .filter(_.startsWith("<td>"))
+      .map(_.filter(_.isDigit).toInt)(2)
+  }
 
   private def getBuildingLevel(suppliesBuilding: SuppliesBuilding): IO[Int] =
     for {
