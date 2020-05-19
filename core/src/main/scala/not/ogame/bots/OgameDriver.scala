@@ -11,14 +11,19 @@ case class Credentials(login: String, password: String, universeName: String, un
 trait OgameDriver[F[_]] {
   def login(): F[Unit]
 
-  def getSuppliesLevels(planetId: String): F[SuppliesLevels]
+  def readSuppliesPage(planetId: String): F[SuppliesPageData]
 
   def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): F[Unit]
 }
 
-case class SuppliesLevels(map: Map[SuppliesBuilding, Int])
+case class SuppliesPageData(currentResources: Resources, suppliesLevels: SuppliesBuildingLevels)
+
+case class Resources(metal: Int, crystal: Int, deuterium: Int)
+
+case class SuppliesBuildingLevels(map: Map[SuppliesBuilding, Int])
 
 sealed trait SuppliesBuilding extends EnumEntry
+
 object SuppliesBuilding extends Enum[SuppliesBuilding] {
   case object MetalMine extends SuppliesBuilding
 

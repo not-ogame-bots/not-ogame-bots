@@ -2,9 +2,9 @@ package not.ogame.bots.selenium
 
 import cats.effect.{IO, Timer}
 import cats.implicits._
+import not.ogame.bots._
 import not.ogame.bots.selenium.WebDriverSyntax._
 import not.ogame.bots.selenium.WebDriverUtils._
-import not.ogame.bots.{Credentials, OgameDriver, SuppliesBuilding, SuppliesLevels}
 import org.openqa.selenium.{By, WebDriver, WebElement}
 
 import scala.concurrent.duration._
@@ -57,14 +57,16 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       _ <- universeBtn.clickF()
     } yield ()
 
-  override def getSuppliesLevels(planetId: String): IO[SuppliesLevels] =
+  override def readSuppliesPage(planetId: String): IO[SuppliesPageData] =
     for {
       _ <- go to s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
+      resources <- IO.pure(Resources(0, 0, 0))
       suppliesLevels <- SuppliesBuilding.values.toList
         .map(suppliesBuilding => suppliesBuilding -> getBuildingLevel(suppliesBuilding))
         .traverse { case (a, b) => b.map(a -> _) }
-        .map(list => SuppliesLevels(list.toMap))
-    } yield suppliesLevels
+        .map(list => SuppliesBuildingLevels(list.toMap))
+      suppliesPageData <- IO.pure(SuppliesPageData(resources, suppliesLevels))
+    } yield suppliesPageData
 
   private def getBuildingLevel(suppliesBuilding: SuppliesBuilding): IO[Int] =
     for {
