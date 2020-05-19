@@ -39,7 +39,12 @@ lazy val facts: Project = (project in file("facts"))
   .settings(name := "facts")
   .dependsOn(core)
 
+lazy val ghostbuster: Project = (project in file("ghostbuster"))
+  .settings(commonSettings)
+  .settings(name := "ghostbuster", libraryDependencies += "com.github.pureconfig" %% "pureconfig" % "0.12.3")
+  .dependsOn(selenium)
+
 lazy val rootProject = (project in file("."))
   .settings(commonSettings)
   .settings(name := "not-ogame-bots")
-  .aggregate(core, selenium, facts)
+  .aggregate(core, selenium, facts, ghostbuster)
