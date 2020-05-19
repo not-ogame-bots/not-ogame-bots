@@ -38,7 +38,7 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       _ <- find(By.name("email")).flatMap(_.typeText(credentials.login))
       _ <- find(By.name("password")).flatMap(_.typeText(credentials.password))
       _ <- IO.sleep(700 milli)
-      _ <- find(By.className("button-lg")).flatMap(_.clickF())
+      _ <- clickF(By.className("button-lg"))
       _ <- waitForElement(By.id("joinGame"))
     } yield ()
 

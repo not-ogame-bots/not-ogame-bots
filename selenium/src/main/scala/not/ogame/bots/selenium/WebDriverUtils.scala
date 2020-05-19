@@ -1,14 +1,14 @@
 package not.ogame.bots.selenium
 
 import cats.effect.{IO, Timer}
+import cats.implicits._
+import not.ogame.bots.selenium.WebDriverUtils._
 import org.openqa.selenium.{By, WebDriver, WebElement}
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
-import cats.implicits._
+import scala.jdk.CollectionConverters._
 
 object WebDriverUtils {
-
   implicit class RichWebElement(webElement: WebElement) {
     def find(by: By): IO[WebElement] = IO.delay(webElement.findElement(by))
 
@@ -25,7 +25,6 @@ object WebDriverUtils {
 }
 
 object WebDriverSyntax {
-
   def waitForElement(by: By, attempts: Int = 100)(implicit webDriver: WebDriver, timer: Timer[IO]): IO[WebElement] =
     waitForElements(by, attempts).map(_.head)
 
@@ -63,6 +62,8 @@ object WebDriverSyntax {
 
   def findMany(by: By)(implicit webDriver: WebDriver): IO[List[WebElement]] =
     IO.delay(webDriver.findElements(by).asScala.toList)
+
+  def clickF(on: By)(implicit webDriver: WebDriver): IO[Unit] = find(on).flatMap(_.clickF())
 
   object go {
     def to(url: String)(implicit driver: WebDriver): IO[Unit] = IO.delay(driver.get(url))
