@@ -7,7 +7,7 @@ import cats.implicits._
 import not.ogame.bots._
 import not.ogame.bots.selenium.WebDriverSyntax._
 import not.ogame.bots.selenium.WebDriverUtils._
-import org.openqa.selenium.{By, WebDriver, WebElement}
+import org.openqa.selenium.{By, WebDriver}
 
 import scala.concurrent.duration._
 
@@ -60,7 +60,7 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
 
   override def readSuppliesPage(planetId: String): IO[SuppliesPageData] =
     for {
-      _ <- go to s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
+      _ <- go to suppliesPageUrl(planetId)
       currentResources <- readCurrentResources
       currentProduction <- readCurrentProduction
       suppliesLevels <- SuppliesBuilding.values.toList
@@ -70,19 +70,28 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       currentBuildingProgress <- readCurrentBuildingProgress
     } yield SuppliesPageData(LocalDateTime.now(), currentResources, currentProduction, suppliesLevels, currentBuildingProgress)
 
+  private def suppliesPageUrl(planetId: String) = {
+    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
+  }
+
   private def readCurrentResources: IO[Resources] =
     for {
-      currentMetal <- find(By.id("metal_box")).map(_.getText.filter(_.isDigit).toInt)
-      currentCrystal <- find(By.id("crystal_box")).map(_.getText.filter(_.isDigit).toInt)
-      currentDeuterium <- find(By.id("deuterium_box")).map(_.getText.filter(_.isDigit).toInt)
+      currentMetal <- readInt(By.id("metal_box"))
+      currentCrystal <- readInt(By.id("crystal_box"))
+      currentDeuterium <- readInt(By.id("deuterium_box"))
     } yield Resources(currentMetal, currentCrystal, currentDeuterium)
 
   private def readCurrentProduction: IO[Resources] =
     for {
-      metalProduction <- find(By.id("metal_box")).map(_.getAttribute("title")).map(getProductionFromTooltip)
-      crystalProduction <- find(By.id("crystal_box")).map(_.getAttribute("title")).map(getProductionFromTooltip)
-      deuteriumProduction <- find(By.id("deuterium_box")).map(_.getAttribute("title")).map(getProductionFromTooltip)
+      metalProduction <- getProduction("metal_box")
+      crystalProduction <- getProduction("crystal_box")
+      deuteriumProduction <- getProduction("deuterium_box")
     } yield Resources(metalProduction, crystalProduction, deuteriumProduction)
+
+  private def getProduction(id: String): IO[Int] =
+    find(By.id(id))
+      .map(_.getAttribute("title"))
+      .map(getProductionFromTooltip)
 
   private def readCurrentBuildingProgress: IO[Option[BuildingProgress]] =
     for {
@@ -95,15 +104,15 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
   private def timeTextToSeconds(timeText: String): Int =
     timeText.split(" ").map(parseTimeSection).sum
 
-  private def parseTimeSection(it: String): Int = {
-    val digits = it.filter(_.isDigit)
+  private def parseTimeSection(text: String): Int = {
+    val digits = text.filter(_.isDigit)
     if (digits.isEmpty) {
       0
     } else {
       val number = digits.toInt
-      if (it.contains("s")) {
+      if (text.contains("s")) {
         number
-      } else if (it.contains("m")) {
+      } else if (text.contains("m")) {
         number * 60
       } else {
         number * 60 * 60
@@ -139,7 +148,7 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
 
   override def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): IO[Unit] =
     for {
-      _ <- go to s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
+      _ <- go to suppliesPageUrl(planetId)
       technologies <- waitForElement(By.id("technologies"))
       buildingComponent <- technologies.find(By.className(getComponentName(suppliesBuilding)))
       upgrade <- buildingComponent.find(By.className("upgrade"))
