@@ -84,4 +84,13 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       case SuppliesBuilding.DeuteriumStorage     => "deuteriumStorage"
     }
   }
+
+  override def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): IO[Unit] =
+    for {
+      _ <- go to s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
+      technologies <- waitForElement(By.id("technologies"))
+      buildingComponent <- technologies.find(By.className(getComponentName(suppliesBuilding)))
+      upgrade <- buildingComponent.find(By.className("upgrade"))
+      _ <- upgrade.clickF()
+    } yield ()
 }

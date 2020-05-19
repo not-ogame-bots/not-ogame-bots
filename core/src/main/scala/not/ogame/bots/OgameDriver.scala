@@ -12,6 +12,8 @@ trait OgameDriver[F[_]] {
   def login(): F[Unit]
 
   def getSuppliesLevels(planetId: String): F[SuppliesLevels]
+
+  def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): F[Unit]
 }
 
 case class SuppliesLevels(map: Map[SuppliesBuilding, Int])
