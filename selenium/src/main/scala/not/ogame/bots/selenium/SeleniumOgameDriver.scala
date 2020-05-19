@@ -51,10 +51,9 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
   private def selectUniverse(): IO[Unit] =
     for {
       list <- waitForElements(By.className("rt-tr"))
-      universeText <- list
+      universeText = list
         .find(_.getText.contains(credentials.universeName))
-        .map(IO.pure)
-        .getOrElse(IO.raiseError[WebElement](new IllegalStateException("Couldn't find universeText")))
+        .getOrElse(throw new IllegalStateException("Couldn't find universeText"))
       universeBtn <- universeText.find(By.className("btn-primary"))
       _ <- universeBtn.clickF()
     } yield ()
