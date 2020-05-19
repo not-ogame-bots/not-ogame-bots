@@ -47,10 +47,14 @@ object WebDriverSyntax {
     }
   }
 
-  def safeUrl(url: String)(implicit webDriver: WebDriver): IO[Unit] = {
+  def safeUrl(url: String, attempts: Int = 1000)(implicit webDriver: WebDriver, timer: Timer[IO]): IO[Unit] = {
     (go to url).flatMap { _ =>
       if (webDriver.getCurrentUrl != url) {
-        safeUrl(url)
+        if (attempts > 0) {
+          IO.sleep(10 millis) >> safeUrl(url, attempts - 1)
+        } else {
+          IO.raiseError(new RuntimeException(s"Couldn't proceed to page $url"))
+        }
       } else {
         IO.unit
       }
