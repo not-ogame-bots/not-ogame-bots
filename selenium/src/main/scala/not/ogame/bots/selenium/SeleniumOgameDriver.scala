@@ -60,13 +60,21 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
   override def readSuppliesPage(planetId: String): IO[SuppliesPageData] =
     for {
       _ <- go to s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
-      resources <- IO.pure(Resources(0, 0, 0))
+      currentResources <- readCurrentResources
       suppliesLevels <- SuppliesBuilding.values.toList
         .map(suppliesBuilding => suppliesBuilding -> getBuildingLevel(suppliesBuilding))
         .traverse { case (a, b) => b.map(a -> _) }
         .map(list => SuppliesBuildingLevels(list.toMap))
-      suppliesPageData <- IO.pure(SuppliesPageData(resources, suppliesLevels))
+      suppliesPageData <- IO.pure(SuppliesPageData(currentResources, suppliesLevels))
     } yield suppliesPageData
+
+  private def readCurrentResources: IO[Resources] =
+    for {
+      currentMetal <- find(By.id("metal_box")).map(_.getText.filter(_.isDigit).toInt)
+      currentCrystal <- find(By.id("crystal_box")).map(_.getText.filter(_.isDigit).toInt)
+      currentDeuterium <- find(By.id("deuterium_box")).map(_.getText.filter(_.isDigit).toInt)
+      currentResources <- IO.pure(Resources(currentMetal, currentCrystal, currentDeuterium))
+    } yield currentResources
 
   private def getBuildingLevel(suppliesBuilding: SuppliesBuilding): IO[Int] =
     for {
