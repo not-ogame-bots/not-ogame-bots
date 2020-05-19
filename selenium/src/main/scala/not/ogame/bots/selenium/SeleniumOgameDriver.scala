@@ -65,16 +65,14 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
         .map(suppliesBuilding => suppliesBuilding -> getBuildingLevel(suppliesBuilding))
         .traverse { case (a, b) => b.map(a -> _) }
         .map(list => SuppliesBuildingLevels(list.toMap))
-      suppliesPageData <- IO.pure(SuppliesPageData(currentResources, suppliesLevels))
-    } yield suppliesPageData
+    } yield SuppliesPageData(currentResources, suppliesLevels)
 
   private def readCurrentResources: IO[Resources] =
     for {
       currentMetal <- find(By.id("metal_box")).map(_.getText.filter(_.isDigit).toInt)
       currentCrystal <- find(By.id("crystal_box")).map(_.getText.filter(_.isDigit).toInt)
       currentDeuterium <- find(By.id("deuterium_box")).map(_.getText.filter(_.isDigit).toInt)
-      currentResources <- IO.pure(Resources(currentMetal, currentCrystal, currentDeuterium))
-    } yield currentResources
+    } yield Resources(currentMetal, currentCrystal, currentDeuterium)
 
   private def getBuildingLevel(suppliesBuilding: SuppliesBuilding): IO[Int] =
     for {
