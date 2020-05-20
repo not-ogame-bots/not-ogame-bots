@@ -3,7 +3,7 @@ package not.ogame.bots.ghostbuster
 import java.time.{Clock, Instant, LocalDateTime, ZoneId}
 
 import eu.timepit.refined.auto._
-import not.ogame.bots.{Resources, SuppliesBuilding, SuppliesBuildingLevels, SuppliesPageData}
+import not.ogame.bots.{BuildingProgress, Resources, SuppliesBuilding, SuppliesBuildingLevels, SuppliesPageData}
 
 class GBotSpec extends munit.FunSuite {
   private val now = Instant.now()
@@ -75,13 +75,45 @@ class GBotSpec extends munit.FunSuite {
     assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600))))
   }
 
+  test("should not build building if it is already built") {
+    val prevState = State.LoggedIn(
+      SuppliesPageData(
+        unused,
+        Resources(0, 0, 0),
+        Resources(10, 10, 10),
+        SuppliesBuildingLevels(createStartingBuildings ++ Map(SuppliesBuilding.MetalMine -> 1)),
+        Option.empty
+      ),
+      List(Wish.build(SuppliesBuilding.MetalMine, 1)),
+      List.empty
+    )
+    val nextState: State = bot.nextStep(prevState)
+    assertEquals(nextState.scheduledTasks, List.empty)
+  }
+
+  test("should schedule refresh if after building finishes") {
+    val prevState = State.LoggedIn(
+      SuppliesPageData(
+        unused,
+        Resources(0, 0, 0),
+        Resources(10, 10, 10),
+        SuppliesBuildingLevels(createStartingBuildings ++ Map(SuppliesBuilding.MetalMine -> 1)),
+        Some(BuildingProgress(now.plusSeconds(1)))
+      ),
+      List(Wish.build(SuppliesBuilding.MetalMine, 1)),
+      List.empty
+    )
+    val nextState: State = bot.nextStep(prevState)
+    assertEquals(nextState.scheduledTasks, List(Task.refresh(now.plusSeconds(1))))
+  }
+
   test("should schedule logging if it is logged out") {
     val state = State.LoggedOut(List.empty, List.empty)
     val nextState = bot.nextStep(state)
     assertEquals(nextState.scheduledTasks, List(Task.login(now)))
   }
 
-  private def createStartingBuildings = {
+  private def createStartingBuildings: Map[SuppliesBuilding, Int] = {
     SuppliesBuilding.values.map(_ -> 0).toMap
   }
 

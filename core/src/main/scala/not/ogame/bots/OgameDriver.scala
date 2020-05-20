@@ -1,8 +1,9 @@
 package not.ogame.bots
 
-import java.time.LocalDateTime
+import java.time.{Instant, LocalDateTime}
 
 import cats.effect.Resource
+import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 
 trait OgameDriverCreator[F[_]] {
@@ -42,9 +43,9 @@ case class Resources(metal: Int, crystal: Int, deuterium: Int) {
 
 case class SuppliesBuildingLevels(map: Map[SuppliesBuilding, Int])
 
-case class BuildingProgress(finishTimestamp: LocalDateTime)
+case class BuildingProgress(finishTimestamp: Instant)
 
-sealed trait SuppliesBuilding extends EnumEntry
+sealed trait SuppliesBuilding extends EnumEntry with Snakecase
 
 object SuppliesBuilding extends Enum[SuppliesBuilding] {
   case object MetalMine extends SuppliesBuilding

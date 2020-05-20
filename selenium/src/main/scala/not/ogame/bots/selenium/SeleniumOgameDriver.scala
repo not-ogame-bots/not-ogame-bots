@@ -1,6 +1,6 @@
 package not.ogame.bots.selenium
 
-import java.time.LocalDateTime
+import java.time.{Instant, LocalDateTime}
 
 import cats.effect.{IO, Timer}
 import cats.implicits._
@@ -98,7 +98,7 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       _ <- waitForElement(By.className("construction"))
       buildingCountdown <- findMany(By.id("buildingCountdown")).map(_.headOption)
       seconds = buildingCountdown.map(_.getText).map(timeTextToSeconds)
-      buildingProgress = seconds.map(s => BuildingProgress(LocalDateTime.now().plusSeconds(s)))
+      buildingProgress = seconds.map(s => BuildingProgress(Instant.now().plusSeconds(s)))
     } yield buildingProgress
 
   private def timeTextToSeconds(timeText: String): Int =
