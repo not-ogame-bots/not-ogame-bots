@@ -24,7 +24,7 @@ object Main extends IOApp {
         val taskExecutor = new TaskExecutor[IO](ogame)
         def loop(state: State): IO[State] = {
           val ns = gbot.nextStep(state)
-          taskExecutor.execute(ns).flatMap(s => IO.sleep(100 millis) >> loop(s))
+          taskExecutor.execute(ns).flatMap(s => IO.sleep(1 seconds) >> loop(s))
         }
         loop(State.LoggedOut(List.empty, botConfig.wishlist))
       }
