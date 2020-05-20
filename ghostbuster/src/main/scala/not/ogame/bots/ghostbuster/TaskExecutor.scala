@@ -3,13 +3,15 @@ package not.ogame.bots.ghostbuster
 import java.time.Clock
 
 import cats.MonadError
+import cats.effect.Timer
 import not.ogame.bots.OgameDriver
 import cats.implicits._
 import com.softwaremill.quicklens._
 import not.ogame.bots.ghostbuster.TaskExecutor._
 import cats.implicits._
+import scala.concurrent.duration._
 
-class TaskExecutor[F[_]: MonError](ogameDriver: OgameDriver[F])(implicit clock: Clock) {
+class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F])(implicit clock: Clock) {
   def execute(state: State): F[State] = {
     (state match {
       case loggedOut: State.LoggedOut =>
@@ -31,6 +33,7 @@ class TaskExecutor[F[_]: MonError](ogameDriver: OgameDriver[F])(implicit clock: 
                 case Task.Login(_) =>
                   new IllegalStateException("We are already logged!!! Cant login again.").raiseError[F, State]
                 case t: Task.Refresh =>
+                  println("handling refresh task")
                   ogameDriver.readSuppliesPage(PlanetId).map { suppliesPage =>
                     loggedIn
                       .modify(_.suppliesPage)
@@ -41,9 +44,9 @@ class TaskExecutor[F[_]: MonError](ogameDriver: OgameDriver[F])(implicit clock: 
               }
           }
           .getOrElse((loggedIn: State).pure[F])
-    }).handleError { e =>
+    }).handleErrorWith { e =>
       e.printStackTrace()
-      State.LoggedOut(scheduledTasks = state.scheduledTasks, wishList = state.wishList)
+      implicitly[Timer[F]].sleep(1 seconds).map(_ => State.LoggedOut(scheduledTasks = state.scheduledTasks, wishList = state.wishList))
     }
   }
 
