@@ -70,7 +70,7 @@ object WebDriverSyntax {
   def findMany(by: By)(implicit webDriver: WebDriver): IO[List[WebElement]] =
     IO.delay(webDriver.findElements(by).asScala.toList)
 
-  def clickF(on: By)(implicit webDriver: WebDriver): IO[Unit] = find(on).flatMap(_.clickF())
+  def clickF(by: By)(implicit webDriver: WebDriver): IO[Unit] = find(by).flatMap(_.clickF())
 
   object go {
     def to(url: String)(implicit driver: WebDriver): IO[Unit] = IO.delay(driver.get(url))
