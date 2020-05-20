@@ -30,15 +30,19 @@ class TaskExecutor[F[_]: MonError](ogameDriver: OgameDriver[F])(implicit clock: 
                   }
                 case Task.Login(_) =>
                   new IllegalStateException("We are already logged!!! Cant login again.").raiseError[F, State]
-                case Task.Refresh(_) =>
+                case t: Task.Refresh =>
                   ogameDriver.readSuppliesPage(PlanetId).map { suppliesPage =>
-                    loggedIn.modify(_.suppliesPage).setTo(suppliesPage): State
+                    loggedIn
+                      .modify(_.suppliesPage)
+                      .setTo(suppliesPage)
+                      .modify(_.scheduledTasks)
+                      .setTo(loggedIn.scheduledTasks.filterNot(_ == t)): State
                   }
               }
           }
           .getOrElse((loggedIn: State).pure[F])
     }).handleError { e =>
-      println(e.getMessage)
+      e.printStackTrace()
       State.LoggedOut(scheduledTasks = state.scheduledTasks, wishList = state.wishList)
     }
   }
