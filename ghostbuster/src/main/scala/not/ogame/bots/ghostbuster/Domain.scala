@@ -13,23 +13,11 @@ import pureconfig.{ConfigObjectCursor, ConfigReader}
 
 sealed trait Task {
   def executeAfter: Instant
-
-  def isFromWish(wish: Wish): Boolean
 }
 object Task {
-  case class Build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant) extends Task {
-    override def isFromWish(wish: Wish): Boolean = {
-      wish match {
-        case Wish.Build(sb, l) => sb == suppliesBuilding && l == level
-      }
-    }
-  }
-  case class Login(executeAfter: Instant) extends Task {
-    override def isFromWish(wish: Wish): Boolean = false
-  }
-  case class Refresh(executeAfter: Instant) extends Task {
-    override def isFromWish(wish: Wish): Boolean = false
-  }
+  case class Build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant) extends Task
+  case class Login(executeAfter: Instant) extends Task
+  case class Refresh(executeAfter: Instant) extends Task
 
   def build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant): Task = {
     Build(suppliesBuilding, level, executeAfter)
