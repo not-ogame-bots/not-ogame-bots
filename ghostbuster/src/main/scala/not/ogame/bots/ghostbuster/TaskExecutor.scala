@@ -7,10 +7,11 @@ import not.ogame.bots.OgameDriver
 import cats.implicits._
 import com.softwaremill.quicklens._
 import not.ogame.bots.ghostbuster.TaskExecutor._
+import cats.implicits._
 
 class TaskExecutor[F[_]: MonError](ogameDriver: OgameDriver[F])(implicit clock: Clock) {
   def execute(state: State): F[State] = {
-    state match {
+    (state match {
       case loggedOut: State.LoggedOut =>
         logIn(loggedOut)
       case loggedIn: State.LoggedIn =>
@@ -36,7 +37,10 @@ class TaskExecutor[F[_]: MonError](ogameDriver: OgameDriver[F])(implicit clock: 
               }
           }
           .getOrElse((loggedIn: State).pure[F])
-    } // TODO handle error assuming we have been logged out
+    }).handleError { e =>
+      println(e.getMessage)
+      State.LoggedOut(scheduledTasks = state.scheduledTasks, wishList = state.wishList)
+    }
   }
 
   private def logIn(loggedOut: State.LoggedOut): F[State] = {
