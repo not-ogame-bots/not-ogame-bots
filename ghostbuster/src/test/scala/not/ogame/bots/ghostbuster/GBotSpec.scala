@@ -13,7 +13,7 @@ class GBotSpec extends munit.FunSuite {
   private val bot = new GBot(randomTimeJitter)
 
   test("should do nothing if wishlist is empty") {
-    val prevState = State(
+    val prevState = State.LoggedIn(
       SuppliesPageData(
         unused,
         Resources(0, 0, 0),
@@ -29,7 +29,7 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should schedule building metal factory now if there is enough resources") {
-    val prevState = State(
+    val prevState = State.LoggedIn(
       SuppliesPageData(
         unused,
         Resources(60, 15, 0),
@@ -37,15 +37,15 @@ class GBotSpec extends munit.FunSuite {
         SuppliesBuildingLevels(createStartingBuildings),
         Option.empty
       ),
-      List.empty,
-      List(Wish.build(SuppliesBuilding.MetalMine, 1))
+      List(Wish.build(SuppliesBuilding.MetalMine, 1)),
+      List.empty
     )
     val nextState: State = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledWishes, List(now -> Wish.build(SuppliesBuilding.MetalMine, 1)))
+    assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalMine, 1, now)))
   }
 
   test("should not schedule building metal factory if there is something scheduled") {
-    val prevState = State(
+    val prevState = State.LoggedIn(
       SuppliesPageData(
         unused,
         Resources(60, 15, 0),
@@ -53,14 +53,14 @@ class GBotSpec extends munit.FunSuite {
         SuppliesBuildingLevels(createStartingBuildings),
         Option.empty
       ),
-      List(now -> Wish.Build(SuppliesBuilding.CrystalMine, 1)),
-      List(Wish.build(SuppliesBuilding.MetalMine, 1))
+      List(Wish.build(SuppliesBuilding.MetalMine, 1)),
+      List(Task.build(SuppliesBuilding.CrystalMine, 1, now))
     )
     val nextState: State = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledWishes, List(now -> Wish.Build(SuppliesBuilding.CrystalMine, 1)))
+    assertEquals(nextState.scheduledTasks, List(Task.Build(SuppliesBuilding.CrystalMine, 1, now)))
   }
   test("should schedule building metal factory in the future if there is not enough resources") {
-    val prevState = State(
+    val prevState = State.LoggedIn(
       SuppliesPageData(
         unused,
         Resources(0, 0, 0),
@@ -68,11 +68,17 @@ class GBotSpec extends munit.FunSuite {
         SuppliesBuildingLevels(createStartingBuildings),
         Option.empty
       ),
-      List.empty,
-      List(Wish.build(SuppliesBuilding.MetalMine, 1))
+      List(Wish.build(SuppliesBuilding.MetalMine, 1)),
+      List.empty
     )
     val nextState: State = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledWishes, List(now.plusSeconds(6 * 3600) -> Wish.build(SuppliesBuilding.MetalMine, 1)))
+    assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600))))
+  }
+
+  test("should schedule logging if it is logged out") {
+    val state = State.LoggedOut(List.empty, List.empty)
+    val nextState = bot.nextStep(state)
+    assertEquals(nextState.scheduledTasks, List(Task.login(now)))
   }
 
   private def createStartingBuildings = {

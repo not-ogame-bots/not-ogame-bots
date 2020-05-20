@@ -29,9 +29,18 @@ object Main extends IOApp {
   }
 }
 
-sealed trait Task
+sealed trait Task {
+  def executeAfter: Instant
+}
 object Task {
-  case object BuildBuilding extends Task
+  case class Build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant) extends Task
+  case class Login(executeAfter: Instant) extends Task
+
+  def build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant): Task = {
+    Build(suppliesBuilding, level, executeAfter)
+  }
+
+  def login(executeAfter: Instant): Task = Task.Login(executeAfter)
 }
 
 sealed trait Wish
@@ -41,7 +50,14 @@ object Wish {
   def build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive): Wish = Build(suppliesBuilding, level)
 }
 
-case class State(suppliesPage: SuppliesPageData, scheduledWishes: List[(Instant, Wish)], wishList: List[Wish])
+sealed trait State {
+  def scheduledTasks: List[Task]
+  def wishList: List[Wish]
+}
+object State {
+  case class LoggedOut(scheduledTasks: List[Task], wishList: List[Wish]) extends State
+  case class LoggedIn(suppliesPage: SuppliesPageData, wishList: List[Wish], scheduledTasks: List[Task]) extends State
+}
 // lista zadan ulozonych w czasie
 
 // metoda check ktora
