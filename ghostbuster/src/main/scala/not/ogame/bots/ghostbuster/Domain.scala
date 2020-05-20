@@ -4,12 +4,7 @@ import java.time.Instant
 
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
-import eu.timepit.refined.pureconfig._
 import not.ogame.bots.{SuppliesBuilding, SuppliesPageData}
-import pureconfig.error.CannotConvert
-import pureconfig.generic.auto._
-import pureconfig.module.enumeratum._
-import pureconfig.{ConfigObjectCursor, ConfigReader}
 
 sealed trait Task {
   def executeAfter: Instant
@@ -33,23 +28,6 @@ object Wish {
   case class Build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive) extends Wish
 
   def build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive): Wish = Build(suppliesBuilding, level)
-
-  implicit val wishReader: ConfigReader[Wish] = ConfigReader.fromCursor { cur =>
-    for {
-      objCur <- cur.asObjectCursor
-      typeCur <- objCur.atKey("type")
-      typeStr <- typeCur.asString
-      ident <- extractByType(typeStr, objCur)
-    } yield ident
-  }
-
-  val buildWishReader: ConfigReader[Wish.Build] = ConfigReader.forProduct2("suppliesBuilding", "level")(Wish.Build)
-
-  def extractByType(typ: String, objCur: ConfigObjectCursor): ConfigReader.Result[Wish] = typ match {
-    case "build" => buildWishReader.from(objCur)
-    case t =>
-      objCur.failed(CannotConvert(objCur.value.toString, "Identifiable", s"type has value $t instead of build"))
-  }
 }
 
 sealed trait State {
