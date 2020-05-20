@@ -27,7 +27,18 @@ case class SuppliesPageData(
     currentBuildingProgress: Option[BuildingProgress]
 )
 
-case class Resources(metal: Int, crystal: Int, deuterium: Int)
+case class Resources(metal: Int, crystal: Int, deuterium: Int) {
+  def gtEqTo(requiredResources: Resources): Boolean =
+    metal >= requiredResources.metal && crystal >= requiredResources.crystal && deuterium >= requiredResources.deuterium
+
+  def difference(other: Resources): Resources = {
+    Resources(Math.abs(metal - other.metal), Math.abs(metal - other.metal), Math.abs(deuterium - other.deuterium))
+  }
+
+  def div(other: Resources): List[Double] = {
+    List(metal.toDouble / other.metal, crystal.toDouble / other.crystal, deuterium.toDouble / other.deuterium)
+  }
+}
 
 case class SuppliesBuildingLevels(map: Map[SuppliesBuilding, Int])
 

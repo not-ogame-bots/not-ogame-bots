@@ -41,8 +41,16 @@ lazy val facts: Project = (project in file("facts"))
 
 lazy val ghostbuster: Project = (project in file("ghostbuster"))
   .settings(commonSettings)
-  .settings(name := "ghostbuster", libraryDependencies += "com.github.pureconfig" %% "pureconfig" % "0.12.3")
-  .dependsOn(selenium)
+  .settings(
+    name := "ghostbuster",
+    libraryDependencies ++= Seq(
+      "com.github.pureconfig" %% "pureconfig" % "0.12.3",
+      "com.softwaremill.quicklens" %% "quicklens" % "1.5.0",
+      "org.scalameta" %% "munit" % "0.7.7" % Test
+    ),
+    testFrameworks += new TestFramework("munit.Framework")
+  )
+  .dependsOn(selenium, facts)
 
 lazy val rootProject = (project in file("."))
   .settings(commonSettings)
