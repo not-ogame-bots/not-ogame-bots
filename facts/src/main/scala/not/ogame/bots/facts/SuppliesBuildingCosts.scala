@@ -13,7 +13,7 @@ object SuppliesBuildingCosts {
       case SuppliesBuilding.SolarPlant           => powerPlantCost(level.value)
       case SuppliesBuilding.MetalStorage         => fromBaseCostPowerOf2(Resources(1000, 0, 0), level.value)
       case SuppliesBuilding.CrystalStorage       => fromBaseCostPowerOf2(Resources(1000, 500, 0), level.value)
-      case SuppliesBuilding.DeuteriumStorage     => fromBaseCostPowerOf2(Resources(1000, 0, 0), level.value) //TODO check
+      case SuppliesBuilding.DeuteriumStorage     => fromBaseCostPowerOf2(Resources(1000, 1000, 0), level.value)
     }
   }
 
