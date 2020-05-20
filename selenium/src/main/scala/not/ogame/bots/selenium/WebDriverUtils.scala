@@ -47,7 +47,7 @@ object WebDriverSyntax {
     }
   }
 
-  def safeUrl(url: String, attempts: Int = 1000)(implicit webDriver: WebDriver, timer: Timer[IO]): IO[Unit] = {
+  def safeUrl(url: String, attempts: Int = 3)(implicit webDriver: WebDriver, timer: Timer[IO]): IO[Unit] = {
     (go to url).flatMap { _ =>
       if (webDriver.getCurrentUrl != url) {
         if (attempts > 0) {
