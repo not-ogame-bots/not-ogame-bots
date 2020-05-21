@@ -11,6 +11,7 @@ class GBotSpec extends munit.FunSuite {
   private implicit val clock: Clock = Clock.fixed(now, ZoneId.systemDefault())
   private val randomTimeJitter: RandomTimeJitter = () => 0
   private val bot = new GBot(randomTimeJitter)
+  private val bigCapacity = Resources(10000, 10000, 10000)
 
   test("should do nothing if wishlist is empty") {
     val prevState = State.LoggedIn(
@@ -18,6 +19,7 @@ class GBotSpec extends munit.FunSuite {
         unused,
         Resources(0, 0, 0),
         Resources(1, 1, 1),
+        bigCapacity,
         SuppliesBuildingLevels(createStartingBuildings),
         Option.empty
       ),
@@ -34,6 +36,7 @@ class GBotSpec extends munit.FunSuite {
         unused,
         Resources(60, 15, 0),
         Resources(0, 0, 0),
+        bigCapacity,
         SuppliesBuildingLevels(createStartingBuildings),
         Option.empty
       ),
@@ -50,6 +53,7 @@ class GBotSpec extends munit.FunSuite {
         unused,
         Resources(60, 15, 0),
         Resources(0, 0, 0),
+        bigCapacity,
         SuppliesBuildingLevels(createStartingBuildings),
         Option.empty
       ),
@@ -65,6 +69,7 @@ class GBotSpec extends munit.FunSuite {
         unused,
         Resources(0, 0, 0),
         Resources(10, 10, 0),
+        bigCapacity,
         SuppliesBuildingLevels(createStartingBuildings),
         Option.empty
       ),
@@ -81,6 +86,7 @@ class GBotSpec extends munit.FunSuite {
         unused,
         Resources(0, 0, 0),
         Resources(10, 10, 10),
+        bigCapacity,
         SuppliesBuildingLevels(createStartingBuildings ++ Map(SuppliesBuilding.MetalMine -> 1)),
         Option.empty
       ),
@@ -97,6 +103,7 @@ class GBotSpec extends munit.FunSuite {
         unused,
         Resources(0, 0, 0),
         Resources(10, 10, 10),
+        bigCapacity,
         SuppliesBuildingLevels(createStartingBuildings ++ Map(SuppliesBuilding.MetalMine -> 1)),
         Some(BuildingProgress(now.plusSeconds(1)))
       ),

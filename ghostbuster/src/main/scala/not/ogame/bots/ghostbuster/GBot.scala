@@ -12,7 +12,7 @@ class GBot(jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
     state match {
       case initialState: State.LoggedOut =>
         initialState.modify(_.scheduledTasks).setTo(initialState.scheduledTasks :+ Task.login(clock.instant()))
-      case loggedState @ State.LoggedIn(SuppliesPageData(_, _, _, _, Some(buildingProgress)), _, tasks) =>
+      case loggedState @ State.LoggedIn(SuppliesPageData(_, _, _, _, _, Some(buildingProgress)), _, tasks) =>
         tasks.find(_.isInstanceOf[Task.Refresh]) match {
           case None =>
             loggedState

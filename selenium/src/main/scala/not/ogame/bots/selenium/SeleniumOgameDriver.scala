@@ -63,12 +63,20 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       _ <- go to suppliesPageUrl(planetId)
       currentResources <- readCurrentResources
       currentProduction <- readCurrentProduction
+      currentCapacity <- readCurrentCapacity
       suppliesLevels <- SuppliesBuilding.values.toList
         .map(suppliesBuilding => suppliesBuilding -> getBuildingLevel(suppliesBuilding))
         .traverse { case (a, b) => b.map(a -> _) }
         .map(list => SuppliesBuildingLevels(list.toMap))
       currentBuildingProgress <- readCurrentBuildingProgress
-    } yield SuppliesPageData(LocalDateTime.now(), currentResources, currentProduction, suppliesLevels, currentBuildingProgress)
+    } yield SuppliesPageData(
+      LocalDateTime.now(),
+      currentResources,
+      currentProduction,
+      currentCapacity,
+      suppliesLevels,
+      currentBuildingProgress
+    )
 
   private def suppliesPageUrl(planetId: String) = {
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
@@ -88,10 +96,22 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       deuteriumProduction <- getProduction("deuterium_box")
     } yield Resources(metalProduction, crystalProduction, deuteriumProduction)
 
+  private def readCurrentCapacity: IO[Resources] =
+    for {
+      metalProduction <- getCapacity("metal_box")
+      crystalProduction <- getCapacity("crystal_box")
+      deuteriumProduction <- getCapacity("deuterium_box")
+    } yield Resources(metalProduction, crystalProduction, deuteriumProduction)
+
   private def getProduction(id: String): IO[Int] =
     find(By.id(id))
       .map(_.getAttribute("title"))
       .map(getProductionFromTooltip)
+
+  private def getCapacity(id: String): IO[Int] =
+    find(By.id(id))
+      .map(_.getAttribute("title"))
+      .map(getCapacityFromTooltip)
 
   private def readCurrentBuildingProgress: IO[Option[BuildingProgress]] =
     for {
@@ -125,6 +145,13 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       .map(_.trim)
       .filter(_.startsWith("<td>"))
       .map(_.filter(_.isDigit).toInt)(2)
+  }
+
+  private def getCapacityFromTooltip(text: String): Int = {
+    text.linesIterator.toList
+      .map(_.trim)
+      .filter(_.startsWith("<td>"))
+      .map(_.filter(_.isDigit).toInt)(1)
   }
 
   private def getBuildingLevel(suppliesBuilding: SuppliesBuilding): IO[Int] =
