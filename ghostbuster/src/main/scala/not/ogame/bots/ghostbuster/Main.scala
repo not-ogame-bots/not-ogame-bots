@@ -3,15 +3,14 @@ package not.ogame.bots.ghostbuster
 import java.time.Clock
 
 import cats.effect.{ExitCode, IO, IOApp}
-import not.ogame.bots.{Credentials, OgameDriver}
-import not.ogame.bots.selenium.SeleniumOgameDriverCreator
-import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
-import pureconfig.generic.auto._
-import eu.timepit.refined.pureconfig._
-import pureconfig.module.enumeratum._
-import pureconfig.{ConfigObjectCursor, ConfigReader}
 import cats.implicits._
+import eu.timepit.refined.pureconfig._
+import not.ogame.bots.Credentials
+import not.ogame.bots.selenium.SeleniumOgameDriverCreator
 import pureconfig.error.CannotConvert
+import pureconfig.generic.auto._
+import pureconfig.module.enumeratum._
+import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
 
 import scala.concurrent.duration._
 
