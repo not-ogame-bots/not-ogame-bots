@@ -4,11 +4,11 @@ import java.time.Clock
 
 import cats.MonadError
 import cats.effect.Timer
-import not.ogame.bots.OgameDriver
 import cats.implicits._
 import com.softwaremill.quicklens._
+import not.ogame.bots.OgameDriver
 import not.ogame.bots.ghostbuster.TaskExecutor._
-import cats.implicits._
+
 import scala.concurrent.duration._
 
 class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F])(implicit clock: Clock) {
@@ -25,8 +25,13 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F])(implicit 
                   //TODO check if level is correct
                   //TODO move executeAfter outside of task?
                   //TODO check resources
-                  ogameDriver.buildSuppliesBuilding(PlanetId, suppliesBuilding).map { _ =>
+                  for {
+                    _ <- ogameDriver.buildSuppliesBuilding(PlanetId, suppliesBuilding)
+                    newSuppliesPage <- ogameDriver.readSuppliesPage(PlanetId)
+                  } yield {
                     loggedIn
+                      .modify(_.suppliesPage)
+                      .setTo(newSuppliesPage)
                       .modify(_.scheduledTasks)
                       .setTo(loggedIn.scheduledTasks.filterNot(_ == readyTask)): State
                   }
@@ -46,7 +51,9 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F])(implicit 
           .getOrElse((loggedIn: State).pure[F])
     }).handleErrorWith { e =>
       e.printStackTrace()
-      implicitly[Timer[F]].sleep(10 seconds).map(_ => State.LoggedOut(scheduledTasks = state.scheduledTasks, wishList = state.wishList))
+      implicitly[Timer[F]]
+        .sleep(10 seconds)
+        .map(_ => State.LoggedOut(scheduledTasks = state.scheduledTasks.drop(1), wishList = state.wishList))
     }
   }
 

@@ -2,7 +2,11 @@ package not.ogame.bots.ghostbuster
 
 import java.time.{Clock, Instant, LocalDateTime, ZoneId}
 
+import eu.timepit.refined._
+import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
+import eu.timepit.refined.numeric.NonNegative
+import not.ogame.bots.facts.SuppliesBuildingCosts
 import not.ogame.bots.{BuildingProgress, Resources, SuppliesBuilding, SuppliesBuildingLevels, SuppliesPageData}
 
 class GBotSpec extends munit.FunSuite {
@@ -45,6 +49,43 @@ class GBotSpec extends munit.FunSuite {
     )
     val nextState: State = bot.nextStep(prevState)
     assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalMine, 1, now)))
+    assertEquals(nextState.wishList, List(Wish.build(SuppliesBuilding.MetalMine, 1)))
+  }
+
+  test("should remove building from wishlist if it is already built") {
+    val prevState = State.LoggedIn(
+      SuppliesPageData(
+        unused,
+        Resources(60, 15, 0),
+        Resources(0, 0, 0),
+        bigCapacity,
+        SuppliesBuildingLevels(createStartingBuildings ++ Map(SuppliesBuilding.MetalMine -> 1)),
+        Option.empty
+      ),
+      List(Wish.build(SuppliesBuilding.MetalMine, 1)),
+      List.empty
+    )
+    val nextState: State = bot.nextStep(prevState)
+    assertEquals(nextState.scheduledTasks, List.empty)
+    assertEquals(nextState.wishList, List.empty)
+  }
+
+  test("should schedule building metal factory now if there is enough resources - with a jump") {
+    val prevState = State.LoggedIn(
+      SuppliesPageData(
+        unused,
+        Resources(60, 15, 0),
+        Resources(0, 0, 0),
+        bigCapacity,
+        SuppliesBuildingLevels(createStartingBuildings),
+        Option.empty
+      ),
+      List(Wish.build(SuppliesBuilding.MetalMine, 10)),
+      List.empty
+    )
+    val nextState: State = bot.nextStep(prevState)
+    assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalMine, 1, now)))
+    assertEquals(nextState.wishList, List(Wish.build(SuppliesBuilding.MetalMine, 10)))
   }
 
   test("should not schedule building metal factory if there is something scheduled") {
@@ -80,6 +121,24 @@ class GBotSpec extends munit.FunSuite {
     assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600))))
   }
 
+  test("should schedule building metal factory in the future if there is not enough resources - with a jump") {
+    val prevState = State.LoggedIn(
+      SuppliesPageData(
+        unused,
+        Resources(0, 0, 0),
+        Resources(10, 10, 0),
+        bigCapacity,
+        SuppliesBuildingLevels(createStartingBuildings),
+        Option.empty
+      ),
+      List(Wish.build(SuppliesBuilding.MetalMine, 10)),
+      List.empty
+    )
+    val nextState: State = bot.nextStep(prevState)
+    assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600))))
+    assertEquals(nextState.wishList, List(Wish.build(SuppliesBuilding.MetalMine, 10)))
+  }
+
   test("should not build building if it is already built") {
     val prevState = State.LoggedIn(
       SuppliesPageData(
@@ -97,7 +156,7 @@ class GBotSpec extends munit.FunSuite {
     assertEquals(nextState.scheduledTasks, List.empty)
   }
 
-  test("should schedule refresh if after building finishes") {
+  test("should schedule refresh after building finishes") {
     val prevState = State.LoggedIn(
       SuppliesPageData(
         unused,
@@ -120,8 +179,25 @@ class GBotSpec extends munit.FunSuite {
     assertEquals(nextState.scheduledTasks, List(Task.login(now)))
   }
 
-  private def createStartingBuildings: Map[SuppliesBuilding, Int] = {
-    SuppliesBuilding.values.map(_ -> 0).toMap
+  test("should build storage if there is not enough capacity") {
+    val prevState = State.LoggedIn(
+      SuppliesPageData(
+        unused,
+        Resources(0, 0, 0),
+        Resources(100, 0, 0),
+        Resources(1500, 0, 0),
+        SuppliesBuildingLevels(createStartingBuildings ++ Map(SuppliesBuilding.MetalMine -> 10)),
+        Option.empty
+      ),
+      List(Wish.build(SuppliesBuilding.MetalMine, 11)),
+      List.empty
+    )
+    val nextState: State = bot.nextStep(prevState)
+    assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalStorage, 1, now.plusSeconds(10 * 3600))))
+  }
+
+  private def createStartingBuildings: Map[SuppliesBuilding, Int Refined NonNegative] = {
+    SuppliesBuilding.values.map(_ -> refineMV[NonNegative](0)).toMap
   }
 
   //TODO ?? suppliesBuildings map -> case class
