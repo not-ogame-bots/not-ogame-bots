@@ -56,6 +56,21 @@ lazy val ghostbuster: Project = (project in file("ghostbuster"))
   )
   .dependsOn(selenium, facts)
 
+lazy val ordon: Project = (project in file("ordon"))
+  .settings(commonSettings)
+  .settings(
+    name := "ordon",
+    libraryDependencies ++= Seq(
+      "com.github.pureconfig" %% "pureconfig" % pureConfigVersion,
+      "com.github.pureconfig" %% "pureconfig-enumeratum" % pureConfigVersion,
+      "eu.timepit" %% "refined-pureconfig" % refinedVersion,
+      "com.softwaremill.quicklens" %% "quicklens" % "1.5.0",
+      "org.scalameta" %% "munit" % "0.7.7" % Test
+    ),
+    testFrameworks += new TestFramework("munit.Framework")
+  )
+  .dependsOn(selenium, facts)
+
 lazy val rootProject = (project in file("."))
   .settings(commonSettings)
   .settings(name := "not-ogame-bots")
