@@ -68,7 +68,7 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       suppliesLevels <- SuppliesBuilding.values.toList
         .map(suppliesBuilding => suppliesBuilding -> getSuppliesBuildingLevel(suppliesBuilding))
         .traverse {
-          case (a, b) => b.map(level => a -> refineVUnsafe[NonNegative, Int](level))
+          case (building, fetchLevel) => fetchLevel.map(level => building -> refineVUnsafe[NonNegative, Int](level))
         }
         .map(list => SuppliesBuildingLevels(list.toMap))
       currentBuildingProgress <- readCurrentBuildingProgress
@@ -86,7 +86,7 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       _ <- safeUrl(facilitiesPageUrl(planetId))
       facilityLevels <- FacilityBuilding.values.toList
         .map(facilityBuilding => facilityBuilding -> getFacilityBuildingLevel(facilityBuilding))
-        .traverse { case (a, b) => b.map(a -> _) }
+        .traverse { case (building, fetchLevel) => fetchLevel.map(level => building -> refineVUnsafe[NonNegative, Int](level)) }
         .map(list => FacilitiesBuildingLevels(list.toMap))
     } yield facilityLevels
 

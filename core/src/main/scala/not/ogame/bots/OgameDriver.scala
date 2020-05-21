@@ -64,7 +64,7 @@ case class Resources(metal: Int, crystal: Int, deuterium: Int) {
 
 case class SuppliesBuildingLevels(map: Map[SuppliesBuilding, Int Refined NonNegative])
 
-case class FacilitiesBuildingLevels(map: Map[FacilityBuilding, Int])
+case class FacilitiesBuildingLevels(map: Map[FacilityBuilding, Int Refined NonNegative])
 
 case class BuildingProgress(finishTimestamp: Instant)
 
