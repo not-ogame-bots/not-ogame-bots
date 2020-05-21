@@ -53,11 +53,7 @@ class GBot(jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
   ): State.LoggedIn = {
     val requiredResources =
       SuppliesBuildingCosts.buildingCost(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding))
-    val remainingWishes = if (buildWish.level == nextLevel(suppliesPage, buildWish.suppliesBuilding)) {
-      tail
-    } else {
-      buildWish :: tail
-    }
+    val remainingWishes = buildWish :: tail
     if (suppliesPage.currentResources.gtEqTo(requiredResources)) {
       scheduleWish(
         loggedState,
