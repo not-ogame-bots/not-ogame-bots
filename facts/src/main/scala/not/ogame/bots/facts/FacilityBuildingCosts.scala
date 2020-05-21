@@ -7,34 +7,18 @@ import not.ogame.bots.{FacilityBuilding, Resources}
 object FacilityBuildingCosts {
   def buildingCost(facilityBuilding: FacilityBuilding, level: Int Refined Positive): Resources = {
     facilityBuilding match {
-      case FacilityBuilding.RoboticsFactory => roboticsFactoryCost(level.value)
-      case FacilityBuilding.Shipyard        => shipyardCost(level.value)
-      case FacilityBuilding.ResearchLab     => researchLabCost(level.value)
-      case FacilityBuilding.NaniteFactory   => ???
+      case FacilityBuilding.RoboticsFactory => fromBaseCostPowerOf2(Resources(400, 120, 200), level.value)
+      case FacilityBuilding.Shipyard        => fromBaseCostPowerOf2(Resources(400, 200, 100), level.value)
+      case FacilityBuilding.ResearchLab     => fromBaseCostPowerOf2(Resources(200, 400, 200), level.value)
+      case FacilityBuilding.NaniteFactory   => fromBaseCostPowerOf2(Resources(1_000_000, 500_000, 100_000), level.value)
     }
   }
 
-  private def roboticsFactoryCost(level: Int): Resources = {
+  private def fromBaseCostPowerOf2(baseCost: Resources, level: Int): Resources = {
     Resources(
-      metal = (400.0 * 2.0.pow(level - 1.0)).toInt,
-      crystal = (120.0 * 2.0.pow(level - 1.0)).toInt,
-      deuterium = (200.0 * 2.0.pow(level - 1.0)).toInt
-    )
-  }
-
-  private def shipyardCost(level: Int): Resources = {
-    Resources(
-      metal = (400.0 * 2.0.pow(level - 1.0)).toInt,
-      crystal = (200.0 * 2.0.pow(level - 1.0)).toInt,
-      deuterium = (100.0 * 2.0.pow(level - 1.0)).toInt
-    )
-  }
-
-  private def researchLabCost(level: Int): Resources = {
-    Resources(
-      metal = (200.0 * 2.0.pow(level - 1.0)).toInt,
-      crystal = (400.0 * 2.0.pow(level - 1.0)).toInt,
-      deuterium = (200.0 * 2.0.pow(level - 1.0)).toInt
+      metal = (baseCost.metal * 2.0.pow(level - 1.0)).toInt,
+      crystal = (baseCost.crystal * 2.0.pow(level - 1.0)).toInt,
+      deuterium = (baseCost.deuterium * 2.0.pow(level - 1.0)).toInt
     )
   }
 }
