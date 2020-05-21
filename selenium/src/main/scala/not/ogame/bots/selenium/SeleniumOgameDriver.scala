@@ -4,6 +4,7 @@ import java.time.{Instant, LocalDateTime}
 
 import cats.effect.{IO, Timer}
 import cats.implicits._
+import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots._
 import not.ogame.bots.selenium.WebDriverSyntax._
 import not.ogame.bots.selenium.WebDriverUtils._
@@ -66,7 +67,9 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       currentCapacity <- readCurrentCapacity
       suppliesLevels <- SuppliesBuilding.values.toList
         .map(suppliesBuilding => suppliesBuilding -> getSuppliesBuildingLevel(suppliesBuilding))
-        .traverse { case (a, b) => b.map(a -> _) }
+        .traverse {
+          case (a, b) => b.map(level => a -> refineVUnsafe[NonNegative, Int](level))
+        }
         .map(list => SuppliesBuildingLevels(list.toMap))
       currentBuildingProgress <- readCurrentBuildingProgress
     } yield SuppliesPageData(

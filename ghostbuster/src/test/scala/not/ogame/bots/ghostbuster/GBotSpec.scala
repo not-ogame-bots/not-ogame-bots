@@ -2,7 +2,11 @@ package not.ogame.bots.ghostbuster
 
 import java.time.{Clock, Instant, LocalDateTime, ZoneId}
 
+import eu.timepit.refined._
+import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
+import eu.timepit.refined.numeric.NonNegative
+import not.ogame.bots.facts.SuppliesBuildingCosts
 import not.ogame.bots.{BuildingProgress, Resources, SuppliesBuilding, SuppliesBuildingLevels, SuppliesPageData}
 
 class GBotSpec extends munit.FunSuite {
@@ -120,8 +124,25 @@ class GBotSpec extends munit.FunSuite {
     assertEquals(nextState.scheduledTasks, List(Task.login(now)))
   }
 
-  private def createStartingBuildings: Map[SuppliesBuilding, Int] = {
-    SuppliesBuilding.values.map(_ -> 0).toMap
+  test("should build storage if there is not enough capacity") {
+    val prevState = State.LoggedIn(
+      SuppliesPageData(
+        unused,
+        Resources(0, 0, 0),
+        Resources(100, 0, 0),
+        Resources(1500, 0, 0),
+        SuppliesBuildingLevels(createStartingBuildings ++ Map(SuppliesBuilding.MetalMine -> 10)),
+        Option.empty
+      ),
+      List(Wish.build(SuppliesBuilding.MetalMine, 11)),
+      List.empty
+    )
+    val nextState: State = bot.nextStep(prevState)
+    assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalStorage, 1, now.plusSeconds(10 * 3600))))
+  }
+
+  private def createStartingBuildings: Map[SuppliesBuilding, Int Refined NonNegative] = {
+    SuppliesBuilding.values.map(_ -> refineMV[NonNegative](0)).toMap
   }
 
   //TODO ?? suppliesBuildings map -> case class

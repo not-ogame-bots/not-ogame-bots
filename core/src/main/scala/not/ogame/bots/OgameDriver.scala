@@ -5,6 +5,8 @@ import java.time.{Instant, LocalDateTime}
 import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.numeric.{NonNegative, Positive}
 
 trait OgameDriverCreator[F[_]] {
   def create(credentials: Credentials): Resource[F, OgameDriver[F]]
@@ -60,7 +62,7 @@ case class Resources(metal: Int, crystal: Int, deuterium: Int) {
   }
 }
 
-case class SuppliesBuildingLevels(map: Map[SuppliesBuilding, Int])
+case class SuppliesBuildingLevels(map: Map[SuppliesBuilding, Int Refined NonNegative])
 
 case class FacilitiesBuildingLevels(map: Map[FacilityBuilding, Int])
 
