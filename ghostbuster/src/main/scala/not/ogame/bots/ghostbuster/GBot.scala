@@ -1,9 +1,8 @@
 package not.ogame.bots.ghostbuster
 
-import java.time.{Clock, Instant}
+import java.time.Clock
 
 import com.softwaremill.quicklens._
-import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import not.ogame.bots.facts.SuppliesBuildingCosts
 import not.ogame.bots.selenium._
@@ -60,14 +59,22 @@ class GBot(jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
       buildWish :: tail
     }
     if (suppliesPage.currentResources.gtEqTo(requiredResources)) {
-      scheduleWish(loggedState, toTask(buildWish, nextLevel(suppliesPage, buildWish.suppliesBuilding), clock.instant()), remainingWishes)
+      scheduleWish(
+        loggedState,
+        Task.build(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding), clock.instant()),
+        remainingWishes
+      )
     } else {
       if (suppliesPage.currentCapacity.gtEqTo(requiredResources)) {
         val stillNeed = requiredResources.difference(suppliesPage.currentResources)
         val hoursToWait = stillNeed.div(suppliesPage.currentProduction).max
         val secondsToWait = (hoursToWait * 3600).toInt + jitterProvider.getJitterInSeconds()
         val timeOfExecution = clock.instant().plusSeconds(secondsToWait)
-        scheduleWish(loggedState, toTask(buildWish, nextLevel(suppliesPage, buildWish.suppliesBuilding), timeOfExecution), remainingWishes)
+        scheduleWish(
+          loggedState,
+          Task.build(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding), timeOfExecution),
+          remainingWishes
+        )
       } else {
         buildStorage(loggedState, suppliesPage, buildWish :: tail, requiredResources)
       }
@@ -116,10 +123,6 @@ class GBot(jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
 
   private def nextLevel(suppliesPage: SuppliesPageData, storage: SuppliesBuilding) = {
     refineVUnsafe[Positive, Int](suppliesPage.suppliesLevels.map(storage).value + 1)
-  }
-
-  private def toTask(buildWish: Wish.Build, nextLevel: Int Refined Positive, timeOfExecution: Instant) = {
-    Task.build(buildWish.suppliesBuilding, nextLevel, timeOfExecution)
   }
 
   private def scheduleWish(state: State.LoggedIn, task: Task, tail: List[Wish]) = {
