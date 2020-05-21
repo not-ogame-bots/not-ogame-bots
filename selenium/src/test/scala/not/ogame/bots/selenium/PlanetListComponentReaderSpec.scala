@@ -13,10 +13,10 @@ class PlanetListComponentReaderSpec extends munit.FunSuite {
     assertEquals(playerPlanets.head, PlayerPlanet("33652802", Coordinates(3, 130, 11)))
   }
 
-  private def testReadPlanet(timer: MyTimer, driver: FirefoxDriver): WaitAndProcess[List[PlayerPlanet]] =
+  private def testReadPlanet(timer: MyTimer, driver: FirefoxDriver): IO[List[PlayerPlanet]] =
     new PlanetListComponentReader()(driver, timer).readPlanetList()
 
-  private def runWithWebDriver[T](resourcesPage: String, function: (MyTimer, FirefoxDriver) => WaitAndProcess[T]): T = {
+  private def runWithWebDriver[T](resourcesPage: String, function: (MyTimer, FirefoxDriver) => IO[T]): T = {
     val timer = new MyTimer()
     Resource
       .make(IO.delay(new FirefoxDriver()))(r => IO.delay(r.close()))
@@ -24,9 +24,7 @@ class PlanetListComponentReaderSpec extends munit.FunSuite {
         driver =>
           for {
             _ <- IO.delay(driver.get(getClass.getResource(resourcesPage).toURI.toString))
-            waitAndProcess = function(timer, driver)
-            _ <- waitAndProcess.await
-            t <- waitAndProcess.process
+            t <- function(timer, driver)
           } yield t
       )
       .unsafeRunSync()
