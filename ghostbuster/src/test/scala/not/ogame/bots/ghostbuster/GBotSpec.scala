@@ -49,6 +49,24 @@ class GBotSpec extends munit.FunSuite {
     )
     val nextState: State = bot.nextStep(prevState)
     assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalMine, 1, now)))
+    assertEquals(nextState.wishList, List(Wish.build(SuppliesBuilding.MetalMine, 1)))
+  }
+
+  test("should remove building from wishlist if it is already built") {
+    val prevState = State.LoggedIn(
+      SuppliesPageData(
+        unused,
+        Resources(60, 15, 0),
+        Resources(0, 0, 0),
+        bigCapacity,
+        SuppliesBuildingLevels(createStartingBuildings ++ Map(SuppliesBuilding.MetalMine -> 1)),
+        Option.empty
+      ),
+      List(Wish.build(SuppliesBuilding.MetalMine, 1)),
+      List.empty
+    )
+    val nextState: State = bot.nextStep(prevState)
+    assertEquals(nextState.scheduledTasks, List.empty)
     assertEquals(nextState.wishList, List.empty)
   }
 
@@ -138,7 +156,7 @@ class GBotSpec extends munit.FunSuite {
     assertEquals(nextState.scheduledTasks, List.empty)
   }
 
-  test("should schedule refresh if after building finishes") {
+  test("should schedule refresh after building finishes") {
     val prevState = State.LoggedIn(
       SuppliesPageData(
         unused,
