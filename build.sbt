@@ -32,7 +32,9 @@ lazy val selenium: Project = (project in file("selenium"))
   .settings(commonSettings)
   .settings(
     name := "selenium",
-    libraryDependencies ++= seleniumDeps
+    libraryDependencies ++= seleniumDeps,
+    libraryDependencies += "org.scalameta" %% "munit" % "0.7.7" % Test,
+    testFrameworks += new TestFramework("munit.Framework")
   )
   .dependsOn(core)
 
