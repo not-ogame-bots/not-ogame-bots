@@ -1,8 +1,9 @@
 package not.ogame.bots
 
-import java.time.LocalDateTime
+import java.time.{Instant, LocalDateTime}
 
 import cats.effect.Resource
+import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 
 trait OgameDriverCreator[F[_]] {
@@ -27,13 +28,38 @@ case class SuppliesPageData(
     currentBuildingProgress: Option[BuildingProgress]
 )
 
-case class Resources(metal: Int, crystal: Int, deuterium: Int)
+case class Resources(metal: Int, crystal: Int, deuterium: Int) {
+  def gtEqTo(requiredResources: Resources): Boolean =
+    metal >= requiredResources.metal && crystal >= requiredResources.crystal && deuterium >= requiredResources.deuterium
+
+  def difference(other: Resources): Resources = {
+    Resources(Math.max(metal - other.metal, 0), Math.max(crystal - other.crystal, 0), Math.max(deuterium - other.deuterium, 0))
+  }
+
+  def div(other: Resources): List[Double] = {
+    List(
+      divideIfGreaterThanZero(metal, other.metal),
+      divideIfGreaterThanZero(crystal, other.crystal),
+      divideIfGreaterThanZero(deuterium, other.deuterium)
+    )
+  }
+
+  private def divideIfGreaterThanZero(first: Double, second: Double) = {
+    if (second > 0) {
+      first.toDouble / second
+    } else if (first > 0) {
+      Double.PositiveInfinity
+    } else {
+      0.0
+    }
+  }
+}
 
 case class SuppliesBuildingLevels(map: Map[SuppliesBuilding, Int])
 
-case class BuildingProgress(finishTimestamp: LocalDateTime)
+case class BuildingProgress(finishTimestamp: Instant)
 
-sealed trait SuppliesBuilding extends EnumEntry
+sealed trait SuppliesBuilding extends EnumEntry with Snakecase
 
 object SuppliesBuilding extends Enum[SuppliesBuilding] {
   case object MetalMine extends SuppliesBuilding
