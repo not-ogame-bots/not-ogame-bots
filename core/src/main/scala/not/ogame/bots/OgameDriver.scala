@@ -24,6 +24,7 @@ case class SuppliesPageData(
     timestamp: LocalDateTime,
     currentResources: Resources,
     currentProduction: Resources,
+    currentCapacity: Resources,
     suppliesLevels: SuppliesBuildingLevels,
     currentBuildingProgress: Option[BuildingProgress]
 )
