@@ -141,17 +141,18 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
   }
 
   private def getProductionFromTooltip(text: String): Int = {
-    text.linesIterator.toList
-      .map(_.trim)
-      .filter(_.startsWith("<td>"))
-      .map(_.filter(_.isDigit).toInt)(2)
+    getNumberFromTooltip(text)(2)
   }
 
   private def getCapacityFromTooltip(text: String): Int = {
+    getNumberFromTooltip(text)(1)
+  }
+
+  private def getNumberFromTooltip(text: String) = {
     text.linesIterator.toList
       .map(_.trim)
       .filter(_.startsWith("<td>"))
-      .map(_.filter(_.isDigit).toInt)(1)
+      .map(_.filter(_.isDigit).toInt)
   }
 
   private def getBuildingLevel(suppliesBuilding: SuppliesBuilding): IO[Int] =
