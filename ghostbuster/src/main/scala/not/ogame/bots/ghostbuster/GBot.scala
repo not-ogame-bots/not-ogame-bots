@@ -54,12 +54,12 @@ class GBot(jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
   ): State.LoggedIn = {
     val requiredResources =
       SuppliesBuildingCosts.buildingCost(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding))
+    val remainingWishes = if (buildWish.level == nextLevel(suppliesPage, buildWish.suppliesBuilding)) {
+      tail
+    } else {
+      buildWish :: tail
+    }
     if (suppliesPage.currentResources.gtEqTo(requiredResources)) {
-      val remainingWishes = if (buildWish.level == nextLevel(suppliesPage, buildWish.suppliesBuilding)) {
-        tail
-      } else {
-        buildWish :: tail
-      }
       scheduleWish(loggedState, toTask(buildWish, nextLevel(suppliesPage, buildWish.suppliesBuilding), clock.instant()), remainingWishes)
     } else {
       if (suppliesPage.currentCapacity.gtEqTo(requiredResources)) {
@@ -67,9 +67,9 @@ class GBot(jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
         val hoursToWait = stillNeed.div(suppliesPage.currentProduction).max
         val secondsToWait = (hoursToWait * 3600).toInt + jitterProvider.getJitterInSeconds()
         val timeOfExecution = clock.instant().plusSeconds(secondsToWait)
-        scheduleWish(loggedState, toTask(buildWish, nextLevel(suppliesPage, buildWish.suppliesBuilding), timeOfExecution), tail)
+        scheduleWish(loggedState, toTask(buildWish, nextLevel(suppliesPage, buildWish.suppliesBuilding), timeOfExecution), remainingWishes)
       } else {
-        buildStorage(loggedState, suppliesPage, tail, buildWish, requiredResources)
+        buildStorage(loggedState, suppliesPage, buildWish :: tail, requiredResources)
       }
     }
   }
@@ -77,8 +77,7 @@ class GBot(jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
   private def buildStorage(
       loggedState: State.LoggedIn,
       suppliesPage: SuppliesPageData,
-      tail: List[Wish],
-      buildWish: Wish.Build,
+      wishes: List[Wish],
       requiredResources: Resources
   ) = {
     requiredResources.difference(suppliesPage.currentCapacity) match {
@@ -86,7 +85,7 @@ class GBot(jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
         buildBuilding(
           loggedState,
           suppliesPage,
-          buildWish :: tail,
+          wishes,
           Wish.Build(
             SuppliesBuilding.MetalStorage,
             nextLevel(suppliesPage, SuppliesBuilding.MetalStorage)
@@ -96,7 +95,7 @@ class GBot(jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
         buildBuilding(
           loggedState,
           suppliesPage,
-          buildWish :: tail,
+          wishes,
           Wish.Build(
             SuppliesBuilding.CrystalStorage,
             nextLevel(suppliesPage, SuppliesBuilding.CrystalStorage)
@@ -106,7 +105,7 @@ class GBot(jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
         buildBuilding(
           loggedState,
           suppliesPage,
-          buildWish :: tail,
+          wishes,
           Wish.Build(
             SuppliesBuilding.DeuteriumStorage,
             nextLevel(suppliesPage, SuppliesBuilding.DeuteriumStorage)

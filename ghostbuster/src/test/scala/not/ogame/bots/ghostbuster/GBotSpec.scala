@@ -103,6 +103,24 @@ class GBotSpec extends munit.FunSuite {
     assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600))))
   }
 
+  test("should schedule building metal factory in the future if there is not enough resources - with a jump") {
+    val prevState = State.LoggedIn(
+      SuppliesPageData(
+        unused,
+        Resources(0, 0, 0),
+        Resources(10, 10, 0),
+        bigCapacity,
+        SuppliesBuildingLevels(createStartingBuildings),
+        Option.empty
+      ),
+      List(Wish.build(SuppliesBuilding.MetalMine, 10)),
+      List.empty
+    )
+    val nextState: State = bot.nextStep(prevState)
+    assertEquals(nextState.scheduledTasks, List(Task.build(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600))))
+    assertEquals(nextState.wishList, List(Wish.build(SuppliesBuilding.MetalMine, 10)))
+  }
+
   test("should not build building if it is already built") {
     val prevState = State.LoggedIn(
       SuppliesPageData(
