@@ -64,7 +64,7 @@ class GBotSpec extends munit.FunSuite {
       SuppliesPageData(
         unused,
         Resources(0, 0, 0),
-        Resources(10, 10, 10),
+        Resources(10, 10, 0),
         SuppliesBuildingLevels(createStartingBuildings),
         Option.empty
       ),

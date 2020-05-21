@@ -40,7 +40,7 @@ class GBot(jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
     if (suppliesPage.currentResources.gtEqTo(requiredResources)) {
       scheduleWish(loggedState, toTask(buildWish, clock.instant()), tail)
     } else {
-      val stillNeed = suppliesPage.currentResources.difference(requiredResources)
+      val stillNeed = requiredResources.difference(suppliesPage.currentResources)
       val hoursToWait = stillNeed.div(suppliesPage.currentProduction).max
       val secondsToWait = (hoursToWait * 3600).toInt + jitterProvider.getJitterInSeconds()
       val timeOfExecution = clock.instant().plusSeconds(secondsToWait)

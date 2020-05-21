@@ -37,7 +37,21 @@ case class Resources(metal: Int, crystal: Int, deuterium: Int) {
   }
 
   def div(other: Resources): List[Double] = {
-    List(metal.toDouble / other.metal, crystal.toDouble / other.crystal, deuterium.toDouble / other.deuterium)
+    List(
+      divideIfGreaterThanZero(metal, other.metal),
+      divideIfGreaterThanZero(crystal, other.crystal),
+      divideIfGreaterThanZero(deuterium, other.deuterium)
+    )
+  }
+
+  private def divideIfGreaterThanZero(first: Double, second: Double) = {
+    if (second > 0) {
+      first.toDouble / second
+    } else if (first > 0) {
+      Double.PositiveInfinity
+    } else {
+      0.0
+    }
   }
 }
 
