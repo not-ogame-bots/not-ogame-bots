@@ -7,22 +7,13 @@ import not.ogame.bots.{PlayerPlanet, _}
 import org.openqa.selenium.{By, WebDriver, WebElement}
 
 class PlanetListComponentReader(implicit val webDriver: WebDriver, implicit val timer: Timer[IO]) {
-  def readPlanetList(): WaitAndProcess[List[PlayerPlanet]] =
-    WaitAndProcess(readPlanetListAwait, readPlanetListProcess)
-
-  private def readPlanetListAwait: IO[Unit] = {
+  def readPlanetList(): IO[List[PlayerPlanet]] =
     for {
       _ <- waitForElement(By.id("planetList"))
-    } yield ()
-  }
-
-  private def readPlanetListProcess: IO[List[PlayerPlanet]] = {
-    for {
       list <- find(By.id("planetList"))
       planets <- list.findMany(By.xpath("*"))
       result = planets.map(element => PlayerPlanet(getPlanetId(element), getCoordinates(element)))
     } yield result
-  }
 
   private def getPlanetId(element: WebElement): String = element.getAttribute("id").stripPrefix("planet-")
 
@@ -31,5 +22,3 @@ class PlanetListComponentReader(implicit val webDriver: WebDriver, implicit val 
     Coordinates(coordinates(0), coordinates(1), coordinates(2))
   }
 }
-
-case class WaitAndProcess[T](await: IO[Unit], process: IO[T])
