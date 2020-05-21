@@ -51,7 +51,9 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F])(implicit 
           .getOrElse((loggedIn: State).pure[F])
     }).handleErrorWith { e =>
       e.printStackTrace()
-      implicitly[Timer[F]].sleep(10 seconds).map(_ => State.LoggedOut(scheduledTasks = state.scheduledTasks, wishList = state.wishList))
+      implicitly[Timer[F]]
+        .sleep(10 seconds)
+        .map(_ => State.LoggedOut(scheduledTasks = state.scheduledTasks.drop(1), wishList = state.wishList))
     }
   }
 
