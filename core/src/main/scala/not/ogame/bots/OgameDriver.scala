@@ -18,6 +18,10 @@ trait OgameDriver[F[_]] {
   def readSuppliesPage(planetId: String): F[SuppliesPageData]
 
   def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): F[Unit]
+
+  def readFacilityBuildingsLevels(planetId: String): F[FacilitiesBuildingLevels]
+
+  def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): F[Unit]
 }
 
 case class SuppliesPageData(
@@ -57,6 +61,8 @@ case class Resources(metal: Int, crystal: Int, deuterium: Int) {
 }
 
 case class SuppliesBuildingLevels(map: Map[SuppliesBuilding, Int])
+
+case class FacilitiesBuildingLevels(map: Map[FacilityBuilding, Int])
 
 case class BuildingProgress(finishTimestamp: Instant)
 

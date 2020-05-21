@@ -65,7 +65,7 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       currentProduction <- readCurrentProduction
       currentCapacity <- readCurrentCapacity
       suppliesLevels <- SuppliesBuilding.values.toList
-        .map(suppliesBuilding => suppliesBuilding -> getBuildingLevel(suppliesBuilding))
+        .map(suppliesBuilding => suppliesBuilding -> getSuppliesBuildingLevel(suppliesBuilding))
         .traverse { case (a, b) => b.map(a -> _) }
         .map(list => SuppliesBuildingLevels(list.toMap))
       currentBuildingProgress <- readCurrentBuildingProgress
@@ -78,8 +78,21 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       currentBuildingProgress
     )
 
+  override def readFacilityBuildingsLevels(planetId: String): IO[FacilitiesBuildingLevels] =
+    for {
+      _ <- safeUrl(facilitiesPageUrl(planetId))
+      facilityLevels <- FacilityBuilding.values.toList
+        .map(facilityBuilding => facilityBuilding -> getFacilityBuildingLevel(facilityBuilding))
+        .traverse { case (a, b) => b.map(a -> _) }
+        .map(list => FacilitiesBuildingLevels(list.toMap))
+    } yield facilityLevels
+
   private def suppliesPageUrl(planetId: String) = {
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
+  }
+
+  private def facilitiesPageUrl(planetId: String) = {
+    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=facilities&cp=$planetId"
   }
 
   private def readCurrentResources: IO[Resources] =
@@ -155,12 +168,19 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       .map(_.filter(_.isDigit).toInt)
   }
 
-  private def getBuildingLevel(suppliesBuilding: SuppliesBuilding): IO[Int] =
+  private def getFacilityBuildingLevel(facilityBuilding: FacilityBuilding): IO[Int] =
+    getBuildingLevel(getComponentName(facilityBuilding))
+
+  private def getSuppliesBuildingLevel(suppliesBuilding: SuppliesBuilding): IO[Int] =
+    getBuildingLevel(getComponentName(suppliesBuilding))
+
+  private def getBuildingLevel(componentName: String) = {
     for {
       technologies <- waitForElement(By.id("technologies"))
-      buildingComponent <- technologies.find(By.className(getComponentName(suppliesBuilding)))
+      buildingComponent <- technologies.find(By.className(componentName))
       level <- buildingComponent.find(By.className("level"))
     } yield level.getText.toInt
+  }
 
   private def getComponentName(suppliesBuilding: SuppliesBuilding): String = {
     suppliesBuilding match {
@@ -174,12 +194,28 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     }
   }
 
+  private def getComponentName(facilityBuilding: FacilityBuilding): String = {
+    facilityBuilding match {
+      case FacilityBuilding.RoboticsFactory => "roboticsFactory"
+      case FacilityBuilding.Shipyard        => "shipyard"
+      case FacilityBuilding.ResearchLab     => "researchLaboratory"
+      case FacilityBuilding.NaniteFactory   => "naniteFactory"
+    }
+  }
+
   override def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): IO[Unit] =
+    buildBuilding(planetId, getComponentName(suppliesBuilding))
+
+  override def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): IO[Unit] =
+    buildBuilding(planetId, getComponentName(facilityBuilding))
+
+  private def buildBuilding(planetId: String, componentName: String) = {
     for {
       _ <- go to suppliesPageUrl(planetId)
       technologies <- waitForElement(By.id("technologies"))
-      buildingComponent <- technologies.find(By.className(getComponentName(suppliesBuilding)))
+      buildingComponent <- technologies.find(By.className(componentName))
       upgrade <- buildingComponent.find(By.className("upgrade"))
       _ <- upgrade.clickF()
     } yield ()
+  }
 }
