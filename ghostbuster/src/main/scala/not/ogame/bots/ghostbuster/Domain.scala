@@ -10,15 +10,12 @@ sealed trait Task {
   def executeAfter: Instant
 }
 object Task {
-  case class Build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant) extends Task
-  case class Login(executeAfter: Instant) extends Task
+  case class BuildSupply(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant) extends Task
   case class Refresh(executeAfter: Instant) extends Task
 
   def build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant): Task = {
-    Build(suppliesBuilding, level, executeAfter)
+    BuildSupply(suppliesBuilding, level, executeAfter)
   }
-
-  def login(executeAfter: Instant): Task = Task.Login(executeAfter)
 
   def refresh(executeAfter: Instant): Task = Task.Refresh(executeAfter)
 }
@@ -30,16 +27,15 @@ object Wish {
   def build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive): Wish = Build(suppliesBuilding, level)
 }
 
-sealed trait State {
+sealed trait PlanetState {
   def scheduledTasks: List[Task]
-  def wishList: List[Wish]
 }
-object State {
-  case class LoggedOut(scheduledTasks: List[Task], wishList: List[Wish]) extends State
-  case class LoggedIn(suppliesPage: SuppliesPageData, wishList: List[Wish], scheduledTasks: List[Task]) extends State
+object PlanetState {
+  case class LoggedOut(scheduledTasks: List[Task]) extends PlanetState
+  case class LoggedIn(suppliesPage: SuppliesPageData, scheduledTasks: List[Task]) extends PlanetState
 
-  def loggedIn(suppliesPage: SuppliesPageData, wishList: List[Wish], scheduledTasks: List[Task]): State = {
-    State.LoggedIn(suppliesPage, wishList, scheduledTasks)
+  def loggedIn(suppliesPage: SuppliesPageData, scheduledTasks: List[Task]): PlanetState = {
+    PlanetState.LoggedIn(suppliesPage, scheduledTasks)
   }
 }
 
