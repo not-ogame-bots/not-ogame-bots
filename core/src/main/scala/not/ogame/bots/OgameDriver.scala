@@ -26,6 +26,8 @@ trait OgameDriver[F[_]] {
   def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): F[Unit]
 
   def buildShips(planetId: String, shipType: ShipType, count: Int): F[Unit]
+
+  def checkFleetOnPlanet(planetId: String, shipType: ShipType): F[Int]
 }
 
 case class SuppliesPageData(
