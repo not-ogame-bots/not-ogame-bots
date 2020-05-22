@@ -98,6 +98,10 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=facilities&cp=$planetId"
   }
 
+  private def getShipyardUrl(credentials: Credentials, planetId: String): String = {
+    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=shipyard&cp=$planetId"
+  }
+
   private def readCurrentResources: IO[Resources] =
     for {
       currentMetal <- readInt(By.id("metal_box"))
@@ -221,5 +225,33 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       upgrade <- buildingComponent.find(By.className("upgrade"))
       _ <- upgrade.clickF()
     } yield ()
+  }
+
+  override def buildShips(planetId: String, shipType: ShipType, count: Int): IO[Unit] = {
+    for {
+      _ <- safeUrl(getShipyardUrl(credentials, planetId))
+      _ <- find(By.id("technologies")).flatMap(_.find(By.className(shipTypeToClassName(shipType)))).flatMap(_.clickF())
+      _ <- waitForElement(By.id("build_amount"))
+      _ <- find(By.id("build_amount")).flatMap(_.sendKeysF(count.toString))
+      _ <- find(By.className("upgrade")).flatMap(_.clickF())
+    } yield ()
+  }
+
+  private def shipTypeToClassName(shipType: ShipType): String = {
+    shipType match {
+      case ShipType.SMALL_CARGO_SHIP => "transporterSmall"
+      case ShipType.LARGE_CARGO_SHIP => "transporterLarge"
+      case ShipType.ESPIONAGE_PROBE  => "espionageProbe"
+      case ShipType.CRUISER          => "cruiser"
+      case ShipType.EXPLORER         => "explorer"
+      case ShipType.LIGHT_FIGHTER    => "fighterLight"
+      case ShipType.HEAVY_FIGHTER    => "fighterHeavy"
+      case ShipType.BATTLESHIP       => "battleship"
+      case ShipType.INTERCEPTOR      => "interceptor"
+      case ShipType.DESTROYER        => "destroyer"
+      case ShipType.RECYCLER         => "recycler"
+      case ShipType.BOMBER           => "bomber"
+      case ShipType.REAPER           => "reaper"
+    }
   }
 }

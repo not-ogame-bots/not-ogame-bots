@@ -1,12 +1,12 @@
 package not.ogame.bots
 
-import java.time.{Instant, LocalDateTime}
+import java.time.Instant
 
 import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.{NonNegative, Positive}
+import eu.timepit.refined.numeric.NonNegative
 
 trait OgameDriverCreator[F[_]] {
   def create(credentials: Credentials): Resource[F, OgameDriver[F]]
@@ -24,6 +24,8 @@ trait OgameDriver[F[_]] {
   def readFacilityBuildingsLevels(planetId: String): F[FacilitiesBuildingLevels]
 
   def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): F[Unit]
+
+  def buildShips(planetId: String, shipType: ShipType, count: Int): F[Unit]
 }
 
 case class SuppliesPageData(
@@ -115,4 +117,21 @@ object CoordinatesType extends Enum[CoordinatesType] {
   case object Debris extends CoordinatesType
 
   val values: IndexedSeq[CoordinatesType] = findValues
+}
+
+sealed trait ShipType
+object ShipType {
+  case object LIGHT_FIGHTER extends ShipType
+  case object HEAVY_FIGHTER extends ShipType
+  case object CRUISER extends ShipType
+  case object BATTLESHIP extends ShipType
+  case object INTERCEPTOR extends ShipType
+  case object DESTROYER extends ShipType
+  case object EXPLORER extends ShipType
+  case object SMALL_CARGO_SHIP extends ShipType
+  case object LARGE_CARGO_SHIP extends ShipType
+  case object RECYCLER extends ShipType
+  case object ESPIONAGE_PROBE extends ShipType
+  case object BOMBER extends ShipType
+  case object REAPER extends ShipType
 }

@@ -17,6 +17,8 @@ object WebDriverUtils {
     def typeText(keys: String): IO[Unit] = IO.delay(webElement.sendKeys(keys))
 
     def clickF(): IO[Unit] = IO.delay(webElement.click())
+
+    def sendKeysF(keys: String): IO[Unit] = IO.delay(webElement.sendKeys(keys))
   }
 
   implicit class RichWebDriver(webDriver: WebDriver) {
