@@ -22,11 +22,11 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
   }
 
   private def logIn(state: PlanetState): F[PlanetState.LoggedIn] = {
-    ogameDriver.login() >> ogameDriver
-      .readSuppliesPage(PlanetId)
-      .map { suppliesPage =>
-        PlanetState.LoggedIn(suppliesPage, state.scheduledTasks)
-      }
+    (for {
+      _ <- ogameDriver.login()
+      sp <- ogameDriver.readSuppliesPage(PlanetId)
+      fp <- ogameDriver.readFacilityBuildingsLevels(PlanetId)
+    } yield PlanetState.LoggedIn(sp, state.scheduledTasks, fp))
       .handleErrorWith { e =>
         e.printStackTrace()
         logIn(state)
@@ -57,10 +57,24 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
 
   private def execute(task: Task, state: LoggedIn): F[LoggedIn] = {
     task match {
-      case Task.BuildSupply(suppliesBuilding, level, executeAfter) =>
+      case Task.BuildSupply(suppliesBuilding, _, _) =>
         buildSupplyBuilding(state, suppliesBuilding)
-      case Task.Refresh(_) =>
-        ogameDriver.readSuppliesPage(PlanetId).map(state.modify(_.suppliesPage).setTo(_))
+      case Task.RefreshSupplyAndFacilityPage(_) =>
+        for {
+          sp <- ogameDriver.readSuppliesPage(PlanetId)
+          fp <- ogameDriver.readFacilityBuildingsLevels(PlanetId)
+        } yield state
+          .modify(_.suppliesPage)
+          .setTo(sp)
+          .modify(_.facilityBuildingLevels)
+          .setTo(fp)
+      case Task.BuildFacility(facilityBuilding, _, _) =>
+        for {
+          _ <- ogameDriver.buildFacilityBuilding(PlanetId, facilityBuilding)
+          newFacilityLevels <- ogameDriver.readFacilityBuildingsLevels(PlanetId)
+        } yield {
+          state.modify(_.facilityBuildingLevels).setTo(newFacilityLevels)
+        }
     }
   }
 
