@@ -35,12 +35,12 @@ case class SuppliesPageData(
     currentBuildingProgress: Option[BuildingProgress]
 )
 
-case class Resources(metal: Int, crystal: Int, deuterium: Int) {
+case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int) {
   def gtEqTo(requiredResources: Resources): Boolean =
     metal >= requiredResources.metal && crystal >= requiredResources.crystal && deuterium >= requiredResources.deuterium
 
   def difference(other: Resources): Resources = {
-    Resources(Math.max(metal - other.metal, 0), Math.max(crystal - other.crystal, 0), Math.max(deuterium - other.deuterium, 0))
+    Resources(Math.max(metal - other.metal, 0), Math.max(crystal - other.crystal, 0), Math.max(deuterium - other.deuterium, 0), 0)
   }
 
   def div(other: Resources): List[Double] = {

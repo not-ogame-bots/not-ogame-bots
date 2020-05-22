@@ -103,21 +103,22 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       currentMetal <- readInt(By.id("metal_box"))
       currentCrystal <- readInt(By.id("crystal_box"))
       currentDeuterium <- readInt(By.id("deuterium_box"))
-    } yield Resources(currentMetal, currentCrystal, currentDeuterium)
+      currentEnergy <- readInt(By.id("energy_box"))
+    } yield Resources(currentMetal, currentCrystal, currentDeuterium, currentEnergy)
 
   private def readCurrentProduction: IO[Resources] =
     for {
       metalProduction <- getProduction("metal_box")
       crystalProduction <- getProduction("crystal_box")
       deuteriumProduction <- getProduction("deuterium_box")
-    } yield Resources(metalProduction, crystalProduction, deuteriumProduction)
+    } yield Resources(metalProduction, crystalProduction, deuteriumProduction, 0)
 
   private def readCurrentCapacity: IO[Resources] =
     for {
       metalProduction <- getCapacity("metal_box")
       crystalProduction <- getCapacity("crystal_box")
       deuteriumProduction <- getCapacity("deuterium_box")
-    } yield Resources(metalProduction, crystalProduction, deuteriumProduction)
+    } yield Resources(metalProduction, crystalProduction, deuteriumProduction, 0)
 
   private def getProduction(id: String): IO[Int] =
     find(By.id(id))
