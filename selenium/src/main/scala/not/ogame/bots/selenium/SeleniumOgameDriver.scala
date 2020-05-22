@@ -249,21 +249,21 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
 
   private def shipTypeToClassName(shipType: ShipType): String = {
     shipType match {
-      case ShipType.SMALL_CARGO_SHIP => "transporterSmall"
-      case ShipType.LARGE_CARGO_SHIP => "transporterLarge"
-      case ShipType.ESPIONAGE_PROBE  => "espionageProbe"
-      case ShipType.CRUISER          => "cruiser"
-      case ShipType.EXPLORER         => "explorer"
       case ShipType.LIGHT_FIGHTER    => "fighterLight"
       case ShipType.HEAVY_FIGHTER    => "fighterHeavy"
+      case ShipType.CRUISER          => "cruiser"
       case ShipType.BATTLESHIP       => "battleship"
       case ShipType.INTERCEPTOR      => "interceptor"
-      case ShipType.DESTROYER        => "destroyer"
-      case ShipType.RECYCLER         => "recycler"
       case ShipType.BOMBER           => "bomber"
-      case ShipType.REAPER           => "reaper"
+      case ShipType.DESTROYER        => "destroyer"
       case ShipType.DEATH_STAR       => "deathstar"
+      case ShipType.REAPER           => "reaper"
+      case ShipType.EXPLORER         => "explorer"
+      case ShipType.SMALL_CARGO_SHIP => "transporterSmall"
+      case ShipType.LARGE_CARGO_SHIP => "transporterLarge"
       case ShipType.COLONY_SHIP      => "colonyShip"
+      case ShipType.RECYCLER         => "recycler"
+      case ShipType.ESPIONAGE_PROBE  => "espionageProbe"
     }
   }
 

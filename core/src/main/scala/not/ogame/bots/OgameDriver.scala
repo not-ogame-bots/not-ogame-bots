@@ -137,7 +137,13 @@ object ShipType {
 
   case object INTERCEPTOR extends ShipType
 
+  case object BOMBER extends ShipType
+
   case object DESTROYER extends ShipType
+
+  case object DEATH_STAR extends ShipType
+
+  case object REAPER extends ShipType
 
   case object EXPLORER extends ShipType
 
@@ -145,17 +151,11 @@ object ShipType {
 
   case object LARGE_CARGO_SHIP extends ShipType
 
+  case object COLONY_SHIP extends ShipType
+
   case object RECYCLER extends ShipType
 
   case object ESPIONAGE_PROBE extends ShipType
-
-  case object BOMBER extends ShipType
-
-  case object REAPER extends ShipType
-
-  case object DEATH_STAR extends ShipType
-
-  case object COLONY_SHIP extends ShipType
 }
 
 case class Fleet(
