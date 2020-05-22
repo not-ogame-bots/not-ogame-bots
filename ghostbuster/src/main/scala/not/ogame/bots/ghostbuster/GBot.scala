@@ -15,7 +15,7 @@ class GBot(jitterProvider: RandomTimeJitter, botConfig: BotConfig)(implicit cloc
       case loggedState @ PlanetState.LoggedIn(SuppliesPageData(_, _, _, _, _, Some(buildingProgress)), tasks) =>
         scheduleRefreshAfterBuildingFinishes(loggedState, buildingProgress, tasks)
       case loggedState @ PlanetState.LoggedIn(suppliesPage, Nil) =>
-        handleWishWhenLogged(loggedState, suppliesPage)
+        handleWishWhenLogged(suppliesPage)
           .map(task => loggedState.modify(_.scheduledTasks).setTo(loggedState.scheduledTasks :+ task))
           .getOrElse(loggedState)
       case other => other
@@ -38,16 +38,25 @@ class GBot(jitterProvider: RandomTimeJitter, botConfig: BotConfig)(implicit cloc
     }
   }
 
-  private def handleWishWhenLogged(loggedState: PlanetState.LoggedIn, suppliesPage: SuppliesPageData) = {
+  private def handleWishWhenLogged(suppliesPage: SuppliesPageData) = {
     botConfig.wishlist
       .collectFirst { case w: Wish.Build if suppliesPage.suppliesLevels.map(w.suppliesBuilding).value < w.level.value => w }
       .flatMap { w =>
-        buildBuilding(loggedState, suppliesPage, w)
+        if (suppliesPage.currentResources.energy < 0) {
+          buildBuilding(
+            suppliesPage,
+            Wish.Build(
+              SuppliesBuilding.SolarPlant,
+              nextLevel(suppliesPage, SuppliesBuilding.MetalStorage)
+            )
+          )
+        } else {
+          buildBuilding(suppliesPage, w)
+        }
       }
   }
 
   private def buildBuilding(
-      loggedState: PlanetState.LoggedIn,
       suppliesPage: SuppliesPageData,
       buildWish: Wish.Build
   ): Option[Task.BuildSupply] = {
@@ -63,38 +72,34 @@ class GBot(jitterProvider: RandomTimeJitter, botConfig: BotConfig)(implicit cloc
         val timeOfExecution = clock.instant().plusSeconds(secondsToWait)
         Some(Task.BuildSupply(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding), timeOfExecution))
       } else {
-        buildStorage(loggedState, suppliesPage, requiredResources)
+        buildStorage(suppliesPage, requiredResources)
       }
     }
   }
 
   private def buildStorage(
-      loggedState: PlanetState.LoggedIn,
       suppliesPage: SuppliesPageData,
       requiredResources: Resources
   ): Option[Task.BuildSupply] = {
     requiredResources.difference(suppliesPage.currentCapacity) match {
-      case Resources(m, _, _) if m > 0 =>
+      case Resources(m, _, _, _) if m > 0 =>
         buildBuilding(
-          loggedState,
           suppliesPage,
           Wish.Build(
             SuppliesBuilding.MetalStorage,
             nextLevel(suppliesPage, SuppliesBuilding.MetalStorage)
           )
         )
-      case Resources(_, c, _) if c > 0 =>
+      case Resources(_, c, _, _) if c > 0 =>
         buildBuilding(
-          loggedState,
           suppliesPage,
           Wish.Build(
             SuppliesBuilding.CrystalStorage,
             nextLevel(suppliesPage, SuppliesBuilding.CrystalStorage)
           )
         )
-      case Resources(_, _, d) if d > 0 =>
+      case Resources(_, _, d, _) if d > 0 =>
         buildBuilding(
-          loggedState,
           suppliesPage,
           Wish.Build(
             SuppliesBuilding.DeuteriumStorage,
