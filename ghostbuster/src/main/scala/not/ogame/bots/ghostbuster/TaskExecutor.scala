@@ -14,16 +14,23 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
   def execute(state: PlanetState): F[PlanetState.LoggedIn] = {
     state match {
       case loggedOut: PlanetState.LoggedOut =>
-        logIn(loggedOut).map(gBot.nextStep)
+        logIn(loggedOut)
+          .map(gBot.nextStep)
       case loggedIn: PlanetState.LoggedIn =>
         executeAl(loggedIn.scheduledTasks, loggedIn).map(s => s: PlanetState.LoggedIn)
     }
   }
 
   private def logIn(state: PlanetState): F[PlanetState.LoggedIn] = {
-    ogameDriver.login() >> ogameDriver.readSuppliesPage(PlanetId).map { suppliesPage =>
-      PlanetState.LoggedIn(suppliesPage, state.scheduledTasks)
-    }
+    ogameDriver.login() >> ogameDriver
+      .readSuppliesPage(PlanetId)
+      .map { suppliesPage =>
+        PlanetState.LoggedIn(suppliesPage, state.scheduledTasks)
+      }
+      .handleErrorWith { e =>
+        e.printStackTrace()
+        logIn(state)
+      }
   }
 
   private def executeAl(tasks: List[Task], state: LoggedIn): F[PlanetState.LoggedIn] = {

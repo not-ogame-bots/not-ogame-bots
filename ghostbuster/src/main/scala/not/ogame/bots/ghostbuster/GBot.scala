@@ -11,7 +11,7 @@ import not.ogame.bots.{BuildingProgress, Resources, SuppliesBuilding, SuppliesPa
 class GBot(jitterProvider: RandomTimeJitter, botConfig: BotConfig)(implicit clock: Clock) {
   def nextStep(state: PlanetState.LoggedIn): PlanetState.LoggedIn = {
     println(s"processing next state $state")
-    state match {
+    val nextState = state match {
       case loggedState @ PlanetState.LoggedIn(SuppliesPageData(_, _, _, _, _, Some(buildingProgress)), tasks) =>
         scheduleRefreshAfterBuildingFinishes(loggedState, buildingProgress, tasks)
       case loggedState @ PlanetState.LoggedIn(suppliesPage, Nil) =>
@@ -20,6 +20,8 @@ class GBot(jitterProvider: RandomTimeJitter, botConfig: BotConfig)(implicit cloc
           .getOrElse(loggedState)
       case other => other
     }
+    println(s"calculated next state: $nextState")
+    nextState
   }
 
   private def scheduleRefreshAfterBuildingFinishes(
