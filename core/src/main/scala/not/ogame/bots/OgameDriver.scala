@@ -27,7 +27,7 @@ trait OgameDriver[F[_]] {
 }
 
 case class SuppliesPageData(
-    timestamp: LocalDateTime,
+    timestamp: Instant,
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,

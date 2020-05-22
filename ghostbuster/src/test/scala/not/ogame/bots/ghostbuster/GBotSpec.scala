@@ -18,7 +18,7 @@ import not.ogame.bots.{
 
 class GBotSpec extends munit.FunSuite {
   private val now = Instant.now()
-  private val unused: LocalDateTime = LocalDateTime.now()
+  private val unused = now
   private implicit val clock: Clock = Clock.fixed(now, ZoneId.systemDefault())
   private val randomTimeJitter: RandomTimeJitter = () => 0
   private val bigCapacity = Resources(10000, 10000, 10000, 0)

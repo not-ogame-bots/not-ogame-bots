@@ -1,6 +1,6 @@
 package not.ogame.bots.selenium
 
-import java.time.{Instant, LocalDateTime}
+import java.time.{Clock, Instant}
 
 import cats.effect.{IO, Timer}
 import cats.implicits._
@@ -12,7 +12,7 @@ import org.openqa.selenium.{By, WebDriver}
 
 import scala.concurrent.duration._
 
-class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDriver, timer: Timer[IO]) extends OgameDriver[IO] {
+class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDriver, timer: Timer[IO], clock: Clock) extends OgameDriver[IO] {
   override def login(): IO[Unit] = {
     val universeListUrl = "https://lobby.ogame.gameforge.com/pl_PL/accounts"
     for {
@@ -73,7 +73,7 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
         .map(list => SuppliesBuildingLevels(list.toMap))
       currentBuildingProgress <- readCurrentBuildingProgress
     } yield SuppliesPageData(
-      LocalDateTime.now(),
+      clock.instant(),
       currentResources,
       currentProduction,
       currentCapacity,
