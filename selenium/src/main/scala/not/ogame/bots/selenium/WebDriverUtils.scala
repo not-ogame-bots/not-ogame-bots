@@ -64,8 +64,17 @@ object WebDriverSyntax {
   def find(by: By)(implicit webDriver: WebDriver): IO[WebElement] =
     IO.delay(webDriver.findElement(by))
 
-  def readInt(by: By)(implicit webDriver: WebDriver): IO[Int] =
-    find(by).map(_.getText.filter(_.isDigit).toInt)
+  def readInt(by: By)(implicit webDriver: WebDriver): IO[Int] = {
+    find(by).map { component =>
+      val text = component.getText
+      val number = text.filter(_.isDigit).toInt
+      if (text.startsWith("-")) {
+        -number
+      } else {
+        number
+      }
+    }
+  }
 
   def findMany(by: By)(implicit webDriver: WebDriver): IO[List[WebElement]] =
     IO.delay(webDriver.findElements(by).asScala.toList)
