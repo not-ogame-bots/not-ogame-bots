@@ -127,35 +127,35 @@ object CoordinatesType extends Enum[CoordinatesType] {
 sealed trait ShipType
 
 object ShipType {
-  case object LIGHT_FIGHTER extends ShipType
+  case object LightFighter extends ShipType
 
-  case object HEAVY_FIGHTER extends ShipType
+  case object HeavyFighter extends ShipType
 
-  case object CRUISER extends ShipType
+  case object Cruiser extends ShipType
 
-  case object BATTLESHIP extends ShipType
+  case object Battleship extends ShipType
 
-  case object INTERCEPTOR extends ShipType
+  case object Interceptor extends ShipType
 
-  case object BOMBER extends ShipType
+  case object Bomber extends ShipType
 
-  case object DESTROYER extends ShipType
+  case object Destroyer extends ShipType
 
-  case object DEATH_STAR extends ShipType
+  case object DeathStar extends ShipType
 
-  case object REAPER extends ShipType
+  case object Reaper extends ShipType
 
-  case object EXPLORER extends ShipType
+  case object Explorer extends ShipType
 
-  case object SMALL_CARGO_SHIP extends ShipType
+  case object SmallCargoShip extends ShipType
 
-  case object LARGE_CARGO_SHIP extends ShipType
+  case object LargeCargoShip extends ShipType
 
-  case object COLONY_SHIP extends ShipType
+  case object ColonyShip extends ShipType
 
-  case object RECYCLER extends ShipType
+  case object Recycler extends ShipType
 
-  case object ESPIONAGE_PROBE extends ShipType
+  case object EspionageProbe extends ShipType
 }
 
 case class Fleet(
