@@ -1,6 +1,6 @@
 package not.ogame.bots.ghostbuster
 
-import java.time.{Clock, Instant}
+import java.time.Clock
 
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
@@ -43,10 +43,14 @@ object Main extends IOApp {
     } yield ident
   }
 
-  implicit val buildWishReader: ConfigReader[Wish.Build] = ConfigReader.forProduct2("suppliesBuilding", "level")(Wish.Build)
+  implicit val buildSupplyWishReader: ConfigReader[Wish.BuildSupply] =
+    ConfigReader.forProduct2("suppliesBuilding", "level")(Wish.BuildSupply)
+  implicit val buildFacilityWishReader: ConfigReader[Wish.BuildFacility] =
+    ConfigReader.forProduct2("facilityBuilding", "level")(Wish.BuildFacility)
 
   def extractByType(typ: String, objCur: ConfigObjectCursor): ConfigReader.Result[Wish] = typ match {
-    case "build" => buildWishReader.from(objCur)
+    case "build_supply"   => buildSupplyWishReader.from(objCur)
+    case "build_facility" => buildFacilityWishReader.from(objCur)
     case t =>
       objCur.failed(CannotConvert(objCur.value.toString, "Identifiable", s"type has value $t instead of build"))
   }
