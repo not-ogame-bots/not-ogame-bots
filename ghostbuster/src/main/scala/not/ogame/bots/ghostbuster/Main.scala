@@ -1,6 +1,6 @@
 package not.ogame.bots.ghostbuster
 
-import java.time.Clock
+import java.time.{Clock, Instant}
 
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
@@ -21,16 +21,15 @@ object Main extends IOApp {
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
     val botConfig = ConfigSource.default.loadOrThrow[BotConfig]
     val credentials = ConfigSource.file(s"${System.getenv("HOME")}/.not-ogame-bots/credentials.conf").loadOrThrow[Credentials]
-    val gbot = new GBot(RealRandomTimeJitter)
+    val gbot = new GBot(RealRandomTimeJitter, botConfig)
     new SeleniumOgameDriverCreator()
       .create(credentials)
       .use { ogame =>
-        val taskExecutor = new TaskExecutor[IO](ogame)
-        def loop(state: State): IO[State] = {
-          val ns = gbot.nextStep(state)
-          taskExecutor.execute(ns).flatMap(s => IO.sleep(1 seconds) >> loop(s))
+        val taskExecutor = new TaskExecutor[IO](ogame, gbot)
+        def loop(state: PlanetState): IO[PlanetState] = {
+          taskExecutor.execute(state).flatMap(s => IO.sleep(1 second) >> loop(s))
         }
-        loop(State.LoggedOut(List.empty, botConfig.wishlist))
+        loop(PlanetState.LoggedOut(List.empty))
       }
       .as(ExitCode.Success)
   }
