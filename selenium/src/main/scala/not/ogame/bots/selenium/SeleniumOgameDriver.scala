@@ -237,7 +237,6 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       _ <- upgrade.clickF()
     } yield ()
   }
-
   override def buildShips(planetId: String, shipType: ShipType, count: Int): IO[Unit] = {
     for {
       _ <- safeUrl(getShipyardUrl(credentials, planetId))
