@@ -26,7 +26,7 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
       _ <- ogameDriver.login()
       sp <- ogameDriver.readSuppliesPage(PlanetId)
       fp <- ogameDriver.readFacilityBuildingsLevels(PlanetId)
-    } yield PlanetState.LoggedIn(sp, state.scheduledTasks, fp))
+    } yield PlanetState.LoggedIn(sp, state.scheduledTasks, fp, Map.empty))
       .handleErrorWith { e =>
         e.printStackTrace()
         logIn(state)
@@ -46,7 +46,7 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
               next,
               gBot.nextStep(
                 s.modify(_.scheduledTasks)
-                  .setTo(state.scheduledTasks.filterNot(_ == head))
+                  .setTo(next)
               )
             )
           }
@@ -72,9 +72,13 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
         for {
           _ <- ogameDriver.buildFacilityBuilding(PlanetId, facilityBuilding)
           newFacilityLevels <- ogameDriver.readFacilityBuildingsLevels(PlanetId)
-        } yield {
-          state.modify(_.facilityBuildingLevels).setTo(newFacilityLevels)
-        }
+        } yield state.modify(_.facilityBuildingLevels).setTo(newFacilityLevels)
+
+      case Task.RefreshFleetOnPlanetStatus(shipType, _) =>
+        ogameDriver
+          .checkFleetOnPlanet(PlanetId, shipType)
+          .map(amount => state.modify(_.fleetOnPlanet).setTo(state.fleetOnPlanet ++ Map(shipType -> amount)))
+      case Task.BuildShip(amount, shipType, _) => ogameDriver.buildShips(PlanetId, shipType, amount).map { ??? }
     }
   }
 

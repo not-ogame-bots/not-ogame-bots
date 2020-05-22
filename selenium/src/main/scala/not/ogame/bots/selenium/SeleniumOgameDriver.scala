@@ -72,13 +72,15 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
         }
         .map(list => SuppliesBuildingLevels(list.toMap))
       currentBuildingProgress <- readCurrentBuildingProgress
+      currentShipyardProgress <- readCurrentShipyardProgress
     } yield SuppliesPageData(
       clock.instant(),
       currentResources,
       currentProduction,
       currentCapacity,
       suppliesLevels,
-      currentBuildingProgress
+      currentBuildingProgress,
+      currentShipyardProgress
     )
 
   override def readFacilityBuildingsLevels(planetId: String): IO[FacilitiesBuildingLevels] =
@@ -138,6 +140,14 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     for {
       _ <- waitForElement(By.className("construction"))
       buildingCountdown <- findMany(By.id("buildingCountdown")).map(_.headOption)
+      seconds = buildingCountdown.map(_.getText).map(timeTextToSeconds)
+      buildingProgress = seconds.map(s => BuildingProgress(Instant.now().plusSeconds(s)))
+    } yield buildingProgress
+
+  private def readCurrentShipyardProgress: IO[Option[BuildingProgress]] =
+    for {
+      _ <- waitForElement(By.className("construction"))
+      buildingCountdown <- findMany(By.id("shipyardCountdown")).map(_.headOption)
       seconds = buildingCountdown.map(_.getText).map(timeTextToSeconds)
       buildingProgress = seconds.map(s => BuildingProgress(Instant.now().plusSeconds(s)))
     } yield buildingProgress

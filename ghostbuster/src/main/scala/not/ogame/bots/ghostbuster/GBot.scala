@@ -4,58 +4,94 @@ import java.time.Clock
 
 import com.softwaremill.quicklens._
 import eu.timepit.refined.numeric.Positive
-import not.ogame.bots.facts.{FacilityBuildingCosts, SuppliesBuildingCosts}
+import not.ogame.bots.facts.{FacilityBuildingCosts, ShipCosts, SuppliesBuildingCosts}
 import not.ogame.bots.selenium._
-import not.ogame.bots.{BuildingProgress, FacilitiesBuildingLevels, FacilityBuilding, Resources, SuppliesBuilding, SuppliesPageData}
+import not.ogame.bots.{FacilitiesBuildingLevels, FacilityBuilding, Resources, ShipType, SuppliesBuilding, SuppliesPageData}
+
+import scala.reflect.ClassTag
 
 class GBot(jitterProvider: RandomTimeJitter, botConfig: BotConfig)(implicit clock: Clock) {
+  println(s"Creating with botConfig: $botConfig")
+
   def nextStep(state: PlanetState.LoggedIn): PlanetState.LoggedIn = {
     println(s"processing next state $state")
-    val nextState = state match {
-      case loggedState @ PlanetState.LoggedIn(SuppliesPageData(_, _, _, _, _, Some(buildingProgress)), tasks, _) =>
-        scheduleRefreshAfterBuildingFinishes(loggedState, buildingProgress, tasks)
-      case loggedState @ PlanetState.LoggedIn(suppliesPage, tasks, facilityBuildingLevels) if !isBuildingInQueue(tasks) =>
+    val buildMtUpToCapacity = if (botConfig.buildMtUpToCapacity) {
+      fleetBuildingProcessor _
+    } else {
+      identity[PlanetState.LoggedIn] _
+    }
+    val nextState = List(buildingProcessor(_), buildMtUpToCapacity).foldLeft(state)((acc, item) => item(acc))
+    println(s"calculated next state: $nextState")
+    nextState
+  }
+
+  private def fleetBuildingProcessor(state: PlanetState.LoggedIn): PlanetState.LoggedIn = {
+    state match {
+      case PlanetState.LoggedIn(SuppliesPageData(_, _, _, capacity, _, None, None), tasks, _, fleetOnPlanet) if !isBuildingInQueue(tasks) =>
+        fleetOnPlanet
+          .get(ShipType.SMALL_CARGO_SHIP)
+          .map { shipAmount =>
+            tryBuildingMt(state, shipAmount)
+          }
+          .getOrElse(
+            state
+              .modify(_.scheduledTasks)
+              .setTo(state.scheduledTasks :+ Task.refreshFleetOnPlanetStatus(ShipType.SMALL_CARGO_SHIP, clock.instant()))
+          ) //TODO add next case with refresh after building one ship, also shipInProgress should have richer information
+      case other => other
+    }
+  }
+
+  private def tryBuildingMt(
+      state: PlanetState.LoggedIn,
+      shipAmount: Int
+  ) = {
+    val capacity = state.suppliesPage.currentCapacity
+    val currentResources = state.suppliesPage.currentResources
+    val currentProduction = state.suppliesPage.currentProduction
+    val expectedAmount = capacity.metal / 5000 + capacity.deuterium / 5000 + capacity.crystal / 5000
+    if (expectedAmount > shipAmount) {
+      val requiredResources = ShipCosts.shipCost(ShipType.SMALL_CARGO_SHIP)
+      val canBuildAmount = currentResources.div(requiredResources).map(_.toInt).min
+      if (canBuildAmount > 1) {
+        state
+          .modify(_.scheduledTasks)
+          .setTo(state.scheduledTasks :+ Task.BuildShip(canBuildAmount, ShipType.SMALL_CARGO_SHIP, clock.instant()))
+      } else {
+        val stillNeed = requiredResources.difference(currentResources)
+        val hoursToWait = stillNeed.div(currentProduction).max
+        val secondsToWait = (hoursToWait * 3600).toInt + jitterProvider.getJitterInSeconds()
+        val timeOfExecution = clock.instant().plusSeconds(secondsToWait)
+        state
+          .modify(_.scheduledTasks)
+          .setTo(state.scheduledTasks :+ Task.BuildShip(canBuildAmount, ShipType.SMALL_CARGO_SHIP, timeOfExecution))
+      }
+    } else {
+      state
+    }
+  }
+
+  private def buildingProcessor(state: PlanetState.LoggedIn) = {
+    state match {
+      case loggedState @ PlanetState.LoggedIn(SuppliesPageData(_, _, _, _, _, Some(buildingProgress), _), tasks, _, _)
+          if !checkAlreadyInQueue[Task.RefreshSupplyAndFacilityPage](tasks) =>
+        loggedState
+          .modify(_.scheduledTasks)
+          .setTo(loggedState.scheduledTasks :+ Task.refreshSupplyPage(buildingProgress.finishTimestamp))
+      case loggedState @ PlanetState.LoggedIn(suppliesPage, tasks, facilityBuildingLevels, _) if !isBuildingInQueue(tasks) =>
         handleWishWhenLogged(suppliesPage, facilityBuildingLevels)
           .map(task => loggedState.modify(_.scheduledTasks).setTo(loggedState.scheduledTasks :+ task))
           .getOrElse(loggedState)
       case other => other
     }
-    println(s"calculated next state: $nextState")
-    nextState
   }
 
-  private def isFacilityBuildingInQueue(tasks: List[Task]): Boolean = {
-    tasks
-      .collectFirst {
-        case Task.BuildFacility(_, _, _) => true
-      }
-      .getOrElse(false)
-  }
-
-  private def isSupplyBuildingInQueue(tasks: List[Task]): Boolean = {
-    tasks
-      .collectFirst {
-        case Task.BuildSupply(_, _, _) => true
-      }
-      .getOrElse(false)
+  private def checkAlreadyInQueue[T: ClassTag](tasks: List[Task]): Boolean = {
+    tasks.exists(t => implicitly[ClassTag[T]].runtimeClass.isInstance(t))
   }
 
   private def isBuildingInQueue(tasks: List[Task]): Boolean = {
-    isSupplyBuildingInQueue(tasks) || isFacilityBuildingInQueue(tasks)
-  }
-
-  private def scheduleRefreshAfterBuildingFinishes(
-      loggedState: PlanetState.LoggedIn,
-      buildingProgress: BuildingProgress,
-      tasks: List[Task]
-  ) = {
-    tasks.find(_.isInstanceOf[Task.RefreshSupplyAndFacilityPage]) match {
-      case None =>
-        loggedState
-          .modify(_.scheduledTasks)
-          .setTo(loggedState.scheduledTasks :+ Task.refreshSupplyPage(buildingProgress.finishTimestamp))
-      case _ => loggedState
-    }
+    checkAlreadyInQueue[Task.BuildSupply](tasks) || checkAlreadyInQueue[Task.BuildFacility](tasks)
   }
 
   private def handleWishWhenLogged(suppliesPage: SuppliesPageData, facilityBuildingLevels: FacilitiesBuildingLevels) = {
@@ -86,7 +122,7 @@ class GBot(jitterProvider: RandomTimeJitter, botConfig: BotConfig)(implicit cloc
   ): Option[Task.BuildSupply] = {
     val requiredResources =
       SuppliesBuildingCosts.buildingCost(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding))
-    if (suppliesPage.currentResources.gtEqTo(requiredResources)) {
+    if (suppliesPage.currentResources.gtEqTo(requiredResources)) { //TODO can be simplified
       Some(Task.BuildSupply(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding), clock.instant()))
     } else {
       if (suppliesPage.currentCapacity.gtEqTo(requiredResources)) {
