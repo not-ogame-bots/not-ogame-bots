@@ -35,7 +35,7 @@ case class SuppliesPageData(
     currentBuildingProgress: Option[BuildingProgress]
 )
 
-case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int) {
+case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
   def gtEqTo(requiredResources: Resources): Boolean =
     metal >= requiredResources.metal && crystal >= requiredResources.crystal && deuterium >= requiredResources.deuterium
 
