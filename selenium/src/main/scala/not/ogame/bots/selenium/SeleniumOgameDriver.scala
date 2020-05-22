@@ -147,8 +147,8 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
   private def readCurrentShipyardProgress: IO[Option[BuildingProgress]] =
     for {
       _ <- waitForElement(By.className("construction"))
-      buildingCountdown <- findMany(By.id("shipyardCountdown")).map(_.headOption)
-      seconds = buildingCountdown.map(_.getText).map(timeTextToSeconds)
+      shipyardCountdown <- findMany(By.id("shipyardCountdown")).map(_.headOption)
+      seconds = shipyardCountdown.map(_.getText).map(timeTextToSeconds)
       buildingProgress = seconds.map(s => BuildingProgress(Instant.now().plusSeconds(s)))
     } yield buildingProgress
 
