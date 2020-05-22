@@ -36,7 +36,8 @@ case class SuppliesPageData(
     currentProduction: Resources,
     currentCapacity: Resources,
     suppliesLevels: SuppliesBuildingLevels,
-    currentBuildingProgress: Option[BuildingProgress]
+    currentBuildingProgress: Option[BuildingProgress],
+    currentShipyardProgress: Option[BuildingProgress]
 )
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
