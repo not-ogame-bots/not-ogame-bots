@@ -152,6 +152,10 @@ object ShipType {
   case object BOMBER extends ShipType
 
   case object REAPER extends ShipType
+
+  case object DEATH_STAR extends ShipType
+
+  case object COLONY_SHIP extends ShipType
 }
 
 case class Fleet(

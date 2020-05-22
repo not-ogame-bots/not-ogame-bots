@@ -262,6 +262,8 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       case ShipType.RECYCLER         => "recycler"
       case ShipType.BOMBER           => "bomber"
       case ShipType.REAPER           => "reaper"
+      case ShipType.DEATH_STAR       => "deathstar"
+      case ShipType.COLONY_SHIP      => "colonyShip"
     }
   }
 
