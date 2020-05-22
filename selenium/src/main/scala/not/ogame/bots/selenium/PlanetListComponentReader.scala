@@ -1,6 +1,7 @@
 package not.ogame.bots.selenium
 
 import cats.effect.{IO, Timer}
+import not.ogame.bots.selenium.ParsingUtils.parseCoordinates
 import not.ogame.bots.selenium.WebDriverSyntax._
 import not.ogame.bots.selenium.WebDriverUtils._
 import not.ogame.bots.{PlayerPlanet, _}
@@ -18,7 +19,7 @@ class PlanetListComponentReader(implicit val webDriver: WebDriver, implicit val 
   private def getPlanetId(element: WebElement): String = element.getAttribute("id").stripPrefix("planet-")
 
   private def getCoordinates(element: WebElement): Coordinates = {
-    val coordinates = element.findElement(By.className("planet-koords")).getText.split(":").map(_.filter(_.isDigit).toInt)
-    Coordinates(coordinates(0), coordinates(1), coordinates(2))
+    val coordinatesText = element.findElement(By.className("planet-koords")).getText
+    parseCoordinates(coordinatesText)
   }
 }
