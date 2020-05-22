@@ -6,6 +6,7 @@ import cats.effect.{IO, Timer}
 import cats.implicits._
 import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots._
+import not.ogame.bots.selenium.EasySelenium._
 import not.ogame.bots.selenium.WebDriverSyntax._
 import not.ogame.bots.selenium.WebDriverUtils._
 import org.openqa.selenium.{By, WebDriver}
@@ -220,5 +221,14 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       upgrade <- buildingComponent.find(By.className("upgrade"))
       _ <- upgrade.clickF()
     } yield ()
+  }
+
+  def readAllFleets(): IO[List[Fleet]] = {
+    IO.delay({
+      webDriver.safeUrl(
+        s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=componentOnly&component=eventList&ajax=1"
+      )
+      new AllFleetsComponentReader(webDriver).readAllFleets()
+    })
   }
 }

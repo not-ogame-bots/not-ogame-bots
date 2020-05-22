@@ -6,7 +6,7 @@ import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.{NonNegative, Positive}
+import eu.timepit.refined.numeric.NonNegative
 
 trait OgameDriverCreator[F[_]] {
   def create(credentials: Credentials): Resource[F, OgameDriver[F]]
@@ -24,6 +24,8 @@ trait OgameDriver[F[_]] {
   def readFacilityBuildingsLevels(planetId: String): F[FacilitiesBuildingLevels]
 
   def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): F[Unit]
+
+  def readAllFleets(): F[List[Fleet]]
 }
 
 case class SuppliesPageData(
@@ -115,4 +117,34 @@ object CoordinatesType extends Enum[CoordinatesType] {
   case object Debris extends CoordinatesType
 
   val values: IndexedSeq[CoordinatesType] = findValues
+}
+
+case class Fleet(
+    arrivalTime: LocalDateTime,
+    fleetAttitude: FleetAttitude,
+    fleetMissionType: FleetMissionType,
+    from: Coordinates,
+    to: Coordinates
+)
+
+sealed trait FleetAttitude extends EnumEntry
+
+object FleetAttitude extends Enum[FleetAttitude] {
+  case object Friendly extends FleetAttitude
+
+  case object Hostile extends FleetAttitude
+
+  val values: IndexedSeq[FleetAttitude] = findValues
+}
+
+sealed trait FleetMissionType extends EnumEntry
+
+object FleetMissionType extends Enum[FleetMissionType] {
+  case object Deployment extends FleetMissionType
+
+  case object Expedition extends FleetMissionType
+
+  case object Unknown extends FleetMissionType
+
+  val values: IndexedSeq[FleetMissionType] = findValues
 }
