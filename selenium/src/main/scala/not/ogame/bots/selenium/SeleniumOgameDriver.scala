@@ -293,4 +293,8 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       new AllFleetsComponentReader(webDriver).readAllFleets()
     })
   }
+
+  override def sendFleet(sendFleetRequest: SendFleetRequest): IO[Unit] = {
+    IO.delay(new SendFleetAction(webDriver, credentials).sendFleet(sendFleetRequest))
+  }
 }

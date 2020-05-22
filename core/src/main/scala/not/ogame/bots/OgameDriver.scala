@@ -30,6 +30,8 @@ trait OgameDriver[F[_]] {
   def checkFleetOnPlanet(planetId: String, shipType: ShipType): F[Int]
 
   def readAllFleets(): F[List[Fleet]]
+
+  def sendFleet(sendFleetRequest: SendFleetRequest): F[Unit]
 }
 
 case class SuppliesPageData(
@@ -186,4 +188,20 @@ object FleetMissionType extends Enum[FleetMissionType] {
   case object Unknown extends FleetMissionType
 
   val values: IndexedSeq[FleetMissionType] = findValues
+}
+
+case class SendFleetRequest(
+    startPlanetId: String,
+    ships: SendFleetRequestShips,
+    targetCoordinates: Coordinates,
+    fleetMissionType: FleetMissionType,
+    resources: Resources
+)
+
+sealed trait SendFleetRequestShips
+
+object SendFleetRequestShips {
+  case object AllShips extends SendFleetRequestShips
+
+  case class Ships(ships: Map[ShipType, Int]) extends SendFleetRequestShips
 }
