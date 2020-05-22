@@ -1,6 +1,6 @@
 package not.ogame.bots
 
-import java.time.{Instant, LocalDateTime}
+import java.time.Instant
 
 import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
@@ -25,24 +25,29 @@ trait OgameDriver[F[_]] {
 
   def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): F[Unit]
 
+  def buildShips(planetId: String, shipType: ShipType, count: Int): F[Unit]
+
+  def checkFleetOnPlanet(planetId: String, shipType: ShipType): F[Int]
+  
   def readAllFleets(): F[List[Fleet]]
 }
 
 case class SuppliesPageData(
-    timestamp: LocalDateTime,
+    timestamp: Instant,
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
     suppliesLevels: SuppliesBuildingLevels,
-    currentBuildingProgress: Option[BuildingProgress]
+    currentBuildingProgress: Option[BuildingProgress],
+    currentShipyardProgress: Option[BuildingProgress]
 )
 
-case class Resources(metal: Int, crystal: Int, deuterium: Int) {
+case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
   def gtEqTo(requiredResources: Resources): Boolean =
     metal >= requiredResources.metal && crystal >= requiredResources.crystal && deuterium >= requiredResources.deuterium
 
   def difference(other: Resources): Resources = {
-    Resources(Math.max(metal - other.metal, 0), Math.max(crystal - other.crystal, 0), Math.max(deuterium - other.deuterium, 0))
+    Resources(Math.max(metal - other.metal, 0), Math.max(crystal - other.crystal, 0), Math.max(deuterium - other.deuterium, 0), 0)
   }
 
   def div(other: Resources): List[Double] = {
@@ -118,6 +123,23 @@ object CoordinatesType extends Enum[CoordinatesType] {
 
   val values: IndexedSeq[CoordinatesType] = findValues
 }
+
+
+sealed trait ShipType
+object ShipType {
+  case object LIGHT_FIGHTER extends ShipType
+  case object HEAVY_FIGHTER extends ShipType
+  case object CRUISER extends ShipType
+  case object BATTLESHIP extends ShipType
+  case object INTERCEPTOR extends ShipType
+  case object DESTROYER extends ShipType
+  case object EXPLORER extends ShipType
+  case object SMALL_CARGO_SHIP extends ShipType
+  case object LARGE_CARGO_SHIP extends ShipType
+  case object RECYCLER extends ShipType
+  case object ESPIONAGE_PROBE extends ShipType
+  case object BOMBER extends ShipType
+  case object REAPER extends ShipType
 
 case class Fleet(
     arrivalTime: LocalDateTime,

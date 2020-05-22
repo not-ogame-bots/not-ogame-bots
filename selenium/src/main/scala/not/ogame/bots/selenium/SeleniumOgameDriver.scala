@@ -1,6 +1,6 @@
 package not.ogame.bots.selenium
 
-import java.time.{Instant, LocalDateTime}
+import java.time.{Clock, Instant}
 
 import cats.effect.{IO, Timer}
 import cats.implicits._
@@ -13,7 +13,7 @@ import org.openqa.selenium.{By, WebDriver}
 
 import scala.concurrent.duration._
 
-class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDriver, timer: Timer[IO]) extends OgameDriver[IO] {
+class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDriver, timer: Timer[IO], clock: Clock) extends OgameDriver[IO] {
   override def login(): IO[Unit] = {
     val universeListUrl = "https://lobby.ogame.gameforge.com/pl_PL/accounts"
     for {
@@ -73,13 +73,15 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
         }
         .map(list => SuppliesBuildingLevels(list.toMap))
       currentBuildingProgress <- readCurrentBuildingProgress
+      currentShipyardProgress <- readCurrentShipyardProgress
     } yield SuppliesPageData(
-      LocalDateTime.now(),
+      clock.instant(),
       currentResources,
       currentProduction,
       currentCapacity,
       suppliesLevels,
-      currentBuildingProgress
+      currentBuildingProgress,
+      currentShipyardProgress
     )
 
   override def readFacilityBuildingsLevels(planetId: String): IO[FacilitiesBuildingLevels] =
@@ -99,12 +101,17 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=facilities&cp=$planetId"
   }
 
+  private def getShipyardUrl(credentials: Credentials, planetId: String): String = {
+    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=shipyard&cp=$planetId"
+  }
+
   private def readCurrentResources: IO[Resources] =
     for {
       currentMetal <- readInt(By.id("metal_box"))
       currentCrystal <- readInt(By.id("crystal_box"))
       currentDeuterium <- readInt(By.id("deuterium_box"))
-    } yield Resources(currentMetal, currentCrystal, currentDeuterium)
+      currentEnergy <- readInt(By.id("energy_box"))
+    } yield Resources(currentMetal, currentCrystal, currentDeuterium, currentEnergy)
 
   private def readCurrentProduction: IO[Resources] =
     for {
@@ -135,6 +142,14 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       _ <- waitForElement(By.className("construction"))
       buildingCountdown <- findMany(By.id("buildingCountdown")).map(_.headOption)
       seconds = buildingCountdown.map(_.getText).map(timeTextToSeconds)
+      buildingProgress = seconds.map(s => BuildingProgress(Instant.now().plusSeconds(s)))
+    } yield buildingProgress
+
+  private def readCurrentShipyardProgress: IO[Option[BuildingProgress]] =
+    for {
+      _ <- waitForElement(By.className("construction"))
+      shipyardCountdown <- findMany(By.id("shipyardCountdown")).map(_.headOption)
+      seconds = shipyardCountdown.map(_.getText).map(timeTextToSeconds)
       buildingProgress = seconds.map(s => BuildingProgress(Instant.now().plusSeconds(s)))
     } yield buildingProgress
 
@@ -222,6 +237,51 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       _ <- upgrade.clickF()
     } yield ()
   }
+  
+  override def buildShips(planetId: String, shipType: ShipType, count: Int): IO[Unit] = {
+    for {
+      _ <- safeUrl(getShipyardUrl(credentials, planetId))
+      _ <- find(By.id("technologies")).flatMap(_.find(By.className(shipTypeToClassName(shipType)))).flatMap(_.clickF())
+      _ <- waitForElement(By.id("build_amount"))
+      _ <- find(By.id("build_amount")).flatMap(_.sendKeysF(count.toString))
+      _ <- find(By.className("upgrade")).flatMap(_.clickF())
+    } yield ()
+  }
+
+  private def shipTypeToClassName(shipType: ShipType): String = {
+    shipType match {
+      case ShipType.SMALL_CARGO_SHIP => "transporterSmall"
+      case ShipType.LARGE_CARGO_SHIP => "transporterLarge"
+      case ShipType.ESPIONAGE_PROBE  => "espionageProbe"
+      case ShipType.CRUISER          => "cruiser"
+      case ShipType.EXPLORER         => "explorer"
+      case ShipType.LIGHT_FIGHTER    => "fighterLight"
+      case ShipType.HEAVY_FIGHTER    => "fighterHeavy"
+      case ShipType.BATTLESHIP       => "battleship"
+      case ShipType.INTERCEPTOR      => "interceptor"
+      case ShipType.DESTROYER        => "destroyer"
+      case ShipType.RECYCLER         => "recycler"
+      case ShipType.BOMBER           => "bomber"
+      case ShipType.REAPER           => "reaper"
+    }
+  }
+
+  private def getFleetDispatchUrl(credentials: Credentials, planetId: String): String = {
+    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=fleetdispatch&cp=$planetId"
+  }
+
+  def checkFleetOnPlanet(planetId: String, shipType: ShipType): IO[Int] = {
+    for {
+      _ <- safeUrl(getFleetDispatchUrl(credentials, planetId))
+      technologies <- findMany(By.id("technologies"))
+      result <- if (technologies.isEmpty) {
+        IO.pure(0)
+      } else {
+        find(By.id("technologies"))
+          .flatMap(_.find(By.className(shipTypeToClassName(shipType))))
+          .flatMap(_.readInt(By.className("amount")))
+      }
+    } yield result
 
   def readAllFleets(): IO[List[Fleet]] = {
     IO.delay({

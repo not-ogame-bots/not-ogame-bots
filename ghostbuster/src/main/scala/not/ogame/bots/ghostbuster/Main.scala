@@ -21,16 +21,15 @@ object Main extends IOApp {
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
     val botConfig = ConfigSource.default.loadOrThrow[BotConfig]
     val credentials = ConfigSource.file(s"${System.getenv("HOME")}/.not-ogame-bots/credentials.conf").loadOrThrow[Credentials]
-    val gbot = new GBot(RealRandomTimeJitter)
+    val gbot = new GBot(RealRandomTimeJitter, botConfig)
     new SeleniumOgameDriverCreator()
       .create(credentials)
       .use { ogame =>
-        val taskExecutor = new TaskExecutor[IO](ogame)
-        def loop(state: State): IO[State] = {
-          val ns = gbot.nextStep(state)
-          taskExecutor.execute(ns).flatMap(s => IO.sleep(1 seconds) >> loop(s))
+        val taskExecutor = new TaskExecutor[IO](ogame, gbot)
+        def loop(state: PlanetState): IO[PlanetState] = {
+          taskExecutor.execute(state).flatMap(s => IO.sleep(1 second) >> loop(s))
         }
-        loop(State.LoggedOut(List.empty, botConfig.wishlist))
+        loop(PlanetState.LoggedOut(List.empty))
       }
       .as(ExitCode.Success)
   }
@@ -44,10 +43,14 @@ object Main extends IOApp {
     } yield ident
   }
 
-  implicit val buildWishReader: ConfigReader[Wish.Build] = ConfigReader.forProduct2("suppliesBuilding", "level")(Wish.Build)
+  implicit val buildSupplyWishReader: ConfigReader[Wish.BuildSupply] =
+    ConfigReader.forProduct2("suppliesBuilding", "level")(Wish.BuildSupply)
+  implicit val buildFacilityWishReader: ConfigReader[Wish.BuildFacility] =
+    ConfigReader.forProduct2("facilityBuilding", "level")(Wish.BuildFacility)
 
   def extractByType(typ: String, objCur: ConfigObjectCursor): ConfigReader.Result[Wish] = typ match {
-    case "build" => buildWishReader.from(objCur)
+    case "build_supply"   => buildSupplyWishReader.from(objCur)
+    case "build_facility" => buildFacilityWishReader.from(objCur)
     case t =>
       objCur.failed(CannotConvert(objCur.value.toString, "Identifiable", s"type has value $t instead of build"))
   }

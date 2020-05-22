@@ -4,43 +4,58 @@ import java.time.Instant
 
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
-import not.ogame.bots.{SuppliesBuilding, SuppliesPageData}
+import not.ogame.bots.{FacilitiesBuildingLevels, FacilityBuilding, ShipType, SuppliesBuilding, SuppliesPageData}
 
 sealed trait Task {
   def executeAfter: Instant
 }
 object Task {
-  case class Build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant) extends Task
-  case class Login(executeAfter: Instant) extends Task
-  case class Refresh(executeAfter: Instant) extends Task
+  case class BuildSupply(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant) extends Task
+  case class BuildFacility(suppliesBuilding: FacilityBuilding, level: Int Refined Positive, executeAfter: Instant) extends Task
+  case class RefreshSupplyAndFacilityPage(executeAfter: Instant) extends Task
 
-  def build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant): Task = {
-    Build(suppliesBuilding, level, executeAfter)
+  case class RefreshFleetOnPlanetStatus(shipType: ShipType, executeAfter: Instant) extends Task
+  case class BuildShip(amount: Int, shipType: ShipType, executeAfter: Instant) extends Task
+
+  def buildSupply(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant): Task = {
+    BuildSupply(suppliesBuilding, level, executeAfter)
   }
 
-  def login(executeAfter: Instant): Task = Task.Login(executeAfter)
+  def refreshSupplyPage(executeAfter: Instant): Task = Task.RefreshSupplyAndFacilityPage(executeAfter)
 
-  def refresh(executeAfter: Instant): Task = Task.Refresh(executeAfter)
+  def refreshFleetOnPlanetStatus(shipType: ShipType, executeAfter: Instant): Task = Task.RefreshFleetOnPlanetStatus(shipType, executeAfter)
 }
 
 sealed trait Wish
 object Wish {
-  case class Build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive) extends Wish
+  case class BuildSupply(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive) extends Wish
 
-  def build(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive): Wish = Build(suppliesBuilding, level)
+  def buildSupply(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive): Wish = BuildSupply(suppliesBuilding, level)
+
+  case class BuildFacility(facility: FacilityBuilding, level: Int Refined Positive) extends Wish
+
+  def buildFacility(facility: FacilityBuilding, level: Int Refined Positive): Wish = BuildFacility(facility, level)
 }
 
-sealed trait State {
+sealed trait PlanetState {
   def scheduledTasks: List[Task]
-  def wishList: List[Wish]
 }
-object State {
-  case class LoggedOut(scheduledTasks: List[Task], wishList: List[Wish]) extends State
-  case class LoggedIn(suppliesPage: SuppliesPageData, wishList: List[Wish], scheduledTasks: List[Task]) extends State
+object PlanetState {
+  case class LoggedOut(scheduledTasks: List[Task]) extends PlanetState
+  case class LoggedIn(
+      suppliesPage: SuppliesPageData,
+      scheduledTasks: List[Task],
+      facilityBuildingLevels: FacilitiesBuildingLevels,
+      fleetOnPlanet: Map[ShipType, Int]
+  ) extends PlanetState
 
-  def loggedIn(suppliesPage: SuppliesPageData, wishList: List[Wish], scheduledTasks: List[Task]): State = {
-    State.LoggedIn(suppliesPage, wishList, scheduledTasks)
+  def loggedIn(
+      suppliesPage: SuppliesPageData,
+      scheduledTasks: List[Task],
+      facilityBuildingLevels: FacilitiesBuildingLevels
+  ): PlanetState = {
+    PlanetState.LoggedIn(suppliesPage, scheduledTasks, facilityBuildingLevels, Map.empty)
   }
 }
 
-case class BotConfig(wishlist: List[Wish])
+case class BotConfig(wishlist: List[Wish], buildMtUpToCapacity: Boolean)

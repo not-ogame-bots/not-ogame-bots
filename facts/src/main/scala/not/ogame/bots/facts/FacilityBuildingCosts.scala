@@ -7,10 +7,10 @@ import not.ogame.bots.{FacilityBuilding, Resources}
 object FacilityBuildingCosts {
   def buildingCost(facilityBuilding: FacilityBuilding, level: Int Refined Positive): Resources = {
     facilityBuilding match {
-      case FacilityBuilding.RoboticsFactory => fromBaseCostPowerOf2(Resources(400, 120, 200), level.value)
-      case FacilityBuilding.Shipyard        => fromBaseCostPowerOf2(Resources(400, 200, 100), level.value)
-      case FacilityBuilding.ResearchLab     => fromBaseCostPowerOf2(Resources(200, 400, 200), level.value)
-      case FacilityBuilding.NaniteFactory   => fromBaseCostPowerOf2(Resources(1_000_000, 500_000, 100_000), level.value)
+      case FacilityBuilding.RoboticsFactory => fromBaseCostPowerOf2(Resources(400, 120, 200, 0), level.value)
+      case FacilityBuilding.Shipyard        => fromBaseCostPowerOf2(Resources(400, 200, 100, 0), level.value)
+      case FacilityBuilding.ResearchLab     => fromBaseCostPowerOf2(Resources(200, 400, 200, 0), level.value)
+      case FacilityBuilding.NaniteFactory   => fromBaseCostPowerOf2(Resources(1_000_000, 500_000, 100_000, 0), level.value)
     }
   }
 
@@ -18,7 +18,8 @@ object FacilityBuildingCosts {
     Resources(
       metal = (baseCost.metal * 2.0.pow(level - 1.0)).toInt,
       crystal = (baseCost.crystal * 2.0.pow(level - 1.0)).toInt,
-      deuterium = (baseCost.deuterium * 2.0.pow(level - 1.0)).toInt
+      deuterium = (baseCost.deuterium * 2.0.pow(level - 1.0)).toInt,
+      0
     )
   }
 }
