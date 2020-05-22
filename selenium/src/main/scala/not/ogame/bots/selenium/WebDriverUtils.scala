@@ -2,6 +2,7 @@ package not.ogame.bots.selenium
 
 import cats.effect.{IO, Timer}
 import cats.implicits._
+import not.ogame.bots.selenium.WebDriverSyntax.testToInt
 import not.ogame.bots.selenium.WebDriverUtils._
 import org.openqa.selenium.{By, WebDriver, WebElement}
 
@@ -17,6 +18,14 @@ object WebDriverUtils {
     def typeText(keys: String): IO[Unit] = IO.delay(webElement.sendKeys(keys))
 
     def clickF(): IO[Unit] = IO.delay(webElement.click())
+
+    def sendKeysF(keys: String): IO[Unit] = IO.delay(webElement.sendKeys(keys))
+
+    def readInt(by: By): IO[Int] = {
+      find(by).map { component =>
+        testToInt(component.getText)
+      }
+    }
   }
 
   implicit class RichWebDriver(webDriver: WebDriver) {
@@ -64,8 +73,20 @@ object WebDriverSyntax {
   def find(by: By)(implicit webDriver: WebDriver): IO[WebElement] =
     IO.delay(webDriver.findElement(by))
 
-  def readInt(by: By)(implicit webDriver: WebDriver): IO[Int] =
-    find(by).map(_.getText.filter(_.isDigit).toInt)
+  def readInt(by: By)(implicit webDriver: WebDriver): IO[Int] = {
+    find(by).map { component =>
+      testToInt(component.getText)
+    }
+  }
+
+  def testToInt(text: String): Int = {
+    val number = text.filter(_.isDigit).toInt
+    if (text.startsWith("-")) {
+      -number
+    } else {
+      number
+    }
+  }
 
   def findMany(by: By)(implicit webDriver: WebDriver): IO[List[WebElement]] =
     IO.delay(webDriver.findElements(by).asScala.toList)
