@@ -254,4 +254,22 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       case ShipType.REAPER           => "reaper"
     }
   }
+
+  private def getFleetDispatchUrl(credentials: Credentials, planetId: String): String = {
+    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=fleetdispatch&cp=$planetId"
+  }
+
+  def checkFleetOnPlanet(planetId: String, shipType: ShipType): IO[Int] = {
+    for {
+      _ <- safeUrl(getFleetDispatchUrl(credentials, planetId))
+      technologies <- findMany(By.id("technologies"))
+      result <- if (technologies.isEmpty) {
+        IO.pure(0)
+      } else {
+        find(By.id("technologies"))
+          .flatMap(_.find(By.className(shipTypeToClassName(shipType))))
+          .flatMap(_.readInt(By.className("amount")))
+      }
+    } yield result
+  }
 }

@@ -2,6 +2,7 @@ package not.ogame.bots.selenium
 
 import cats.effect.{IO, Timer}
 import cats.implicits._
+import not.ogame.bots.selenium.WebDriverSyntax.testToInt
 import not.ogame.bots.selenium.WebDriverUtils._
 import org.openqa.selenium.{By, WebDriver, WebElement}
 
@@ -19,6 +20,12 @@ object WebDriverUtils {
     def clickF(): IO[Unit] = IO.delay(webElement.click())
 
     def sendKeysF(keys: String): IO[Unit] = IO.delay(webElement.sendKeys(keys))
+
+    def readInt(by: By): IO[Int] = {
+      find(by).map { component =>
+        testToInt(component.getText)
+      }
+    }
   }
 
   implicit class RichWebDriver(webDriver: WebDriver) {
@@ -68,13 +75,16 @@ object WebDriverSyntax {
 
   def readInt(by: By)(implicit webDriver: WebDriver): IO[Int] = {
     find(by).map { component =>
-      val text = component.getText
-      val number = text.filter(_.isDigit).toInt
-      if (text.startsWith("-")) {
-        -number
-      } else {
-        number
-      }
+      testToInt(component.getText)
+    }
+  }
+
+  def testToInt(text: String): Int = {
+    val number = text.filter(_.isDigit).toInt
+    if (text.startsWith("-")) {
+      -number
+    } else {
+      number
     }
   }
 
