@@ -52,6 +52,8 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
     task match {
       case Task.BuildSupply(suppliesBuilding, level, executeAfter) =>
         buildSupplyBuilding(state, suppliesBuilding)
+      case Task.Refresh(_) =>
+        ogameDriver.readSuppliesPage(PlanetId).map(state.modify(_.suppliesPage).setTo(_))
     }
   }
 
