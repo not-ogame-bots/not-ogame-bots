@@ -7,9 +7,11 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import not.ogame.bots._
 
-sealed trait Action {
+sealed trait Action[T] {
   def uuid: UUID
   def executionTime: Instant
+  def defer(any: Any): T = any.asInstanceOf[T]
+  def response(value: T): Response = Response(value, uuid)
 }
 
 case class Response(value: Any, uuid: UUID)
@@ -21,10 +23,7 @@ object Action {
       executionTime: Instant,
       planetId: String,
       uuid: UUID = UUID.randomUUID()
-  ) extends Action {
-    def defer(any: Any): Instant = any.asInstanceOf[Instant]
-    def response(value: Instant): Response = Response(value, uuid)
-  }
+  ) extends Action[Instant]
 
   case class BuildFacility(
       suppliesBuilding: FacilityBuilding,
@@ -32,51 +31,25 @@ object Action {
       executionTime: Instant,
       planetId: String,
       uuid: UUID = UUID.randomUUID()
-  ) extends Action {
-    def defer(any: Any): FacilitiesBuildingLevels = any.asInstanceOf[FacilitiesBuildingLevels]
-    def response(value: FacilitiesBuildingLevels): Response = Response(value, uuid)
-  }
+  ) extends Action[FacilitiesBuildingLevels]
 
-  case class RefreshSupplyAndFacilityPage(executionTime: Instant, planetId: String, uuid: UUID = UUID.randomUUID()) extends Action { //TODO remove
-    def defer(any: Any): Any = any.asInstanceOf[Any]
-    def response(value: Any): Response = Response(value, uuid)
-  }
+  case class RefreshSupplyAndFacilityPage(executionTime: Instant, planetId: String, uuid: UUID = UUID.randomUUID()) extends Action[Any]
 
-  case class ReadSupplyPage(executionTime: Instant, planetId: String, uuid: UUID = UUID.randomUUID()) extends Action {
-    def defer(any: Any): SuppliesPageData = any.asInstanceOf[SuppliesPageData]
-    def response(value: SuppliesPageData): Response = Response(value, uuid)
-  }
+  case class ReadSupplyPage(executionTime: Instant, planetId: String, uuid: UUID = UUID.randomUUID()) extends Action[SuppliesPageData]
 
-  case class RefreshFleetOnPlanetStatus(executionTime: Instant, playerPlanet: PlayerPlanet, uuid: UUID = UUID.randomUUID()) extends Action {
-    def defer(any: Any): PlanetFleet = any.asInstanceOf[PlanetFleet]
-    def response(value: PlanetFleet): Response = Response(value, uuid)
-  }
+  case class RefreshFleetOnPlanetStatus(executionTime: Instant, playerPlanet: PlayerPlanet, uuid: UUID = UUID.randomUUID())
+      extends Action[PlanetFleet]
 
   case class BuildShip(amount: Int, shipType: ShipType, executionTime: Instant, planetId: String, uuid: UUID = UUID.randomUUID())
-      extends Action {
-    def defer(any: Any): SuppliesPageData = any.asInstanceOf[SuppliesPageData]
-    def response(value: SuppliesPageData): Response = Response(value, uuid)
-  }
+      extends Action[SuppliesPageData]
 
-  case class DumpActivity(executionTime: Instant, planets: List[String], uuid: UUID = UUID.randomUUID()) extends Action {
-    def defer(any: Any): Unit = any.asInstanceOf[Unit]
-    def response(value: Unit): Response = Response(value, uuid)
-  }
+  case class DumpActivity(executionTime: Instant, planets: List[String], uuid: UUID = UUID.randomUUID()) extends Action[Unit]
 
-  case class SendFleet(executionTime: Instant, sendFleetRequest: SendFleetRequest, uuid: UUID = UUID.randomUUID()) extends Action {
-    def defer(any: Any): Instant = any.asInstanceOf[Instant]
-    def response(value: Instant): Response = Response(value, uuid)
-  }
+  case class SendFleet(executionTime: Instant, sendFleetRequest: SendFleetRequest, uuid: UUID = UUID.randomUUID()) extends Action[Instant]
 
-  case class GetAirFleet(executionTime: Instant, uuid: UUID = UUID.randomUUID()) extends Action {
-    def defer(any: Any): List[Fleet] = any.asInstanceOf[List[Fleet]]
-    def response(value: List[Fleet]): Response = Response(value, uuid)
-  }
+  case class GetAirFleet(executionTime: Instant, uuid: UUID = UUID.randomUUID()) extends Action[List[Fleet]]
 
-  case class ReadPlanets(executionTime: Instant, uuid: UUID = UUID.randomUUID()) extends Action {
-    def defer(any: Any): List[PlayerPlanet] = any.asInstanceOf[List[PlayerPlanet]]
-    def response(value: List[PlayerPlanet]): Response = Response(value, uuid)
-  }
+  case class ReadPlanets(executionTime: Instant, uuid: UUID = UUID.randomUUID()) extends Action[List[PlayerPlanet]]
 }
 
 sealed trait Wish
