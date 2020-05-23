@@ -2,10 +2,9 @@ package not.ogame.bots.ghostbuster
 
 import java.time.Clock
 
-import cats.effect.{ExitCode, IO, IOApp}
-import cats.implicits._
 import eu.timepit.refined.pureconfig._
 import monix.eval.Task
+import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots.Credentials
 import not.ogame.bots.ghostbuster.two.{FlyAndBuildProcessor, TaskExecutorImpl}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
@@ -13,8 +12,6 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import pureconfig.module.enumeratum._
 import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
-
-import monix.execution.Scheduler.Implicits.global
 
 object Main {
   private implicit val clock: Clock = Clock.systemUTC()
