@@ -9,13 +9,15 @@ class GBot(jitterProvider: RandomTimeJitter, botConfig: BotConfig)(implicit cloc
 
   private val wishlistProcessor = new WishlistProcessor(botConfig, jitterProvider)
   private val buildMtUpToCapacityProcessor = new BuildMtUpToCapacityProcessor(botConfig, jitterProvider)
-  private val inactivityProcessor = new InactivityProcessor()
+  private val inactivityProcessor = new InactivityProcessor(botConfig)
 
-  def nextStep(state: PlanetState.LoggedIn): PlanetState.LoggedIn = {
-    println(s"processing next state $state")
+  def nextStep(state: State.LoggedIn): State.LoggedIn = {
+    println("processing state:")
+    pprint.pprintln(state)
     val nextState =
       List(wishlistProcessor(_), buildMtUpToCapacityProcessor(_), inactivityProcessor(_)).foldLeft(state)((acc, item) => item(acc))
-    println(s"calculated next state: ${nextState.suppliesPage.timestamp} ${nextState.scheduledTasks}")
+    println(s"calculated next state: ${nextState.planets.head.suppliesPage.timestamp}")
+    pprint.pprintln(nextState.scheduledTasks)
     nextState
   }
 }

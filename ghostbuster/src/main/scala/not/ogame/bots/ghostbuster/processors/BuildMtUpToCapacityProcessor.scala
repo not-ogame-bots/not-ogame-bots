@@ -3,62 +3,62 @@ package not.ogame.bots.ghostbuster.processors
 import java.time.Clock
 
 import com.softwaremill.quicklens._
+import not.ogame.bots.ShipType
 import not.ogame.bots.facts.ShipCosts
-import not.ogame.bots.ghostbuster.{BotConfig, PlanetState, RandomTimeJitter, Task}
-import not.ogame.bots.{ShipType, SuppliesPageData}
+import not.ogame.bots.ghostbuster._
 
 class BuildMtUpToCapacityProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
-  def apply(state: PlanetState.LoggedIn): PlanetState.LoggedIn = {
+  def apply(state: State.LoggedIn): State.LoggedIn = {
     if (botConfig.buildMtUpToCapacity) {
-      fleetBuildingProcessor(state)
+      state
+        .modify(_.scheduledTasks)
+        .setTo(state.scheduledTasks ++ createTasks(state))
     } else {
       state
     }
   }
 
-  private def fleetBuildingProcessor(state: PlanetState.LoggedIn): PlanetState.LoggedIn = {
-    state match {
-      case PlanetState.LoggedIn(SuppliesPageData(_, _, _, capacity, _, None, None), tasks, _, fleetOnPlanet) if !isBuildingInQueue(tasks) =>
-        fleetOnPlanet
-          .get(ShipType.SmallCargoShip)
-          .map { shipAmount =>
-            tryBuildingMt(state, shipAmount)
-          }
-          .getOrElse(
-            state
-              .modify(_.scheduledTasks)
-              .setTo(state.scheduledTasks :+ Task.refreshFleetOnPlanetStatus(ShipType.SmallCargoShip, clock.instant()))
-          ) //TODO add next case with refresh after building one ship, also shipInProgress should have richer information
-      case other => other
+  private def createTasks(state: State.LoggedIn) = {
+    state.planets.flatMap(ps => processSinglePlanet(ps, state.scheduledTasks))
+  }
+
+  private def processSinglePlanet(planetState: PlanetState, tasks: List[Task]): List[Task] = {
+    if (planetState.isIdle && noBuildingsInQueue(tasks, planetState.id)) {
+      planetState.fleetOnPlanet
+        .get(ShipType.SmallCargoShip)
+        .map { shipAmount =>
+          tryBuildingMt(planetState, shipAmount)
+        }
+        .getOrElse(
+          List(Task.RefreshFleetOnPlanetStatus(ShipType.SmallCargoShip, clock.instant(), planetState.id))
+        ) //TODO add next case with refresh after building one ship, also shipInProgress should have richer information
+    } else {
+      List.empty
     }
   }
 
   private def tryBuildingMt(
-      state: PlanetState.LoggedIn,
+      planetState: PlanetState,
       shipAmount: Int
-  ) = {
-    val capacity = state.suppliesPage.currentCapacity
-    val currentResources = state.suppliesPage.currentResources
-    val currentProduction = state.suppliesPage.currentProduction
+  ): List[Task] = {
+    val capacity = planetState.suppliesPage.currentCapacity
+    val currentResources = planetState.suppliesPage.currentResources
+    val currentProduction = planetState.suppliesPage.currentProduction
     val expectedAmount = capacity.metal / 5000 + capacity.deuterium / 5000 + capacity.crystal / 5000
     if (expectedAmount > shipAmount) {
       val requiredResources = ShipCosts.shipCost(ShipType.SmallCargoShip)
       val canBuildAmount = currentResources.div(requiredResources).map(_.toInt).min
       if (canBuildAmount > 1) {
-        state
-          .modify(_.scheduledTasks)
-          .setTo(state.scheduledTasks :+ Task.BuildShip(canBuildAmount, ShipType.SmallCargoShip, clock.instant()))
+        List(Task.BuildShip(canBuildAmount, ShipType.SmallCargoShip, clock.instant(), planetState.id))
       } else {
         val stillNeed = requiredResources.difference(currentResources)
         val hoursToWait = stillNeed.div(currentProduction).max
         val secondsToWait = (hoursToWait * 3600).toInt + jitterProvider.getJitterInSeconds()
         val timeOfExecution = clock.instant().plusSeconds(secondsToWait)
-        state
-          .modify(_.scheduledTasks)
-          .setTo(state.scheduledTasks :+ Task.BuildShip(canBuildAmount, ShipType.SmallCargoShip, timeOfExecution))
+        List(Task.BuildShip(canBuildAmount, ShipType.SmallCargoShip, timeOfExecution, planetId = planetState.id))
       }
     } else {
-      state
+      List.empty
     }
   }
 }

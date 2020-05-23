@@ -6,34 +6,39 @@ import cats.MonadError
 import cats.effect.Timer
 import cats.implicits._
 import com.softwaremill.quicklens._
-import not.ogame.bots.ghostbuster.PlanetState.LoggedIn
+import not.ogame.bots.ghostbuster.State.LoggedIn
 import not.ogame.bots.ghostbuster.TaskExecutor._
 import not.ogame.bots.{OgameDriver, ShipType, SuppliesBuilding}
 
 class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBot)(implicit clock: Clock) {
-  def execute(state: PlanetState): F[PlanetState.LoggedIn] = {
+  def execute(state: State): F[State.LoggedIn] = {
     state match {
-      case loggedOut: PlanetState.LoggedOut =>
+      case loggedOut: State.LoggedOut =>
         logIn(loggedOut)
           .map(gBot.nextStep)
-      case loggedIn: PlanetState.LoggedIn =>
-        executeAl(loggedIn.scheduledTasks, loggedIn).map(s => s: PlanetState.LoggedIn)
+      case loggedIn: State.LoggedIn =>
+        executeAl(loggedIn.scheduledTasks, loggedIn).map(s => s: State.LoggedIn)
     }
   }
 
-  private def logIn(state: PlanetState): F[PlanetState.LoggedIn] = {
+  private def logIn(state: State): F[State.LoggedIn] = {
     (for {
       _ <- ogameDriver.login()
-      sp <- ogameDriver.readSuppliesPage(PlanetId)
-      fp <- ogameDriver.readFacilityBuildingsLevels(PlanetId)
-    } yield PlanetState.LoggedIn(sp, state.scheduledTasks, fp, Map.empty))
+      planets <- ogameDriver.readPlanets()
+      planetStates <- planets.map { pp =>
+        for {
+          sp <- ogameDriver.readSuppliesPage(pp.id)
+          fp <- ogameDriver.readFacilityBuildingsLevels(pp.id)
+        } yield PlanetState(pp.id, pp.coordinates, sp, fp, Map.empty)
+      }.sequence
+    } yield State.LoggedIn(state.scheduledTasks, planetStates))
       .handleErrorWith { e =>
         e.printStackTrace()
         logIn(state)
       }
   }
 
-  private def executeAl(tasks: List[Task], state: LoggedIn): F[PlanetState.LoggedIn] = {
+  private def executeAl(tasks: List[Task], state: State.LoggedIn): F[State.LoggedIn] = {
     tasks match {
       case ::(head, next) if clock.instant().isAfter(head.executeAfter) =>
         execute(head, state)
@@ -57,52 +62,70 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
 
   private def execute(task: Task, state: LoggedIn): F[LoggedIn] = {
     task match {
-      case Task.BuildSupply(suppliesBuilding, _, _) =>
-        buildSupplyBuilding(state, suppliesBuilding)
-      case Task.RefreshSupplyAndFacilityPage(_) =>
+      case Task.BuildSupply(suppliesBuilding, _, _, planetId) =>
+        buildSupplyBuilding(state, suppliesBuilding, planetId)
+      case Task.RefreshSupplyAndFacilityPage(_, planetId) =>
         for {
-          sp <- ogameDriver.readSuppliesPage(PlanetId)
-          fp <- ogameDriver.readFacilityBuildingsLevels(PlanetId)
-        } yield state
-          .modify(_.suppliesPage)
-          .setTo(sp)
-          .modify(_.facilityBuildingLevels)
-          .setTo(fp)
-      case Task.BuildFacility(facilityBuilding, _, _) =>
+          sp <- ogameDriver.readSuppliesPage(planetId)
+          fp <- ogameDriver.readFacilityBuildingsLevels(planetId)
+        } yield {
+          val planetIdx = state.planets.indexWhere(_.id == planetId)
+          state
+            .modify(_.planets.at(planetIdx).suppliesPage)
+            .setTo(sp)
+            .modify(_.planets.at(planetIdx).facilityBuildingLevels)
+            .setTo(fp)
+        }
+      case Task.BuildFacility(facilityBuilding, _, _, planetId) =>
         for {
-          _ <- ogameDriver.buildFacilityBuilding(PlanetId, facilityBuilding)
-          newFacilityLevels <- ogameDriver.readFacilityBuildingsLevels(PlanetId)
-        } yield state.modify(_.facilityBuildingLevels).setTo(newFacilityLevels)
-
-      case Task.RefreshFleetOnPlanetStatus(shipType, _) =>
+          _ <- ogameDriver.buildFacilityBuilding(planetId, facilityBuilding)
+          newFacilityLevels <- ogameDriver.readFacilityBuildingsLevels(planetId)
+        } yield {
+          val planetIdx = state.planets.indexWhere(_.id == planetId)
+          state
+            .modify(_.planets.at(planetIdx).facilityBuildingLevels)
+            .setTo(newFacilityLevels)
+        }
+      case Task.RefreshFleetOnPlanetStatus(shipType, _, planetId) =>
+        val planetIdx = state.planets.indexWhere(_.id == planetId)
         ogameDriver
-          .checkFleetOnPlanet(PlanetId, shipType)
-          .map(amount => state.modify(_.fleetOnPlanet).setTo(state.fleetOnPlanet ++ Map(shipType -> amount)))
-      case Task.BuildShip(amount, shipType, _) =>
-        ogameDriver.buildShips(PlanetId, shipType, amount) >> ogameDriver
-          .readSuppliesPage(PlanetId)
-          .map(suppliesPage => state.modify(_.suppliesPage).setTo(suppliesPage))
-      case Task.DumpActivity(_) =>
-        ogameDriver.checkFleetOnPlanet(PlanetId, ShipType.SmallCargoShip) >> ogameDriver.readSuppliesPage(PlanetId).map(_ => state)
+          .checkFleetOnPlanet(planetId, shipType)
+          .map(
+            amount =>
+              state
+                .modify(_.planets.at(planetIdx).fleetOnPlanet)
+                .using(_ ++ Map(shipType -> amount))
+          )
+      case Task.BuildShip(amount, shipType, _, planetId) =>
+        val planetIdx = state.planets.indexWhere(_.id == planetId)
+        ogameDriver.buildShips(planetId, shipType, amount) >> ogameDriver
+          .readSuppliesPage(planetId)
+          .map(suppliesPage => state.modify(_.planets.at(planetIdx).suppliesPage).setTo(suppliesPage))
+      case Task.DumpActivity(_, planets) =>
+        planets
+          .map { planet =>
+            ogameDriver.checkFleetOnPlanet(planet, ShipType.SmallCargoShip) >> ogameDriver.readSuppliesPage(planet)
+          }
+          .sequence
+          .map(_ => state)
     }
   }
 
-  private def buildSupplyBuilding(state: LoggedIn, suppliesBuilding: SuppliesBuilding) = {
+  private def buildSupplyBuilding(state: LoggedIn, suppliesBuilding: SuppliesBuilding, planetId: String) = {
     //TODO check if level is correct
     //TODO move executeAfter outside of task?
     //TODO check resources
     for {
-      _ <- ogameDriver.buildSuppliesBuilding(PlanetId, suppliesBuilding)
-      newSuppliesPage <- ogameDriver.readSuppliesPage(PlanetId)
+      _ <- ogameDriver.buildSuppliesBuilding(planetId, suppliesBuilding)
+      newSuppliesPage <- ogameDriver.readSuppliesPage(planetId)
     } yield {
-      state
-        .modify(_.suppliesPage)
-        .setTo(newSuppliesPage)
+      val planetIdx = state.planets.indexWhere(_.id == planetId)
+      modify(state)(_.planets.at(planetIdx))
+        .using(ps => ps.copy(suppliesPage = newSuppliesPage))
     }
   }
 }
 
 object TaskExecutor {
   type MonError[F[_]] = MonadError[F, Throwable]
-  val PlanetId = "33653280"
 }

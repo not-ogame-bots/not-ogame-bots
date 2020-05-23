@@ -26,11 +26,11 @@ object Main extends IOApp {
       .use { ogame =>
         val taskExecutor = new TaskExecutor[IO](ogame, gbot)
 
-        def loop(state: PlanetState): IO[PlanetState] = {
+        def loop(state: State): IO[PlanetState] = {
           taskExecutor.execute(state).flatMap(s => IO.sleep(1 second) >> loop(s))
         }
 
-        loop(PlanetState.LoggedOut(List.empty))
+        loop(State.LoggedOut(List.empty))
       }
       .as(ExitCode.Success)
   }
@@ -45,9 +45,9 @@ object Main extends IOApp {
   }
 
   implicit val buildSupplyWishReader: ConfigReader[Wish.BuildSupply] =
-    ConfigReader.forProduct2("suppliesBuilding", "level")(Wish.BuildSupply)
+    ConfigReader.forProduct3("suppliesBuilding", "level", "planetId")(Wish.BuildSupply)
   implicit val buildFacilityWishReader: ConfigReader[Wish.BuildFacility] =
-    ConfigReader.forProduct2("facilityBuilding", "level")(Wish.BuildFacility)
+    ConfigReader.forProduct3("facilityBuilding", "level", "planetId")(Wish.BuildFacility)
 
   def extractByType(typ: String, objCur: ConfigObjectCursor): ConfigReader.Result[Wish] = typ match {
     case "build_supply"   => buildSupplyWishReader.from(objCur)

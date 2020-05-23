@@ -297,4 +297,8 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
   override def sendFleet(sendFleetRequest: SendFleetRequest): IO[Unit] = {
     IO.delay(new SendFleetAction(webDriver, credentials).sendFleet(sendFleetRequest))
   }
+
+  override def readPlanets(): IO[List[PlayerPlanet]] = {
+    IO.delay(new PlanetListComponentReader(webDriver).readPlanetList())
+  }
 }

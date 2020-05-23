@@ -1,13 +1,23 @@
 package not.ogame.bots.ghostbuster
 
-import scala.reflect.ClassTag
-
 package object processors {
-  private[processors] def checkAlreadyInQueue[T: ClassTag](tasks: List[Task]): Boolean = {
-    tasks.exists(t => implicitly[ClassTag[T]].runtimeClass.isInstance(t))
+  private[processors] def checkAlreadyInQueue(tasks: List[Task])(p: PartialFunction[Task, Task]): Boolean = {
+    tasks.collectFirst(p).isDefined
   }
 
-  private[processors] def isBuildingInQueue(tasks: List[Task]): Boolean = {
-    checkAlreadyInQueue[Task.BuildSupply](tasks) || checkAlreadyInQueue[Task.BuildFacility](tasks)
+  private[processors] def buildingScheduled(tasks: List[Task], planetId: String): Boolean = {
+    tasks.collectFirst(buildingFilter(planetId)).isDefined
+  }
+
+  private[processors] def refreshScheduled(tasks: List[Task], planetId: String): Boolean = {
+    tasks.collectFirst { case t: Task.RefreshSupplyAndFacilityPage if t.planetId == planetId => t }.isDefined
+  }
+
+  private[processors] def noBuildingsInQueue(tasks: List[Task], planetId: String): Boolean = !buildingScheduled(tasks, planetId)
+
+  private[processors] def buildingFilter(planetId: String): PartialFunction[Task, Task] = {
+    case t: Task.BuildSupply if t.planetId == planetId   => t
+    case t: Task.BuildFacility if t.planetId == planetId => t
+    case t: Task.BuildShip if t.planetId == planetId     => t
   }
 }

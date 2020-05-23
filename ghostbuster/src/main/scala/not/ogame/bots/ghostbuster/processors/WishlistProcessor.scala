@@ -5,39 +5,38 @@ import java.time.Clock
 import eu.timepit.refined.numeric.Positive
 import not.ogame.bots.{FacilitiesBuildingLevels, FacilityBuilding, Resources, SuppliesBuilding, SuppliesPageData}
 import not.ogame.bots.facts.{FacilityBuildingCosts, SuppliesBuildingCosts}
-import not.ogame.bots.ghostbuster.{BotConfig, PlanetState, RandomTimeJitter, Task, Wish}
+import not.ogame.bots.ghostbuster.{BotConfig, PlanetState, RandomTimeJitter, State, Task, Wish}
 import not.ogame.bots.selenium.refineVUnsafe
 import com.softwaremill.quicklens._
 
 class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
-  def apply(state: PlanetState.LoggedIn): PlanetState.LoggedIn = {
+  def apply(state: State.LoggedIn): State.LoggedIn = {
     if (botConfig.useWishlist) {
-      buildingProcessor(state)
+      state.modify(_.scheduledTasks).setTo(state.scheduledTasks ++ state.planets.flatMap(ps => buildingProcessor(ps, state.scheduledTasks)))
     } else {
       state
     }
   }
 
-  private def buildingProcessor(state: PlanetState.LoggedIn) = {
-    state match {
-      case loggedState @ PlanetState.LoggedIn(SuppliesPageData(_, _, _, _, _, Some(buildingProgress), _), tasks, _, _)
-          if !checkAlreadyInQueue[Task.RefreshSupplyAndFacilityPage](tasks) =>
-        loggedState
-          .modify(_.scheduledTasks)
-          .setTo(loggedState.scheduledTasks :+ Task.refreshSupplyPage(buildingProgress.finishTimestamp))
-      case loggedState @ PlanetState.LoggedIn(suppliesPage, tasks, facilityBuildingLevels, _) if !isBuildingInQueue(tasks) =>
-        handleWishWhenLogged(suppliesPage, facilityBuildingLevels)
-          .map(task => loggedState.modify(_.scheduledTasks).setTo(loggedState.scheduledTasks :+ task))
-          .getOrElse(loggedState)
-      case other => other
+  private def buildingProcessor(planetState: PlanetState, tasks: List[Task]): List[Task] = {
+    if (planetState.isIdle && !buildingScheduled(tasks, planetState.id)) {
+      scheduleNextWish(planetState).toList
+    } else if (planetState.buildingInProgress && !refreshScheduled(tasks, planetState.id)) {
+      List(Task.RefreshSupplyAndFacilityPage(planetState.suppliesPage.currentBuildingProgress.get.finishTimestamp, planetState.id))
+    } else {
+      List.empty
     }
   }
 
-  private def handleWishWhenLogged(suppliesPage: SuppliesPageData, facilityBuildingLevels: FacilitiesBuildingLevels) = {
+  private def scheduleNextWish(planetState: PlanetState) = {
+    val suppliesPage = planetState.suppliesPage
+    val facilityBuildingLevels = planetState.facilityBuildingLevels
     botConfig.wishlist.collectFirst {
-      case w: Wish.BuildSupply if suppliesPage.suppliesLevels.map(w.suppliesBuilding).value < w.level.value => buildSupply(suppliesPage, w)
-      case w: Wish.BuildFacility if facilityBuildingLevels.map(w.facility).value < w.level.value =>
-        buildFacility(suppliesPage, facilityBuildingLevels, w)
+      case w: Wish.BuildSupply
+          if suppliesPage.suppliesLevels.map(w.suppliesBuilding).value < w.level.value && w.planetId == planetState.id =>
+        buildSupply(suppliesPage, w)
+      case w: Wish.BuildFacility if facilityBuildingLevels.map(w.facility).value < w.level.value && w.planetId == planetState.id =>
+        buildFacility(suppliesPage, facilityBuildingLevels, w, planetState.id)
     }.flatten
   }
 
@@ -47,7 +46,8 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
         suppliesPage,
         Wish.BuildSupply(
           SuppliesBuilding.SolarPlant,
-          nextLevel(suppliesPage, SuppliesBuilding.MetalStorage)
+          nextLevel(suppliesPage, SuppliesBuilding.MetalStorage),
+          w.planetId
         )
       )
     } else {
@@ -62,16 +62,26 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
     val requiredResources =
       SuppliesBuildingCosts.buildingCost(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding))
     if (suppliesPage.currentResources.gtEqTo(requiredResources)) { //TODO can be simplified
-      Some(Task.BuildSupply(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding), clock.instant()))
+      Some(
+        Task
+          .BuildSupply(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding), clock.instant(), buildWish.planetId)
+      )
     } else {
       if (suppliesPage.currentCapacity.gtEqTo(requiredResources)) {
         val stillNeed = requiredResources.difference(suppliesPage.currentResources)
         val hoursToWait = stillNeed.div(suppliesPage.currentProduction).max
         val secondsToWait = (hoursToWait * 3600).toInt + jitterProvider.getJitterInSeconds()
         val timeOfExecution = clock.instant().plusSeconds(secondsToWait)
-        Some(Task.BuildSupply(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding), timeOfExecution))
+        Some(
+          Task.BuildSupply(
+            buildWish.suppliesBuilding,
+            nextLevel(suppliesPage, buildWish.suppliesBuilding),
+            timeOfExecution,
+            buildWish.planetId
+          )
+        )
       } else {
-        buildStorage(suppliesPage, requiredResources)
+        buildStorage(suppliesPage, requiredResources, buildWish.planetId)
       }
     }
   }
@@ -79,28 +89,30 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
   private def buildFacility(
       suppliesPage: SuppliesPageData,
       facilitiesBuildingLevels: FacilitiesBuildingLevels,
-      buildWish: Wish.BuildFacility
+      buildWish: Wish.BuildFacility,
+      planetId: String
   ): Option[Task] = {
     val requiredResources =
       FacilityBuildingCosts.buildingCost(buildWish.facility, nextLevel(facilitiesBuildingLevels, buildWish.facility))
     if (suppliesPage.currentResources.gtEqTo(requiredResources)) {
-      Some(Task.BuildFacility(buildWish.facility, nextLevel(facilitiesBuildingLevels, buildWish.facility), clock.instant()))
+      Some(Task.BuildFacility(buildWish.facility, nextLevel(facilitiesBuildingLevels, buildWish.facility), clock.instant(), planetId))
     } else {
       if (suppliesPage.currentCapacity.gtEqTo(requiredResources)) {
         val stillNeed = requiredResources.difference(suppliesPage.currentResources)
         val hoursToWait = stillNeed.div(suppliesPage.currentProduction).max
         val secondsToWait = (hoursToWait * 3600).toInt + jitterProvider.getJitterInSeconds()
         val timeOfExecution = clock.instant().plusSeconds(secondsToWait)
-        Some(Task.BuildFacility(buildWish.facility, nextLevel(facilitiesBuildingLevels, buildWish.facility), timeOfExecution))
+        Some(Task.BuildFacility(buildWish.facility, nextLevel(facilitiesBuildingLevels, buildWish.facility), timeOfExecution, planetId))
       } else {
-        buildStorage(suppliesPage, requiredResources)
+        buildStorage(suppliesPage, requiredResources, planetId)
       }
     }
   }
 
   private def buildStorage(
       suppliesPage: SuppliesPageData,
-      requiredResources: Resources
+      requiredResources: Resources,
+      planetId: String
   ): Option[Task.BuildSupply] = {
     requiredResources.difference(suppliesPage.currentCapacity) match {
       case Resources(m, _, _, _) if m > 0 =>
@@ -108,7 +120,8 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
           suppliesPage,
           Wish.BuildSupply(
             SuppliesBuilding.MetalStorage,
-            nextLevel(suppliesPage, SuppliesBuilding.MetalStorage)
+            nextLevel(suppliesPage, SuppliesBuilding.MetalStorage),
+            planetId
           )
         )
       case Resources(_, c, _, _) if c > 0 =>
@@ -116,7 +129,8 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
           suppliesPage,
           Wish.BuildSupply(
             SuppliesBuilding.CrystalStorage,
-            nextLevel(suppliesPage, SuppliesBuilding.CrystalStorage)
+            nextLevel(suppliesPage, SuppliesBuilding.CrystalStorage),
+            planetId
           )
         )
       case Resources(_, _, d, _) if d > 0 =>
@@ -124,7 +138,8 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
           suppliesPage,
           Wish.BuildSupply(
             SuppliesBuilding.DeuteriumStorage,
-            nextLevel(suppliesPage, SuppliesBuilding.DeuteriumStorage)
+            nextLevel(suppliesPage, SuppliesBuilding.DeuteriumStorage),
+            planetId
           )
         )
     }

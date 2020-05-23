@@ -32,6 +32,8 @@ trait OgameDriver[F[_]] {
   def readAllFleets(): F[List[Fleet]]
 
   def sendFleet(sendFleetRequest: SendFleetRequest): F[Unit]
+
+  def readPlanets(): F[List[PlayerPlanet]]
 }
 
 case class SuppliesPageData(
@@ -69,6 +71,10 @@ case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) 
       0.0
     }
   }
+}
+
+object Resources {
+  def Zero: Resources = Resources(0, 0, 0)
 }
 
 case class SuppliesBuildingLevels(map: Map[SuppliesBuilding, Int Refined NonNegative])
