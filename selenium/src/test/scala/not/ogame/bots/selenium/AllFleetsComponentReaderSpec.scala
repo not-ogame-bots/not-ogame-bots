@@ -1,5 +1,6 @@
 package not.ogame.bots.selenium
 
+import not.ogame.bots.CoordinatesType.{Moon, Planet}
 import not.ogame.bots.FleetAttitude.Friendly
 import not.ogame.bots.FleetMissionType.{Deployment, Expedition}
 import not.ogame.bots.{Coordinates, Fleet}
@@ -26,14 +27,13 @@ class AllFleetsComponentReaderSpec extends munit.FunSuite {
     //    assertEquals(firstFleet.arrivalTime.getSecond, 40)
     assertEquals(firstFleet.fleetAttitude, Friendly)
     assertEquals(firstFleet.fleetMissionType, Deployment)
-    assertEquals(firstFleet.from, Coordinates(3, 133, 6))
+    assertEquals(firstFleet.from, Coordinates(3, 133, 6, Planet))
     assertEquals(firstFleet.isReturning, false)
-    //TODO: Handle different CoordinatesTypes
-    //assertEquals(firstFleet.to, Coordinates(3, 133, 6, Moon))
+    assertEquals(firstFleet.to, Coordinates(3, 133, 6, Moon))
     val secondFleet = allFleets(1)
     assertEquals(secondFleet.fleetMissionType, Expedition)
-    assertEquals(secondFleet.from, Coordinates(3, 133, 5))
-    assertEquals(secondFleet.to, Coordinates(3, 133, 16))
+    assertEquals(secondFleet.from, Coordinates(3, 133, 5, Moon))
+    assertEquals(secondFleet.to, Coordinates(3, 133, 16, Planet))
     assertEquals(secondFleet.isReturning, true)
   }
 

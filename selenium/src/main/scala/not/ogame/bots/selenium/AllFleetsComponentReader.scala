@@ -25,12 +25,27 @@ class AllFleetsComponentReader(webDriver: WebDriver) {
 
   private def getFrom(fleetElement: WebElement): Coordinates = {
     val coordinatesText = fleetElement.findElement(By.className("coordsOrigin")).getText
-    ParsingUtils.parseCoordinates(coordinatesText)
+    val coordinatesTypeText =
+      fleetElement.findElement(By.className("originFleet")).findElement(By.className("planetIcon")).getAttribute("class")
+    ParsingUtils.parseCoordinates(coordinatesText).copy(coordinatesType = parseCoordinatesType(coordinatesTypeText))
   }
 
   private def getTo(fleetElement: WebElement): Coordinates = {
     val coordinatesText = fleetElement.findElement(By.className("destCoords")).getText
-    ParsingUtils.parseCoordinates(coordinatesText)
+    val coordinatesTypeClassAttribute =
+      fleetElement.findElement(By.className("destFleet")).findElement(By.className("planetIcon")).getAttribute("class")
+    ParsingUtils.parseCoordinates(coordinatesText).copy(coordinatesType = parseCoordinatesType(coordinatesTypeClassAttribute))
+  }
+
+  private def parseCoordinatesType(coordinatesTypeClassAttribute: String): CoordinatesType = {
+    val classes = coordinatesTypeClassAttribute.split(" ")
+    if (classes.contains("planet")) {
+      CoordinatesType.Planet
+    } else if (classes.contains("moon")) {
+      CoordinatesType.Moon
+    } else {
+      CoordinatesType.Debris
+    }
   }
 
   private def getArrivalTime(fleetElement: WebElement): Instant = {
