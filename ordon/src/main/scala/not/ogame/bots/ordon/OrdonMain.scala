@@ -14,11 +14,7 @@ object OrdonMain extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
-    restartOnError(runBot)
-  }
-
-  private def restartOnError(function: () => IO[ExitCode]): IO[ExitCode] = {
-    function().flatMap(exitCode => if (exitCode != ExitCode.Success) restartOnError(function) else IO.pure(exitCode))
+    runBot()
   }
 
   private def runBot(): IO[ExitCode] = {
@@ -28,6 +24,7 @@ object OrdonMain extends IOApp {
         ogame.login() >> process(ogame, OrdonConfig.getInitialActions)
       }
       .as(ExitCode.Success)
+      .handleErrorWith(_ => runBot())
   }
 
   @scala.annotation.tailrec
