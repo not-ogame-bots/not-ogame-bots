@@ -23,6 +23,8 @@ object Task {
   case class BuildShip(amount: Int, shipType: ShipType, executeAfter: Instant, planetId: String) extends Task
 
   case class DumpActivity(executeAfter: Instant, planets: List[String]) extends Task
+
+  case class SendFleet(executeAfter: Instant, sendFleetRequest: SendFleetRequest) extends Task
 }
 
 sealed trait Wish
@@ -57,4 +59,10 @@ object State {
   case class LoggedIn(scheduledTasks: List[Task], planets: List[PlanetState], fleets: List[Fleet]) extends State
 }
 
-case class BotConfig(wishlist: List[Wish], buildMtUpToCapacity: Boolean, useWishlist: Boolean, activityFaker: Boolean)
+case class BotConfig(
+    wishlist: List[Wish],
+    buildMtUpToCapacity: Boolean,
+    useWishlist: Boolean,
+    activityFaker: Boolean,
+    allowWaiting: Boolean
+)

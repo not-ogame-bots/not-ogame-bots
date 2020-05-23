@@ -3,8 +3,7 @@ package not.ogame.bots.ghostbuster.processors
 import java.time.Clock
 
 import com.softwaremill.quicklens._
-import not.ogame.bots.{Resources, ShipType}
-import not.ogame.bots.facts.ShipCosts
+import not.ogame.bots.ShipType
 import not.ogame.bots.ghostbuster._
 
 class BuildMtUpToCapacityProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
@@ -73,7 +72,7 @@ class BuildMtUpToCapacityProcessor(botConfig: BotConfig, jitterProvider: RandomT
     val capacity = planetState.suppliesPage.currentCapacity
     val expectedAmount = capacity.metal / 5000 + capacity.deuterium / 5000 + capacity.crystal / 5000
     if (expectedAmount > shipAmount) {
-      List(buildShip(planetState, ShipType.SmallCargoShip, jitterProvider, expectedAmount - shipAmount))
+      buildShip(planetState, ShipType.SmallCargoShip, jitterProvider, expectedAmount - shipAmount).toList
     } else {
       List.empty
     }

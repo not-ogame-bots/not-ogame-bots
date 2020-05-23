@@ -42,7 +42,7 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
       case w: Wish.BuildShip if planetState.fleetOnPlanet.contains(w.shipType) =>
         val currentAmount = planetState.fleetOnPlanet(w.shipType)
         if (currentAmount < w.amount.value) {
-          Some(buildShip(planetState, w.shipType, jitterProvider, w.amount.value - currentAmount))
+          buildShip(planetState, w.shipType, jitterProvider, w.amount.value - currentAmount, botConfig.allowWaiting)
         } else {
           None
         }
@@ -75,7 +75,7 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
         Task
           .BuildSupply(buildWish.suppliesBuilding, nextLevel(suppliesPage, buildWish.suppliesBuilding), clock.instant(), buildWish.planetId)
       )
-    } else {
+    } else if (botConfig.allowWaiting) {
       if (suppliesPage.currentCapacity.gtEqTo(requiredResources)) {
         val stillNeed = requiredResources.difference(suppliesPage.currentResources)
         val hoursToWait = stillNeed.div(suppliesPage.currentProduction).max
@@ -92,6 +92,8 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
       } else {
         buildStorage(suppliesPage, requiredResources, buildWish.planetId)
       }
+    } else {
+      None
     }
   }
 
@@ -105,7 +107,7 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
       FacilityBuildingCosts.buildingCost(buildWish.facility, nextLevel(facilitiesBuildingLevels, buildWish.facility))
     if (suppliesPage.currentResources.gtEqTo(requiredResources)) {
       Some(Task.BuildFacility(buildWish.facility, nextLevel(facilitiesBuildingLevels, buildWish.facility), clock.instant(), planetId))
-    } else {
+    } else if (botConfig.allowWaiting) {
       if (suppliesPage.currentCapacity.gtEqTo(requiredResources)) {
         val stillNeed = requiredResources.difference(suppliesPage.currentResources)
         val hoursToWait = stillNeed.div(suppliesPage.currentProduction).max
@@ -115,6 +117,8 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
       } else {
         buildStorage(suppliesPage, requiredResources, planetId)
       }
+    } else {
+      None
     }
   }
 

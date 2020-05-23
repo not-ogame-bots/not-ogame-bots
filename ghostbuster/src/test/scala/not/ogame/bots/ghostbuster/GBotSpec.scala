@@ -10,7 +10,10 @@ class GBotSpec extends munit.FunSuite {
   private val randomTimeJitter: RandomTimeJitter = () => 0
 
   test("should do nothing if wishlist is empty") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List.empty, buildMtUpToCapacity = false, useWishlist = true, activityFaker = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List.empty, buildMtUpToCapacity = false, useWishlist = true, activityFaker = false, allowWaiting = true)
+    )
     val prevState = State.LoggedIn(
       List.empty,
       List(createPlanetState(createSuppliesPage())),
@@ -21,39 +24,44 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should refresh fleet state on planet if wishlist is empty") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List.empty, buildMtUpToCapacity = true, useWishlist = true, activityFaker = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List.empty, buildMtUpToCapacity = true, useWishlist = true, activityFaker = false, allowWaiting = true)
+    )
     val prevState = State.LoggedIn(
       List.empty,
       List(createPlanetState(createSuppliesPage())),
       List.empty
     )
     val nextState = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledTasks, List(Task.RefreshFleetOnPlanetStatus(ShipType.SmallCargoShip, clock.instant(), PlanetId)))
+    assertEquals(nextState.scheduledTasks, List(Task.RefreshFleetOnPlanetStatus(ShipType.SmallCargoShip, clock.instant(), planetId1)))
   }
 
   test("should schedule building metal factory now if there is enough resources") {
     val bot = new GBot(
       randomTimeJitter,
       BotConfig(
-        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, PlanetId)),
+        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, planetId1)),
         buildMtUpToCapacity = false,
         useWishlist = true,
-        activityFaker = false
+        activityFaker = false,
+        allowWaiting = true
       )
     )
     val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0)))), List.empty)
     val nextState = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now, PlanetId)))
+    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now, planetId1)))
   }
 
   test("should remove building from wishlist if it is already built") {
     val bot = new GBot(
       randomTimeJitter,
       BotConfig(
-        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, PlanetId)),
+        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, planetId1)),
         buildMtUpToCapacity = false,
         useWishlist = true,
-        activityFaker = false
+        activityFaker = false,
+        allowWaiting = true
       )
     )
     val prevState = State.LoggedIn(
@@ -76,76 +84,81 @@ class GBotSpec extends munit.FunSuite {
     val bot = new GBot(
       randomTimeJitter,
       BotConfig(
-        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 10, PlanetId)),
+        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 10, planetId1)),
         buildMtUpToCapacity = false,
         useWishlist = true,
-        activityFaker = false
+        activityFaker = false,
+        allowWaiting = true
       )
     )
     val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0)))), List.empty)
     val nextState = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now, PlanetId)))
+    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now, planetId1)))
   }
 
   test("should not schedule building metal factory if there is something scheduled") {
     val bot = new GBot(
       randomTimeJitter,
       BotConfig(
-        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, PlanetId)),
+        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, planetId1)),
         buildMtUpToCapacity = false,
         useWishlist = true,
-        activityFaker = false
+        activityFaker = false,
+        allowWaiting = true
       )
     )
 
     val prevState = State.LoggedIn(
-      List(Task.BuildSupply(SuppliesBuilding.CrystalMine, 1, now, PlanetId)),
+      List(Task.BuildSupply(SuppliesBuilding.CrystalMine, 1, now, planetId1)),
       List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0)))),
       List.empty
     )
     val nextState = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.CrystalMine, 1, now, PlanetId)))
+    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.CrystalMine, 1, now, planetId1)))
   }
   test("should schedule building metal factory in the future if there is not enough resources") {
     val bot = new GBot(
       randomTimeJitter,
       BotConfig(
-        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, PlanetId)),
+        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, planetId1)),
         buildMtUpToCapacity = false,
         useWishlist = true,
-        activityFaker = false
+        activityFaker = false,
+        allowWaiting = true
       )
     )
     val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(production = Resources(10, 10, 10)))), List.empty)
 
     val nextState = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600), PlanetId)))
+    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600), planetId1)))
   }
 
   test("should schedule building metal factory in the future if there is not enough resources - with a jump") {
     val bot = new GBot(
       randomTimeJitter,
       BotConfig(
-        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 10, PlanetId)),
+        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 10, planetId1)),
         buildMtUpToCapacity = false,
         useWishlist = true,
-        activityFaker = false
+        activityFaker = false,
+        allowWaiting = true
       )
     )
     val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(production = Resources(10, 10, 10)))), List.empty)
 
     val nextState = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600), PlanetId)))
+    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600), planetId1)))
   }
 
   test("should not build building if it is already built") {
     val bot = new GBot(
       randomTimeJitter,
       BotConfig(
-        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, PlanetId)),
+        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, planetId1)),
         buildMtUpToCapacity = false,
         useWishlist = true,
-        activityFaker = false
+        activityFaker = false,
+        allowWaiting = true
       )
     )
     val prevState = State.LoggedIn(
@@ -169,10 +182,11 @@ class GBotSpec extends munit.FunSuite {
     val bot = new GBot(
       randomTimeJitter,
       BotConfig(
-        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, PlanetId)),
+        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 1, planetId1)),
         buildMtUpToCapacity = false,
         useWishlist = true,
-        activityFaker = false
+        activityFaker = false,
+        allowWaiting = true
       )
     )
     val prevState = State.LoggedIn(
@@ -186,17 +200,18 @@ class GBotSpec extends munit.FunSuite {
     )
 
     val nextState = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledTasks, List(Task.RefreshSupplyAndFacilityPage(now.plusSeconds(1), PlanetId)))
+    assertEquals(nextState.scheduledTasks, List(Task.RefreshSupplyAndFacilityPage(now.plusSeconds(1), planetId1)))
   }
 
   test("should build storage if there is not enough capacity") {
     val bot = new GBot(
       randomTimeJitter,
       BotConfig(
-        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 11, PlanetId)),
+        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 11, planetId1)),
         buildMtUpToCapacity = false,
         useWishlist = true,
-        activityFaker = false
+        activityFaker = false,
+        allowWaiting = true
       )
     )
     val prevState = State.LoggedIn(
@@ -214,17 +229,18 @@ class GBotSpec extends munit.FunSuite {
       List.empty
     )
     val nextState = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalStorage, 1, now.plusSeconds(10 * 3600), PlanetId)))
+    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalStorage, 1, now.plusSeconds(10 * 3600), planetId1)))
   }
 
   test("should build power plant if there is not enough energy") {
     val bot = new GBot(
       randomTimeJitter,
       BotConfig(
-        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 11, PlanetId)),
+        List(Wish.BuildSupply(SuppliesBuilding.MetalMine, 11, planetId1)),
         buildMtUpToCapacity = false,
         useWishlist = true,
-        activityFaker = false
+        activityFaker = false,
+        allowWaiting = true
       )
     )
     val prevState = State.LoggedIn(
@@ -238,7 +254,7 @@ class GBotSpec extends munit.FunSuite {
     )
 
     val nextState = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.SolarPlant, 1, now.plusSeconds(1 * 3600), PlanetId)))
+    assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.SolarPlant, 1, now.plusSeconds(1 * 3600), planetId1)))
   }
   //TODO ?? suppliesBuildings map -> case class
   //TODO resources @newtype metal, crystal, deuter

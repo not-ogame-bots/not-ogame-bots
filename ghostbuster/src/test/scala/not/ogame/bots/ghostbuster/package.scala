@@ -16,17 +16,20 @@ package object ghostbuster {
   }
   val bigCapacity: Resources = Resources(10000, 10000, 10000, 0)
 
-  val PlanetId = "33653280"
-  val now = Instant.now()
+  val planetId1 = "33653280"
+  val planet1Coords: Coordinates = Coordinates(1, 1, 1)
+  val planet2Coords: Coordinates = Coordinates(2, 2, 2)
+  val now: Instant = Instant.now()
 
   def createPlanetState(
       suppliesPageData: SuppliesPageData = createSuppliesPage(),
       facilitiesBuildingLevels: FacilitiesBuildingLevels = createFacilityBuildings,
-      fleet: Map[ShipType, Int] = Map.empty
+      fleet: Map[ShipType, Int] = Map.empty,
+      planetId: String = planetId1
   ): PlanetState = {
     PlanetState(
-      PlanetId,
-      Coordinates(1, 1, 1),
+      planetId,
+      planet1Coords,
       suppliesPageData,
       facilitiesBuildingLevels,
       fleet

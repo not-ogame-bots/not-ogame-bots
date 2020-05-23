@@ -30,21 +30,23 @@ package object processors {
     case t: Task.BuildShip if t.planetId == planetId     => t
   }
 
-  def buildShip(planetState: PlanetState, ship: ShipType, jitterProvider: RandomTimeJitter, amount: Int)(
+  def buildShip(planetState: PlanetState, ship: ShipType, jitterProvider: RandomTimeJitter, amount: Int, allowWaiting: Boolean = true)(
       implicit clock: Clock
-  ): Task.BuildShip = {
+  ): Option[Task.BuildShip] = { //TODO should check storages
     val requiredResources = ShipCosts.shipCost(ship)
     val currentResources = planetState.suppliesPage.currentResources
     val currentProduction = planetState.suppliesPage.currentProduction
     val canBuildAmount = Math.min(currentResources.div(requiredResources).map(_.toInt).min, amount)
     if (canBuildAmount > 1) {
-      Task.BuildShip(canBuildAmount, ship, clock.instant(), planetState.id)
-    } else {
+      Some(Task.BuildShip(canBuildAmount, ship, clock.instant(), planetState.id))
+    } else if (allowWaiting) {
       val stillNeed = requiredResources.difference(currentResources)
       val hoursToWait = stillNeed.div(currentProduction).max
       val secondsToWait = (hoursToWait * 3600).toInt + jitterProvider.getJitterInSeconds()
       val timeOfExecution = clock.instant().plusSeconds(secondsToWait)
-      Task.BuildShip(1, ship, timeOfExecution, planetId = planetState.id)
+      Some(Task.BuildShip(1, ship, timeOfExecution, planetId = planetState.id))
+    } else {
+      None
     }
   }
 }
