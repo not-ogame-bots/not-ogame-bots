@@ -13,7 +13,8 @@ class GBotSpec extends munit.FunSuite {
     val bot = new GBot(randomTimeJitter, BotConfig(List.empty, buildMtUpToCapacity = false, useWishlist = true, activityFaker = false))
     val prevState = State.LoggedIn(
       List.empty,
-      List(createPlanetState(createSuppliesPage()))
+      List(createPlanetState(createSuppliesPage())),
+      List.empty
     )
     val nextState = bot.nextStep(prevState)
     assertEquals(nextState, prevState)
@@ -23,7 +24,8 @@ class GBotSpec extends munit.FunSuite {
     val bot = new GBot(randomTimeJitter, BotConfig(List.empty, buildMtUpToCapacity = true, useWishlist = true, activityFaker = false))
     val prevState = State.LoggedIn(
       List.empty,
-      List(createPlanetState(createSuppliesPage()))
+      List(createPlanetState(createSuppliesPage())),
+      List.empty
     )
     val nextState = bot.nextStep(prevState)
     assertEquals(nextState.scheduledTasks, List(Task.RefreshFleetOnPlanetStatus(ShipType.SmallCargoShip, clock.instant(), PlanetId)))
@@ -39,7 +41,7 @@ class GBotSpec extends munit.FunSuite {
         activityFaker = false
       )
     )
-    val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0)))))
+    val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0)))), List.empty)
     val nextState = bot.nextStep(prevState)
     assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now, PlanetId)))
   }
@@ -63,7 +65,8 @@ class GBotSpec extends munit.FunSuite {
             suppliesBuildingLevels = SuppliesBuildingLevels(createStartingBuildings ++ Map(SuppliesBuilding.MetalMine -> 1))
           )
         )
-      )
+      ),
+      List.empty
     )
     val nextState = bot.nextStep(prevState)
     assertEquals(nextState.scheduledTasks, List.empty)
@@ -79,7 +82,7 @@ class GBotSpec extends munit.FunSuite {
         activityFaker = false
       )
     )
-    val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0)))))
+    val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0)))), List.empty)
     val nextState = bot.nextStep(prevState)
     assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now, PlanetId)))
   }
@@ -97,7 +100,8 @@ class GBotSpec extends munit.FunSuite {
 
     val prevState = State.LoggedIn(
       List(Task.BuildSupply(SuppliesBuilding.CrystalMine, 1, now, PlanetId)),
-      List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0))))
+      List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0)))),
+      List.empty
     )
     val nextState = bot.nextStep(prevState)
     assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.CrystalMine, 1, now, PlanetId)))
@@ -112,7 +116,7 @@ class GBotSpec extends munit.FunSuite {
         activityFaker = false
       )
     )
-    val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(production = Resources(10, 10, 10)))))
+    val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(production = Resources(10, 10, 10)))), List.empty)
 
     val nextState = bot.nextStep(prevState)
     assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600), PlanetId)))
@@ -128,7 +132,7 @@ class GBotSpec extends munit.FunSuite {
         activityFaker = false
       )
     )
-    val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(production = Resources(10, 10, 10)))))
+    val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(production = Resources(10, 10, 10)))), List.empty)
 
     val nextState = bot.nextStep(prevState)
     assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalMine, 1, now.plusSeconds(6 * 3600), PlanetId)))
@@ -153,7 +157,8 @@ class GBotSpec extends munit.FunSuite {
             suppliesBuildingLevels = SuppliesBuildingLevels(createStartingBuildings ++ Map(SuppliesBuilding.MetalMine -> 1))
           )
         )
-      )
+      ),
+      List.empty
     )
 
     val nextState = bot.nextStep(prevState)
@@ -176,7 +181,8 @@ class GBotSpec extends munit.FunSuite {
         createPlanetState(
           createSuppliesPage(production = Resources(10, 10, 10), currentBuildinProgress = Some(BuildingProgress(now.plusSeconds(1))))
         )
-      )
+      ),
+      List.empty
     )
 
     val nextState = bot.nextStep(prevState)
@@ -204,7 +210,8 @@ class GBotSpec extends munit.FunSuite {
             suppliesBuildingLevels = SuppliesBuildingLevels(createStartingBuildings ++ Map(SuppliesBuilding.MetalMine -> 10))
           )
         )
-      )
+      ),
+      List.empty
     )
     val nextState = bot.nextStep(prevState)
     assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.MetalStorage, 1, now.plusSeconds(10 * 3600), PlanetId)))
@@ -226,7 +233,8 @@ class GBotSpec extends munit.FunSuite {
         createPlanetState(
           createSuppliesPage(resources = Resources(0, 0, 0, -100), production = Resources(75, 30, 0), capacity = Resources(2000, 2000, 0))
         )
-      )
+      ),
+      List.empty
     )
 
     val nextState = bot.nextStep(prevState)

@@ -13,7 +13,7 @@ class InactivityProcessorSpec extends munit.FunSuite {
   )
 
   test("should schedule next action in 14 minutes") {
-    val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0)))))
+    val prevState = State.LoggedIn(List.empty, List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0)))), List.empty)
 
     val timestamp = clock.instant()
     val state = processor.apply(prevState)
@@ -24,7 +24,8 @@ class InactivityProcessorSpec extends munit.FunSuite {
   test("should not schedule dump action if it is already scheduled") {
     val prevState = State.LoggedIn(
       List(Task.DumpActivity(clock.instant().plus(14, ChronoUnit.MINUTES), List(PlanetId))),
-      List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0))))
+      List(createPlanetState(createSuppliesPage(resources = Resources(60, 15, 0)))),
+      List.empty
     )
 
     val state = processor.apply(prevState)

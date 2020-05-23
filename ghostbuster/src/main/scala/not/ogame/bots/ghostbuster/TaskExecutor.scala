@@ -31,7 +31,8 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
           fp <- ogameDriver.readFacilityBuildingsLevels(pp.id)
         } yield PlanetState(pp.id, pp.coordinates, sp, fp, Map.empty)
       }.sequence
-    } yield State.LoggedIn(state.scheduledTasks, planetStates))
+      fleets <- ogameDriver.readAllFleets()
+    } yield State.LoggedIn(state.scheduledTasks, planetStates, fleets))
       .handleErrorWith { e =>
         e.printStackTrace()
         logIn(state)

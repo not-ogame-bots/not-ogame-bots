@@ -1,6 +1,9 @@
 package not.ogame.bots.ghostbuster
 
+import java.time.Clock
+
 import not.ogame.bots.ShipType
+import not.ogame.bots.facts.ShipCosts
 
 package object processors {
   private[processors] def checkAlreadyInQueue(tasks: List[Task])(p: PartialFunction[Task, Task]): Boolean = {
@@ -25,5 +28,23 @@ package object processors {
     case t: Task.BuildSupply if t.planetId == planetId   => t
     case t: Task.BuildFacility if t.planetId == planetId => t
     case t: Task.BuildShip if t.planetId == planetId     => t
+  }
+
+  def buildShip(planetState: PlanetState, ship: ShipType, jitterProvider: RandomTimeJitter, amount: Int)(
+      implicit clock: Clock
+  ): Task.BuildShip = {
+    val requiredResources = ShipCosts.shipCost(ship)
+    val currentResources = planetState.suppliesPage.currentResources
+    val currentProduction = planetState.suppliesPage.currentProduction
+    val canBuildAmount = Math.min(currentResources.div(requiredResources).map(_.toInt).min, amount)
+    if (canBuildAmount > 1) {
+      Task.BuildShip(canBuildAmount, ship, clock.instant(), planetState.id)
+    } else {
+      val stillNeed = requiredResources.difference(currentResources)
+      val hoursToWait = stillNeed.div(currentProduction).max
+      val secondsToWait = (hoursToWait * 3600).toInt + jitterProvider.getJitterInSeconds()
+      val timeOfExecution = clock.instant().plusSeconds(secondsToWait)
+      Task.BuildShip(1, ship, timeOfExecution, planetId = planetState.id)
+    }
   }
 }

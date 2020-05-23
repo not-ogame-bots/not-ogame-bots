@@ -30,6 +30,8 @@ object Wish {
   case class BuildSupply(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, planetId: String) extends Wish
 
   case class BuildFacility(facility: FacilityBuilding, level: Int Refined Positive, planetId: String) extends Wish
+
+  case class BuildShip(shipType: ShipType, planetId: String, amount: Int Refined Positive) extends Wish
 }
 
 case class PlanetState(
@@ -52,7 +54,7 @@ sealed trait State {
 object State {
   case class LoggedOut(scheduledTasks: List[Task]) extends State
 
-  case class LoggedIn(scheduledTasks: List[Task], planets: List[PlanetState]) extends State
+  case class LoggedIn(scheduledTasks: List[Task], planets: List[PlanetState], fleets: List[Fleet]) extends State
 }
 
 case class BotConfig(wishlist: List[Wish], buildMtUpToCapacity: Boolean, useWishlist: Boolean, activityFaker: Boolean)

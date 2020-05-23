@@ -3,7 +3,7 @@ package not.ogame.bots.ghostbuster.processors
 import java.time.Clock
 
 import com.softwaremill.quicklens._
-import not.ogame.bots.ShipType
+import not.ogame.bots.{Resources, ShipType}
 import not.ogame.bots.facts.ShipCosts
 import not.ogame.bots.ghostbuster._
 
@@ -71,21 +71,9 @@ class BuildMtUpToCapacityProcessor(botConfig: BotConfig, jitterProvider: RandomT
       shipAmount: Int
   ): List[Task] = {
     val capacity = planetState.suppliesPage.currentCapacity
-    val currentResources = planetState.suppliesPage.currentResources
-    val currentProduction = planetState.suppliesPage.currentProduction
     val expectedAmount = capacity.metal / 5000 + capacity.deuterium / 5000 + capacity.crystal / 5000
     if (expectedAmount > shipAmount) {
-      val requiredResources = ShipCosts.shipCost(ShipType.SmallCargoShip)
-      val canBuildAmount = currentResources.div(requiredResources).map(_.toInt).min
-      if (canBuildAmount > 1) {
-        List(Task.BuildShip(canBuildAmount, ShipType.SmallCargoShip, clock.instant(), planetState.id))
-      } else {
-        val stillNeed = requiredResources.difference(currentResources)
-        val hoursToWait = stillNeed.div(currentProduction).max
-        val secondsToWait = (hoursToWait * 3600).toInt + jitterProvider.getJitterInSeconds()
-        val timeOfExecution = clock.instant().plusSeconds(secondsToWait)
-        List(Task.BuildShip(canBuildAmount, ShipType.SmallCargoShip, timeOfExecution, planetId = planetState.id))
-      }
+      List(buildShip(planetState, ShipType.SmallCargoShip, jitterProvider, expectedAmount - shipAmount))
     } else {
       List.empty
     }

@@ -12,13 +12,13 @@ import com.softwaremill.quicklens._
 class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(implicit clock: Clock) {
   def apply(state: State.LoggedIn): State.LoggedIn = {
     if (botConfig.useWishlist) {
-      state.modify(_.scheduledTasks).setTo(state.scheduledTasks ++ state.planets.flatMap(ps => buildingProcessor(ps, state.scheduledTasks)))
+      state.modify(_.scheduledTasks).setTo(state.scheduledTasks ++ state.planets.flatMap(ps => process(ps, state.scheduledTasks)))
     } else {
       state
     }
   }
 
-  private def buildingProcessor(planetState: PlanetState, tasks: List[Task]): List[Task] = {
+  private def process(planetState: PlanetState, tasks: List[Task]): List[Task] = {
     if (planetState.isIdle && !buildingScheduled(tasks, planetState.id)) {
       scheduleNextWish(planetState).toList
     } else if (planetState.buildingInProgress && !refreshScheduled(tasks, planetState.id)) {
@@ -37,6 +37,15 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
         buildSupply(suppliesPage, w)
       case w: Wish.BuildFacility if facilityBuildingLevels.map(w.facility).value < w.level.value && w.planetId == planetState.id =>
         buildFacility(suppliesPage, facilityBuildingLevels, w, planetState.id)
+      case w: Wish.BuildShip if !planetState.fleetOnPlanet.contains(w.shipType) =>
+        Some(Task.RefreshFleetOnPlanetStatus(w.shipType, clock.instant(), planetState.id))
+      case w: Wish.BuildShip if planetState.fleetOnPlanet.contains(w.shipType) =>
+        val currentAmount = planetState.fleetOnPlanet(w.shipType)
+        if (currentAmount < w.amount.value) {
+          Some(buildShip(planetState, w.shipType, jitterProvider, w.amount.value - currentAmount))
+        } else {
+          None
+        }
     }.flatten
   }
 

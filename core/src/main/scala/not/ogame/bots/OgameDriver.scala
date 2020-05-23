@@ -132,9 +132,9 @@ object CoordinatesType extends Enum[CoordinatesType] {
   val values: IndexedSeq[CoordinatesType] = findValues
 }
 
-sealed trait ShipType
+sealed trait ShipType extends EnumEntry
 
-object ShipType {
+object ShipType extends Enum[ShipType] with Snakecase {
   case object LightFighter extends ShipType
 
   case object HeavyFighter extends ShipType
@@ -164,6 +164,8 @@ object ShipType {
   case object Recycler extends ShipType
 
   case object EspionageProbe extends ShipType
+
+  override def values: IndexedSeq[ShipType] = findValues
 }
 
 case class Fleet(

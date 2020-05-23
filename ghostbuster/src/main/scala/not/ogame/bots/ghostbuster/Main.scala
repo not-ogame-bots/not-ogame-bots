@@ -8,9 +8,10 @@ import eu.timepit.refined.pureconfig._
 import not.ogame.bots.Credentials
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
 import pureconfig.error.CannotConvert
+import pureconfig.generic.auto._
 import pureconfig.module.enumeratum._
 import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
-import pureconfig.generic.auto._
+
 import scala.concurrent.duration._
 
 object Main extends IOApp {
@@ -44,15 +45,11 @@ object Main extends IOApp {
     } yield ident
   }
 
-  implicit val buildSupplyWishReader: ConfigReader[Wish.BuildSupply] =
-    ConfigReader.forProduct3("suppliesBuilding", "level", "planetId")(Wish.BuildSupply)
-  implicit val buildFacilityWishReader: ConfigReader[Wish.BuildFacility] =
-    ConfigReader.forProduct3("facilityBuilding", "level", "planetId")(Wish.BuildFacility)
-
   def extractByType(typ: String, objCur: ConfigObjectCursor): ConfigReader.Result[Wish] = typ match {
-    case "build_supply"   => buildSupplyWishReader.from(objCur)
-    case "build_facility" => buildFacilityWishReader.from(objCur)
+    case "build_supply"   => implicitly[ConfigReader[Wish.BuildSupply]].from(objCur)
+    case "build_facility" => implicitly[ConfigReader[Wish.BuildFacility]].from(objCur)
+    case "build_ship"     => implicitly[ConfigReader[Wish.BuildShip]].from(objCur)
     case t =>
-      objCur.failed(CannotConvert(objCur.value.toString, "Identifiable", s"type has value $t instead of build"))
+      objCur.failed(CannotConvert(objCur.value.toString, "Wish", s"unknown type: $t"))
   }
 }
