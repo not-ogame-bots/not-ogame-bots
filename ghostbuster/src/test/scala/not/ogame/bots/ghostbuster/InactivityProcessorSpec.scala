@@ -27,7 +27,7 @@ class InactivityProcessorSpec extends munit.FunSuite {
     )
 
     val timestamp = clock.instant()
-    val state = processor.nextState(prevState)
+    val state = processor.apply(prevState)
 
     assertEquals(state.scheduledTasks, List(Task.DumpActivity(timestamp.plus(14, ChronoUnit.MINUTES))))
   }
@@ -48,7 +48,7 @@ class InactivityProcessorSpec extends munit.FunSuite {
       Map.empty
     )
 
-    val state = processor.nextState(prevState)
+    val state = processor.apply(prevState)
 
     assertEquals(state.scheduledTasks.size, 1)
   }

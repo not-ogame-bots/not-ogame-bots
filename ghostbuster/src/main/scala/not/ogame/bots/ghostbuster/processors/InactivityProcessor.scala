@@ -7,7 +7,7 @@ import not.ogame.bots.ghostbuster.{PlanetState, Task}
 import com.softwaremill.quicklens._
 
 class InactivityProcessor(implicit clock: Clock) {
-  def nextState(state: PlanetState.LoggedIn): PlanetState.LoggedIn = {
+  def apply(state: PlanetState.LoggedIn): PlanetState.LoggedIn = {
     if (checkAlreadyInQueue[Task.DumpActivity](state.scheduledTasks)) {
       state
     } else {
