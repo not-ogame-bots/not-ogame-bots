@@ -34,7 +34,7 @@ class GBotSpec extends munit.FunSuite {
       List.empty
     )
     val nextState = bot.nextStep(prevState)
-    assertEquals(nextState.scheduledTasks, List(Task.RefreshFleetOnPlanetStatus(ShipType.SmallCargoShip, clock.instant(), planetId1)))
+    assertEquals(nextState.scheduledTasks, List(Task.RefreshFleetOnPlanetStatus(clock.instant(), planetId1)))
   }
 
   test("should schedule building metal factory now if there is enough resources") {

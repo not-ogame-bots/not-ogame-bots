@@ -18,7 +18,7 @@ object Task {
 
   case class RefreshSupplyAndFacilityPage(executeAfter: Instant, planetId: String) extends Task
 
-  case class RefreshFleetOnPlanetStatus(shipType: ShipType, executeAfter: Instant, planetId: String) extends Task
+  case class RefreshFleetOnPlanetStatus(executeAfter: Instant, planetId: String) extends Task
 
   case class BuildShip(amount: Int, shipType: ShipType, executeAfter: Instant, planetId: String) extends Task
 

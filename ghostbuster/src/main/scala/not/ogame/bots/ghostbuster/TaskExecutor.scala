@@ -87,15 +87,15 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
             .modify(_.planets.at(planetIdx).facilityBuildingLevels)
             .setTo(newFacilityLevels)
         }
-      case Task.RefreshFleetOnPlanetStatus(shipType, _, planetId) =>
+      case Task.RefreshFleetOnPlanetStatus(_, planetId) =>
         val planetIdx = state.planets.indexWhere(_.id == planetId)
         ogameDriver
-          .checkFleetOnPlanet(planetId, shipType)
+          .checkFleetOnPlanet(planetId)
           .map(
-            amount =>
+            ships =>
               state
                 .modify(_.planets.at(planetIdx).fleetOnPlanet)
-                .using(_ ++ Map(shipType -> amount))
+                .setTo(ships)
           )
       case Task.BuildShip(amount, shipType, _, planetId) =>
         val planetIdx = state.planets.indexWhere(_.id == planetId)
@@ -105,10 +105,12 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
       case Task.DumpActivity(_, planets) =>
         planets
           .map { planet =>
-            ogameDriver.checkFleetOnPlanet(planet, ShipType.SmallCargoShip) >> ogameDriver.readSuppliesPage(planet)
+            ogameDriver.checkFleetOnPlanet(planet) >> ogameDriver.readSuppliesPage(planet)
           }
           .sequence
           .map(_ => state)
+      case Task.SendFleet(_, sendFleetRequest) =>
+        ogameDriver.sendFleet(sendFleetRequest) >> ogameDriver.readAllFleets().map(fleets => state.modify(_.fleets).setTo(fleets))
     }
   }
 

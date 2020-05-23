@@ -19,7 +19,7 @@ package object processors {
   }
 
   private[processors] def refreshShipScheduled(tasks: List[Task], planetId: String, shipType: ShipType): Boolean = {
-    tasks.collectFirst { case t: Task.RefreshFleetOnPlanetStatus if t.planetId == planetId && t.shipType == shipType => t }.isDefined
+    tasks.collectFirst { case t: Task.RefreshFleetOnPlanetStatus if t.planetId == planetId => t }.isDefined
   }
 
   private[processors] def noBuildingsInQueue(tasks: List[Task], planetId: String): Boolean = !buildingScheduled(tasks, planetId)

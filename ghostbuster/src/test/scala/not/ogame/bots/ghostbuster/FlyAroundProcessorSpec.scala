@@ -15,7 +15,7 @@ class FlyAroundProcessorSpec extends munit.FunSuite {
       List(createPlanetState(planetId = planetId1), createPlanetState(planetId = planetId2)),
       List(
         Fleet(
-          LocalDateTime.ofInstant(now.plus(5, ChronoUnit.MINUTES), ZoneOffset.UTC),
+          now,
           FleetAttitude.Friendly,
           FleetMissionType.Deployment,
           planet1Coords,

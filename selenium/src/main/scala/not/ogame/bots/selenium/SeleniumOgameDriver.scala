@@ -271,16 +271,23 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=fleetdispatch&cp=$planetId"
   }
 
-  def checkFleetOnPlanet(planetId: String, shipType: ShipType): IO[Int] = {
+  def checkFleetOnPlanet(planetId: String): IO[Map[ShipType, Int]] = {
     for {
       _ <- safeUrl(getFleetDispatchUrl(credentials, planetId))
       technologies <- findMany(By.id("technologies"))
       result <- if (technologies.isEmpty) {
-        IO.pure(0)
+        IO.pure(ShipType.values.map(_ -> 0).toMap)
       } else {
-        find(By.id("technologies"))
-          .flatMap(_.find(By.className(shipTypeToClassName(shipType))))
-          .flatMap(_.readInt(By.className("amount")))
+        ShipType.values
+          .map { ship =>
+            find(By.id("technologies"))
+              .flatMap(_.find(By.className(shipTypeToClassName(ship))))
+              .flatMap(_.readInt(By.className("amount")))
+              .map(ship -> _)
+          }
+          .toList
+          .sequence
+          .map(_.toMap)
       }
     } yield result
   }

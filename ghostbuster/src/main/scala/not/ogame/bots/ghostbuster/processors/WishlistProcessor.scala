@@ -38,7 +38,7 @@ class WishlistProcessor(botConfig: BotConfig, jitterProvider: RandomTimeJitter)(
       case w: Wish.BuildFacility if facilityBuildingLevels.map(w.facility).value < w.level.value && w.planetId == planetState.id =>
         buildFacility(suppliesPage, facilityBuildingLevels, w, planetState.id)
       case w: Wish.BuildShip if !planetState.fleetOnPlanet.contains(w.shipType) =>
-        Some(Task.RefreshFleetOnPlanetStatus(w.shipType, clock.instant(), planetState.id))
+        Some(Task.RefreshFleetOnPlanetStatus(clock.instant(), planetState.id))
       case w: Wish.BuildShip if planetState.fleetOnPlanet.contains(w.shipType) =>
         val currentAmount = planetState.fleetOnPlanet(w.shipType)
         if (currentAmount < w.amount.value) {

@@ -27,7 +27,7 @@ trait OgameDriver[F[_]] {
 
   def buildShips(planetId: String, shipType: ShipType, count: Int): F[Unit]
 
-  def checkFleetOnPlanet(planetId: String, shipType: ShipType): F[Int]
+  def checkFleetOnPlanet(planetId: String): F[Map[ShipType, Int]]
 
   def readAllFleets(): F[List[Fleet]]
 

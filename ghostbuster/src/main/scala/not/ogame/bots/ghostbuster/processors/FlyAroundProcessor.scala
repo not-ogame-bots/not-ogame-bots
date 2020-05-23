@@ -21,7 +21,7 @@ class FlyAroundProcessor(jitter: RandomTimeJitter) {
       val fromPlanetId = planets.find(p => p.coords == fleet.to).get
       List(
         Task.SendFleet(
-          fleet.arrivalTime.toInstant(ZoneOffset.ofHours(2)).plusSeconds(10 + jitter.getJitterInSeconds()),
+          fleet.arrivalTime.plusSeconds(10 + jitter.getJitterInSeconds()),
           SendFleetRequest(fromPlanetId.id, SendFleetRequestShips.AllShips, fleet.from, FleetMissionType.Deployment, FleetResources.Max)
         )
       )
