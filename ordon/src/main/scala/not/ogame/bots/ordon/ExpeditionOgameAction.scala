@@ -37,7 +37,7 @@ class ExpeditionOgameAction[T[_]: Monad](
           Ships(expeditionFleet),
           targetCoordinates,
           Expedition,
-          Resources(0, 0, 0)
+          FleetResources.Given(Resources.Zero)
         )
       )
     )(_ => Instant.now())
