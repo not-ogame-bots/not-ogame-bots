@@ -1,6 +1,6 @@
 package not.ogame.bots
 
-import java.time.{Instant, LocalDateTime}
+import java.time.Instant
 
 import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
@@ -169,7 +169,7 @@ object ShipType extends Enum[ShipType] with Snakecase {
 }
 
 case class Fleet(
-    arrivalTime: LocalDateTime,
+    arrivalTime: Instant,
     fleetAttitude: FleetAttitude,
     fleetMissionType: FleetMissionType,
     from: Coordinates,

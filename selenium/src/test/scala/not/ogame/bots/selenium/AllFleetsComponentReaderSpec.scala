@@ -21,9 +21,9 @@ class AllFleetsComponentReaderSpec extends munit.FunSuite {
     val allFleets = testReadAllFleets(driver)
     assertEquals(allFleets.size, 11)
     val firstFleet = allFleets.head
-    assertEquals(firstFleet.arrivalTime.getHour, 13)
-    assertEquals(firstFleet.arrivalTime.getMinute, 29)
-    assertEquals(firstFleet.arrivalTime.getSecond, 40)
+    //    assertEquals(firstFleet.arrivalTime.getHour, 13)
+    //    assertEquals(firstFleet.arrivalTime.getMinute, 29)
+    //    assertEquals(firstFleet.arrivalTime.getSecond, 40)
     assertEquals(firstFleet.fleetAttitude, Friendly)
     assertEquals(firstFleet.fleetMissionType, Deployment)
     assertEquals(firstFleet.from, Coordinates(3, 133, 6))

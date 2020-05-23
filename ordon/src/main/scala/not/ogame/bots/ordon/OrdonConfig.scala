@@ -1,6 +1,6 @@
 package not.ogame.bots.ordon
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 import cats.effect.IO
 import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
@@ -19,7 +19,7 @@ object OrdonConfig {
 
   def getInitialActions: IO[List[ScheduledAction[IO]]] = {
     val listOfActions = List(createExpeditionAction)
-    IO.pure(listOfActions.map(ScheduledAction(LocalDateTime.now(), _)))
+    IO.pure(listOfActions.map(ScheduledAction(Instant.now(), _)))
   }
 
   private def createExpeditionAction: ExpeditionOgameAction[IO] = {
