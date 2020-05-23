@@ -20,6 +20,8 @@ object Task {
 
   case class BuildShip(amount: Int, shipType: ShipType, executeAfter: Instant) extends Task
 
+  case class DumpActivity(executeAfter: Instant) extends Task
+
   def buildSupply(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, executeAfter: Instant): Task = {
     BuildSupply(suppliesBuilding, level, executeAfter)
   }

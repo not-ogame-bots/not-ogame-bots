@@ -8,7 +8,7 @@ import cats.implicits._
 import com.softwaremill.quicklens._
 import not.ogame.bots.ghostbuster.PlanetState.LoggedIn
 import not.ogame.bots.ghostbuster.TaskExecutor._
-import not.ogame.bots.{OgameDriver, SuppliesBuilding}
+import not.ogame.bots.{OgameDriver, ShipType, SuppliesBuilding}
 
 class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBot)(implicit clock: Clock) {
   def execute(state: PlanetState): F[PlanetState.LoggedIn] = {
@@ -82,6 +82,8 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
         ogameDriver.buildShips(PlanetId, shipType, amount).map {
           ???
         }
+      case Task.DumpActivity(_) =>
+        ogameDriver.checkFleetOnPlanet(PlanetId, ShipType.SmallCargoShip) >> ogameDriver.readSuppliesPage(PlanetId).map(_ => state)
     }
   }
 

@@ -2,10 +2,7 @@ package not.ogame.bots.ghostbuster
 
 import java.time.{Clock, Instant, ZoneId}
 
-import eu.timepit.refined._
-import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
-import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots._
 
 class GBotSpec extends munit.FunSuite {
@@ -13,7 +10,6 @@ class GBotSpec extends munit.FunSuite {
   private val unused = now
   private implicit val clock: Clock = Clock.fixed(now, ZoneId.systemDefault())
   private val randomTimeJitter: RandomTimeJitter = () => 0
-  private val bigCapacity = Resources(10000, 10000, 10000, 0)
 
   test("should do nothing if wishlist is empty") {
     val bot = new GBot(randomTimeJitter, BotConfig(List.empty, buildMtUpToCapacity = false, useWishlist = true))
@@ -284,15 +280,6 @@ class GBotSpec extends munit.FunSuite {
     val nextState: PlanetState = bot.nextStep(prevState)
     assertEquals(nextState.scheduledTasks, List(Task.buildSupply(SuppliesBuilding.SolarPlant, 1, now.plusSeconds(1 * 3600))))
   }
-
-  private def createStartingBuildings: Map[SuppliesBuilding, Int Refined NonNegative] = {
-    SuppliesBuilding.values.map(_ -> refineMV[NonNegative](0)).toMap
-  }
-
-  private def createFacilityBuildings: FacilitiesBuildingLevels = {
-    FacilitiesBuildingLevels(FacilityBuilding.values.map(_ -> refineMV[NonNegative](0)).toMap)
-  }
-
   //TODO ?? suppliesBuildings map -> case class
   //TODO resources @newtype metal, crystal, deuter
 }
