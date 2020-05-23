@@ -1,6 +1,6 @@
 package not.ogame.bots.ordon
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 import cats.Monad
 import not.ogame.bots.FleetMissionType.Expedition
@@ -17,7 +17,7 @@ class ExpeditionOgameAction[T[_]: Monad](
     Monad[T].map(Monad[T].flatMap(ogame.readAllFleets())(processFleet(ogame, _)))(resumeOn => List(ScheduledAction(resumeOn, this)))
   }
 
-  def processFleet(ogame: OgameDriver[T], fleets: List[Fleet]): T[LocalDateTime] = {
+  def processFleet(ogame: OgameDriver[T], fleets: List[Fleet]): T[Instant] = {
     if (fleets.count(returningExpedition) >= maxNumberOfExpeditions) {
       Monad[T].pure(fleets.filter(_.fleetMissionType == Expedition).map(_.arrivalTime).min)
     } else {
@@ -29,7 +29,7 @@ class ExpeditionOgameAction[T[_]: Monad](
     fleet.fleetMissionType == Expedition && fleet.isReturning
   }
 
-  def sendFleet(ogame: OgameDriver[T]): T[LocalDateTime] = {
+  def sendFleet(ogame: OgameDriver[T]): T[Instant] = {
     Monad[T].map(
       ogame.sendFleet(
         SendFleetRequest(
@@ -40,6 +40,6 @@ class ExpeditionOgameAction[T[_]: Monad](
           Resources(0, 0, 0)
         )
       )
-    )(_ => LocalDateTime.now())
+    )(_ => Instant.now())
   }
 }

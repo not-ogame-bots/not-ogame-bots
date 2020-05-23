@@ -1,6 +1,6 @@
 package not.ogame.bots.selenium
 
-import java.time.LocalDateTime
+import java.time.{Instant, LocalDateTime, ZoneOffset}
 
 import not.ogame.bots.Coordinates
 
@@ -12,17 +12,17 @@ object ParsingUtils {
   }
 
   /** @param timeDigits Time in "12:30:30" format.
-    * @return LocalDateTime instance with correct time set. Returned instance is always between now and 24h ahead. */
-  def parseTimeInFuture(timeDigits: String): LocalDateTime = {
+    * @return Instant instance with correct time set. Returned instant is always between now and 24h ahead. */
+  def parseTimeInFuture(timeDigits: String): Instant = {
     val timeList = timeDigits.split(":").map {
       _.filter(_.isDigit).toInt
     }
     val now = LocalDateTime.now()
     val localDateTime = now.withHour(timeList(0)).withMinute(timeList(1)).withSecond(timeList(2))
     if (localDateTime.isBefore(now)) {
-      localDateTime.plusDays(1)
+      localDateTime.plusDays(1).toInstant(ZoneOffset.UTC)
     } else {
-      localDateTime
+      localDateTime.toInstant(ZoneOffset.UTC)
     }
   }
 }

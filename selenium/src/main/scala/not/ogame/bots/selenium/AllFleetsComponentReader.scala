@@ -1,6 +1,6 @@
 package not.ogame.bots.selenium
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 import not.ogame.bots._
 import not.ogame.bots.selenium.EasySelenium._
@@ -33,7 +33,7 @@ class AllFleetsComponentReader(webDriver: WebDriver) {
     ParsingUtils.parseCoordinates(coordinatesText)
   }
 
-  private def getArrivalTime(fleetElement: WebElement): LocalDateTime = {
+  private def getArrivalTime(fleetElement: WebElement): Instant = {
     val timeText = fleetElement.findElement(By.className("arrivalTime")).getText
     ParsingUtils.parseTimeInFuture(timeText)
   }
