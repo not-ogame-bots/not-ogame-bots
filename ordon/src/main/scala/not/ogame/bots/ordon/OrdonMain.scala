@@ -1,28 +1,42 @@
 package not.ogame.bots.ordon
 
-import java.time.Clock
+import java.time.{Clock, LocalDateTime}
 
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
-import not.ogame.bots.FleetMissionType.Expedition
-import not.ogame.bots.SendFleetRequestShips.Ships
-import not.ogame.bots.ShipType.SmallCargoShip
+import not.ogame.bots.OgameDriver
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
-import not.ogame.bots.{Coordinates, Credentials, Resources, SendFleetRequest}
+
+import scala.concurrent.duration._
 
 object OrdonMain extends IOApp {
   private implicit val clock: Clock = Clock.systemUTC()
 
   override def run(args: List[String]): IO[ExitCode] = {
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
-    val credentials = Credentials("fire@fire.pl", "1qaz2wsx", "Mensa", "s165-pl")
-    val sendFleetRequest =
-      SendFleetRequest("33794124", Ships(Map(SmallCargoShip -> 1)), Coordinates(7, 258, 16), Expedition, Resources(0, 0, 0))
+    restartOnError(runBot)
+  }
+
+  private def restartOnError(function: () => IO[ExitCode]): IO[ExitCode] = {
+    function().flatMap(exitCode => if (exitCode != ExitCode.Success) restartOnError(function) else IO.pure(exitCode))
+  }
+
+  private def runBot(): IO[ExitCode] = {
     new SeleniumOgameDriverCreator()
-      .create(credentials)
+      .create(OrdonConfig.getCredentials)
       .use { ogame =>
-        ogame.login() >> ogame.sendFleet(sendFleetRequest) >> IO.never
+        ogame.login() >> process(ogame, OrdonConfig.getInitialActions)
       }
       .as(ExitCode.Success)
+  }
+
+  @scala.annotation.tailrec
+  private def process(ogame: OgameDriver[IO], scheduled: IO[List[ScheduledAction[IO]]]): IO[Unit] = {
+    println("Process")
+    val scheduledActionList = scheduled.unsafeRunSync()
+    val processed: IO[List[ScheduledAction[IO]]] = scheduledActionList.map(_.process(ogame, LocalDateTime.now())).sequence.map(_.flatten)
+    val withSleep = processed
+      .flatMap(a => IO.sleep(1 second).map(_ => a))
+    process(ogame, withSleep)
   }
 }
