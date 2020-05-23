@@ -13,7 +13,7 @@ class GBot(jitterProvider: RandomTimeJitter, botConfig: BotConfig)(implicit cloc
   def nextStep(state: PlanetState.LoggedIn): PlanetState.LoggedIn = {
     println(s"processing next state $state")
     val nextState = List(wishlistProcessor.apply(_), buildMtUpToCapacityProcessor.apply(_)).foldLeft(state)((acc, item) => item(acc))
-    println(s"calculated next state: $nextState")
+    println(s"calculated next state: ${nextState.suppliesPage.timestamp} ${nextState.scheduledTasks}")
     nextState
   }
 }
