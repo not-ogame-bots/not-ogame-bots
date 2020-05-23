@@ -79,9 +79,9 @@ class TaskExecutor[F[_]: MonError: Timer](ogameDriver: OgameDriver[F], gBot: GBo
           .checkFleetOnPlanet(PlanetId, shipType)
           .map(amount => state.modify(_.fleetOnPlanet).setTo(state.fleetOnPlanet ++ Map(shipType -> amount)))
       case Task.BuildShip(amount, shipType, _) =>
-        ogameDriver.buildShips(PlanetId, shipType, amount).map {
-          ???
-        }
+        ogameDriver.buildShips(PlanetId, shipType, amount) >> ogameDriver
+          .readSuppliesPage(PlanetId)
+          .map(suppliesPage => state.modify(_.suppliesPage).setTo(suppliesPage))
       case Task.DumpActivity(_) =>
         ogameDriver.checkFleetOnPlanet(PlanetId, ShipType.SmallCargoShip) >> ogameDriver.readSuppliesPage(PlanetId).map(_ => state)
     }
