@@ -1,84 +1,90 @@
 package not.ogame.bots.selenium
 
-import cats.effect.{IO, Timer}
+import cats.effect.{Sync, Timer}
 import cats.implicits._
 import not.ogame.bots.selenium.WebDriverSyntax.testToInt
-import not.ogame.bots.selenium.WebDriverUtils._
 import org.openqa.selenium.{By, WebDriver, WebElement}
 
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
 object WebDriverUtils {
-  implicit class RichWebElement(webElement: WebElement) {
-    def find(by: By): IO[WebElement] = IO.delay(webElement.findElement(by))
+  implicit class RichWebElement[F[_]: Sync](webElement: WebElement) {
+    def find(by: By): F[WebElement] = Sync[F].delay(webElement.findElement(by))
 
-    def findMany(by: By): IO[List[WebElement]] = IO.delay(webElement.findElements(by).asScala.toList)
+    def findMany(by: By): F[List[WebElement]] = Sync[F].delay(webElement.findElements(by).asScala.toList)
 
-    def typeText(keys: String): IO[Unit] = IO.delay(webElement.sendKeys(keys))
+    def typeText(keys: String): F[Unit] = Sync[F].delay(webElement.sendKeys(keys))
 
-    def clickF(): IO[Unit] = IO.delay(webElement.click())
+    def clickF(): F[Unit] = Sync[F].delay(webElement.click())
 
-    def sendKeysF(keys: String): IO[Unit] = IO.delay(webElement.sendKeys(keys))
+    def sendKeysF(keys: String): F[Unit] = Sync[F].delay(webElement.sendKeys(keys))
 
-    def readInt(by: By): IO[Int] = {
+    def readInt(by: By): F[Int] = {
       find(by).map { component =>
         testToInt(component.getText)
       }
     }
   }
 
-  implicit class RichWebDriver(webDriver: WebDriver) {
-    def closeF(): IO[Unit] = IO.delay(webDriver.close())
+  implicit class RichWebDriver[F[_]: Sync: Timer](webDriver: WebDriver) {
+    def closeF(): F[Unit] = Sync[F].delay(webDriver.close())
+
+    def waitForElementF(by: By, attempts: Int = 100): F[WebElement] =
+      waitForElementsF(by, attempts).map(_.head)
+
+    def waitForElementsF(by: By, attempts: Int = 100): F[List[WebElement]] =
+      findMany(by).flatMap {
+        case l @ _ :: _          => Sync[F].pure(l)
+        case Nil if attempts > 0 => Timer[F].sleep(100 millis) >> waitForElementsF(by, attempts - 1)
+        case _                   => Sync[F].raiseError(new RuntimeException(s"Timeout waiting for element to become available: $by"))
+      }
+
+    def switchToOtherTab(): F[Unit] = Sync[F].delay {
+      val otherHandle = webDriver.getWindowHandles.asScala.find(_ != webDriver.getWindowHandle)
+      otherHandle.map(webDriver.switchTo().window(_))
+    }
+
+    def switchToAnyOpenTab(): F[Unit] = Sync[F].delay {
+      webDriver.getWindowHandles.asScala.toList match {
+        case ::(head, _) => webDriver.switchTo().window(head)
+        case Nil         =>
+      }
+    }
+
+    def safeUrlF(url: String, attempts: Int = 3): F[Unit] = {
+      goto(url).flatMap { _ =>
+        if (webDriver.getCurrentUrl != url) {
+          if (attempts > 0) {
+            Timer[F].sleep(10 millis) >> safeUrlF(url, attempts - 1)
+          } else {
+            Sync[F].raiseError(new RuntimeException(s"Couldn't proceed to page $url"))
+          }
+        } else {
+          Sync[F].unit
+        }
+      }
+    }
+
+    def find(by: By): F[WebElement] =
+      Sync[F].delay(webDriver.findElement(by))
+
+    def readInt(by: By): F[Int] = {
+      find(by).map { component =>
+        testToInt(component.getText)
+      }
+    }
+
+    def findMany(by: By): F[List[WebElement]] =
+      Sync[F].delay(webDriver.findElements(by).asScala.toList)
+
+    def clickF(by: By): F[Unit] = find(by).flatMap(_.clickF())
+
+    def goto(url: String): F[Unit] = Sync[F].delay(webDriver.get(url))
   }
 }
 
 object WebDriverSyntax {
-  def waitForElement(by: By, attempts: Int = 100)(implicit webDriver: WebDriver, timer: Timer[IO]): IO[WebElement] =
-    waitForElements(by, attempts).map(_.head)
-
-  def waitForElements(by: By, attempts: Int = 100)(implicit webDriver: WebDriver, timer: Timer[IO]): IO[List[WebElement]] =
-    findMany(by).flatMap {
-      case l @ _ :: _          => IO.pure(l)
-      case Nil if attempts > 0 => IO.sleep(100 millis) >> waitForElements(by, attempts - 1)
-      case _                   => IO.raiseError(new RuntimeException(s"Timeout waiting for element to become available: $by"))
-    }
-
-  def switchToOtherTab()(implicit webDriver: WebDriver): IO[Unit] = IO.delay {
-    val otherHandle = webDriver.getWindowHandles.asScala.find(_ != webDriver.getWindowHandle)
-    otherHandle.map(webDriver.switchTo().window(_))
-  }
-
-  def switchToAnyOpenTab()(implicit webDriver: WebDriver): IO[Unit] = IO.delay {
-    webDriver.getWindowHandles.asScala.toList match {
-      case ::(head, _) => webDriver.switchTo().window(head)
-      case Nil         =>
-    }
-  }
-
-  def safeUrl(url: String, attempts: Int = 3)(implicit webDriver: WebDriver, timer: Timer[IO]): IO[Unit] = {
-    (go to url).flatMap { _ =>
-      if (webDriver.getCurrentUrl != url) {
-        if (attempts > 0) {
-          IO.sleep(10 millis) >> safeUrl(url, attempts - 1)
-        } else {
-          IO.raiseError(new RuntimeException(s"Couldn't proceed to page $url"))
-        }
-      } else {
-        IO.unit
-      }
-    }
-  }
-
-  def find(by: By)(implicit webDriver: WebDriver): IO[WebElement] =
-    IO.delay(webDriver.findElement(by))
-
-  def readInt(by: By)(implicit webDriver: WebDriver): IO[Int] = {
-    find(by).map { component =>
-      testToInt(component.getText)
-    }
-  }
-
   def testToInt(text: String): Int = {
     val number = text.filter(_.isDigit).toInt
     if (text.startsWith("-")) {
@@ -86,14 +92,5 @@ object WebDriverSyntax {
     } else {
       number
     }
-  }
-
-  def findMany(by: By)(implicit webDriver: WebDriver): IO[List[WebElement]] =
-    IO.delay(webDriver.findElements(by).asScala.toList)
-
-  def clickF(by: By)(implicit webDriver: WebDriver): IO[Unit] = find(by).flatMap(_.clickF())
-
-  object go {
-    def to(url: String)(implicit driver: WebDriver): IO[Unit] = IO.delay(driver.get(url))
   }
 }

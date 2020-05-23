@@ -5,35 +5,44 @@ import java.time.Clock
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import eu.timepit.refined.pureconfig._
+import monix.eval.Task
 import not.ogame.bots.Credentials
+import not.ogame.bots.ghostbuster.two.{FlyAndBuildProcessor, TaskExecutorImpl}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import pureconfig.module.enumeratum._
 import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
 
-import scala.concurrent.duration._
+import monix.execution.Scheduler.Implicits.global
 
-object Main extends IOApp {
+object Main {
   private implicit val clock: Clock = Clock.systemUTC()
 
-  override def run(args: List[String]): IO[ExitCode] = {
+  def main(args: Array[String]): Unit = {
+    Thread.setDefaultUncaughtExceptionHandler { (t, e) =>
+      println("Uncaught exception in thread: " + t, e)
+      e.printStackTrace()
+    }
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
-    val botConfig = ConfigSource.default.loadOrThrow[BotConfig]
+    val botConfig =
+      ConfigSource.file("/home/kghost/workspace/not-ogame-bots/ghostbuster/src/main/resources/application.conf").loadOrThrow[BotConfig]
     val credentials = ConfigSource.file(s"${System.getenv("HOME")}/.not-ogame-bots/credentials.conf").loadOrThrow[Credentials]
-    val gbot = new GBot(RealRandomTimeJitter, botConfig)
-    new SeleniumOgameDriverCreator()
+
+    new SeleniumOgameDriverCreator[Task]()
       .create(credentials)
       .use { ogame =>
-        val taskExecutor = new TaskExecutor[IO](ogame, gbot)
+        val taskExecutor = new TaskExecutorImpl(ogame, clock)
+        val fbp = new FlyAndBuildProcessor(taskExecutor, clock, botConfig.wishlist)
+        Task.raceMany(List(taskExecutor.run(), fbp.run())).handleError { e =>
+          e.printStackTrace()
+        } >> Task.eval(println("zamykac"))
 
-        def loop(state: State): IO[PlanetState] = {
-          taskExecutor.execute(state).flatMap(s => IO.sleep(1 second) >> loop(s))
-        }
-
-        loop(State.LoggedOut(List.empty))
+//        taskExecutor.run().runToFuture
+//        fbp.run().runToFuture
+//        Task.never
       }
-      .as(ExitCode.Success)
+      .runSyncUnsafe()
   }
 
   implicit val wishReader: ConfigReader[Wish] = ConfigReader.fromCursor { cur =>

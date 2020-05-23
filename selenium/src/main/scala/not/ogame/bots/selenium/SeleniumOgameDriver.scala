@@ -2,57 +2,59 @@ package not.ogame.bots.selenium
 
 import java.time.{Clock, Instant}
 
-import cats.effect.{IO, Timer}
+import cats.effect.{Sync, Timer}
 import cats.implicits._
 import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots._
 import not.ogame.bots.selenium.EasySelenium._
-import not.ogame.bots.selenium.WebDriverSyntax._
 import not.ogame.bots.selenium.WebDriverUtils._
 import org.openqa.selenium.{By, WebDriver}
 
 import scala.concurrent.duration._
 
-class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDriver, timer: Timer[IO], clock: Clock) extends OgameDriver[IO] {
-  override def login(): IO[Unit] = {
+class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriver: WebDriver, timer: Timer[F], clock: Clock)
+    extends OgameDriver[F] {
+  override def login(): F[Unit] = {
     val universeListUrl = "https://lobby.ogame.gameforge.com/pl_PL/accounts"
     for {
-      _ <- go to universeListUrl
+      _ <- webDriver.goto(universeListUrl)
       _ <- loginImpl(universeListUrl)
       _ <- selectUniverse()
       _ <- webDriver.closeF()
-      _ <- switchToAnyOpenTab()
-      _ <- waitForElement(By.className("OGameClock"))
+      _ <- webDriver.switchToAnyOpenTab()
+      _ <- webDriver.waitForElementF(By.className("OGameClock"))
     } yield ()
   }
 
-  private def loginImpl(universeListUrl: String): IO[Unit] = {
+  private def loginImpl(universeListUrl: String): F[Unit] = {
     if (webDriver.getCurrentUrl == universeListUrl) {
-      IO.unit
+      Sync[F].unit
     } else {
-      insetCredentials() >> (go to universeListUrl)
+      insetCredentials() >> webDriver.goto(universeListUrl)
     }
   }
 
-  private def insetCredentials(): IO[Unit] =
+  private def insetCredentials(): F[Unit] =
     for {
       _ <- clickLoginTab()
-      _ <- find(By.name("email")).flatMap(_.typeText(credentials.login))
-      _ <- find(By.name("password")).flatMap(_.typeText(credentials.password))
-      _ <- IO.sleep(700 milli)
-      _ <- clickF(By.className("button-lg"))
-      _ <- waitForElement(By.id("joinGame"))
+      _ <- webDriver.find(By.name("email")).flatMap(_.typeText(credentials.login))
+      _ <- webDriver.find(By.name("password")).flatMap(_.typeText(credentials.password))
+      _ <- Timer[F].sleep(700 milli)
+      _ <- webDriver.waitForElementF(By.className("button-lg"))
+      _ <- webDriver.clickF(By.className("button-lg"))
+      _ <- webDriver.waitForElementF(By.id("joinGame"))
     } yield ()
 
-  private def clickLoginTab(): IO[Unit] =
-    find(By.id("loginRegisterTabs"))
+  private def clickLoginTab(): F[Unit] =
+    webDriver
+      .find(By.id("loginRegisterTabs"))
       .flatMap(_.find(By.className("tabsList")))
       .flatMap(_.find(By.tagName("li")))
       .flatMap(_.clickF())
 
-  private def selectUniverse(): IO[Unit] =
+  private def selectUniverse(): F[Unit] =
     for {
-      list <- waitForElements(By.className("rt-tr"))
+      list <- webDriver.waitForElementsF(By.className("rt-tr"))
       universeText = list
         .find(_.getText.contains(credentials.universeName))
         .getOrElse(throw new IllegalStateException("Couldn't find universeText"))
@@ -60,9 +62,9 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       _ <- universeBtn.clickF()
     } yield ()
 
-  override def readSuppliesPage(planetId: String): IO[SuppliesPageData] =
+  override def readSuppliesPage(planetId: String): F[SuppliesPageData] =
     for {
-      _ <- go to suppliesPageUrl(planetId)
+      _ <- webDriver.goto(suppliesPageUrl(planetId))
       currentResources <- readCurrentResources
       currentProduction <- readCurrentProduction
       currentCapacity <- readCurrentCapacity
@@ -84,9 +86,9 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       currentShipyardProgress
     )
 
-  override def readFacilityBuildingsLevels(planetId: String): IO[FacilitiesBuildingLevels] =
+  override def readFacilityBuildingsLevels(planetId: String): F[FacilitiesBuildingLevels] =
     for {
-      _ <- safeUrl(facilitiesPageUrl(planetId))
+      _ <- webDriver.safeUrlF(facilitiesPageUrl(planetId))
       facilityLevels <- FacilityBuilding.values.toList
         .map(facilityBuilding => facilityBuilding -> getFacilityBuildingLevel(facilityBuilding))
         .traverse { case (building, fetchLevel) => fetchLevel.map(level => building -> refineVUnsafe[NonNegative, Int](level)) }
@@ -105,50 +107,52 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=shipyard&cp=$planetId"
   }
 
-  private def readCurrentResources: IO[Resources] =
+  private def readCurrentResources: F[Resources] =
     for {
-      currentMetal <- readInt(By.id("metal_box"))
-      currentCrystal <- readInt(By.id("crystal_box"))
-      currentDeuterium <- readInt(By.id("deuterium_box"))
-      currentEnergy <- readInt(By.id("energy_box"))
+      currentMetal <- webDriver.readInt(By.id("metal_box"))
+      currentCrystal <- webDriver.readInt(By.id("crystal_box"))
+      currentDeuterium <- webDriver.readInt(By.id("deuterium_box"))
+      currentEnergy <- webDriver.readInt(By.id("energy_box"))
     } yield Resources(currentMetal, currentCrystal, currentDeuterium, currentEnergy)
 
-  private def readCurrentProduction: IO[Resources] =
+  private def readCurrentProduction: F[Resources] =
     for {
       metalProduction <- getProduction("metal_box")
       crystalProduction <- getProduction("crystal_box")
       deuteriumProduction <- getProduction("deuterium_box")
     } yield Resources(metalProduction, crystalProduction, deuteriumProduction)
 
-  private def readCurrentCapacity: IO[Resources] =
+  private def readCurrentCapacity: F[Resources] =
     for {
       metalProduction <- getCapacity("metal_box")
       crystalProduction <- getCapacity("crystal_box")
       deuteriumProduction <- getCapacity("deuterium_box")
     } yield Resources(metalProduction, crystalProduction, deuteriumProduction)
 
-  private def getProduction(id: String): IO[Int] =
-    find(By.id(id))
+  private def getProduction(id: String): F[Int] =
+    webDriver
+      .find(By.id(id))
       .map(_.getAttribute("title"))
       .map(getProductionFromTooltip)
 
-  private def getCapacity(id: String): IO[Int] =
-    find(By.id(id))
+  private def getCapacity(id: String): F[Int] =
+    webDriver
+      .find(By.id(id))
       .map(_.getAttribute("title"))
       .map(getCapacityFromTooltip)
 
-  private def readCurrentBuildingProgress: IO[Option[BuildingProgress]] =
+  private def readCurrentBuildingProgress: F[Option[BuildingProgress]] =
     for {
-      _ <- waitForElement(By.className("construction"))
-      buildingCountdown <- findMany(By.id("buildingCountdown")).map(_.headOption)
+      _ <- webDriver.waitForElementF(By.className("construction"))
+      buildingCountdown <- webDriver.findMany(By.id("buildingCountdown")).map(_.headOption)
       seconds = buildingCountdown.map(_.getText).map(timeTextToSeconds)
       buildingProgress = seconds.map(s => BuildingProgress(Instant.now().plusSeconds(s)))
     } yield buildingProgress
 
-  private def readCurrentShipyardProgress: IO[Option[BuildingProgress]] =
+  private def readCurrentShipyardProgress: F[Option[BuildingProgress]] =
     for {
-      _ <- waitForElement(By.className("construction"))
-      shipyardCountdown <- findMany(By.id("shipyardCountdown")).map(_.headOption)
+      _ <- webDriver.waitForElementF(By.className("construction"))
+      shipyardCountdown <- webDriver.findMany(By.id("shipyardCountdown")).map(_.headOption)
       seconds = shipyardCountdown.map(_.getText).map(timeTextToSeconds)
       buildingProgress = seconds.map(s => BuildingProgress(Instant.now().plusSeconds(s)))
     } yield buildingProgress
@@ -187,15 +191,15 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
       .map(_.filter(_.isDigit).toInt)
   }
 
-  private def getFacilityBuildingLevel(facilityBuilding: FacilityBuilding): IO[Int] =
+  private def getFacilityBuildingLevel(facilityBuilding: FacilityBuilding): F[Int] =
     getBuildingLevel(getComponentName(facilityBuilding))
 
-  private def getSuppliesBuildingLevel(suppliesBuilding: SuppliesBuilding): IO[Int] =
+  private def getSuppliesBuildingLevel(suppliesBuilding: SuppliesBuilding): F[Int] =
     getBuildingLevel(getComponentName(suppliesBuilding))
 
   private def getBuildingLevel(componentName: String) = {
     for {
-      technologies <- waitForElement(By.id("technologies"))
+      technologies <- webDriver.waitForElementF(By.id("technologies"))
       buildingComponent <- technologies.find(By.className(componentName))
       level <- buildingComponent.find(By.className("level"))
     } yield level.getText.toInt
@@ -222,28 +226,28 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     }
   }
 
-  override def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): IO[Unit] =
+  override def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): F[Unit] =
     buildBuilding(planetId, getComponentName(suppliesBuilding))
 
-  override def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): IO[Unit] =
+  override def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): F[Unit] =
     buildBuilding(planetId, getComponentName(facilityBuilding))
 
   private def buildBuilding(planetId: String, componentName: String) = {
     for {
-      _ <- go to suppliesPageUrl(planetId)
-      technologies <- waitForElement(By.id("technologies"))
+      _ <- webDriver.goto(suppliesPageUrl(planetId))
+      technologies <- webDriver.waitForElementF(By.id("technologies"))
       buildingComponent <- technologies.find(By.className(componentName))
       upgrade <- buildingComponent.find(By.className("upgrade"))
       _ <- upgrade.clickF()
     } yield ()
   }
-  override def buildShips(planetId: String, shipType: ShipType, count: Int): IO[Unit] = {
+  override def buildShips(planetId: String, shipType: ShipType, count: Int): F[Unit] = {
     for {
-      _ <- safeUrl(getShipyardUrl(credentials, planetId))
-      _ <- find(By.id("technologies")).flatMap(_.find(By.className(shipTypeToClassName(shipType)))).flatMap(_.clickF())
-      _ <- waitForElement(By.id("build_amount"))
-      _ <- find(By.id("build_amount")).flatMap(_.sendKeysF(count.toString))
-      _ <- find(By.className("upgrade")).flatMap(_.clickF())
+      _ <- webDriver.safeUrlF(getShipyardUrl(credentials, planetId))
+      _ <- webDriver.find(By.id("technologies")).flatMap(_.find(By.className(shipTypeToClassName(shipType)))).flatMap(_.clickF())
+      _ <- webDriver.waitForElementF(By.id("build_amount"))
+      _ <- webDriver.find(By.id("build_amount")).flatMap(_.sendKeysF(count.toString))
+      _ <- webDriver.find(By.className("upgrade")).flatMap(_.clickF())
     } yield ()
   }
 
@@ -271,16 +275,17 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=fleetdispatch&cp=$planetId"
   }
 
-  def checkFleetOnPlanet(planetId: String): IO[Map[ShipType, Int]] = {
+  def checkFleetOnPlanet(planetId: String): F[Map[ShipType, Int]] = {
     for {
-      _ <- safeUrl(getFleetDispatchUrl(credentials, planetId))
-      technologies <- findMany(By.id("technologies"))
+      _ <- webDriver.safeUrlF(getFleetDispatchUrl(credentials, planetId))
+      technologies <- webDriver.findMany(By.id("technologies"))
       result <- if (technologies.isEmpty) {
-        IO.pure(ShipType.values.map(_ -> 0).toMap)
+        Sync[F].pure(ShipType.values.map(_ -> 0).toMap)
       } else {
         ShipType.values
           .map { ship =>
-            find(By.id("technologies"))
+            webDriver
+              .find(By.id("technologies"))
               .flatMap(_.find(By.className(shipTypeToClassName(ship))))
               .flatMap(_.readInt(By.className("amount")))
               .map(ship -> _)
@@ -292,8 +297,8 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     } yield result
   }
 
-  def readAllFleets(): IO[List[Fleet]] = {
-    IO.delay({
+  def readAllFleets(): F[List[Fleet]] = {
+    Sync[F].delay({
       webDriver.safeUrl(
         s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=componentOnly&component=eventList&ajax=1"
       )
@@ -301,11 +306,11 @@ class SeleniumOgameDriver(credentials: Credentials)(implicit webDriver: WebDrive
     })
   }
 
-  override def sendFleet(sendFleetRequest: SendFleetRequest): IO[Unit] = {
-    IO.delay(new SendFleetAction(webDriver, credentials).sendFleet(sendFleetRequest))
+  override def sendFleet(sendFleetRequest: SendFleetRequest): F[Unit] = {
+    Sync[F].delay(new SendFleetAction(webDriver, credentials).sendFleet(sendFleetRequest))
   }
 
-  override def readPlanets(): IO[List[PlayerPlanet]] = {
-    IO.delay(new PlanetListComponentReader(webDriver).readPlanetList())
+  override def readPlanets(): F[List[PlayerPlanet]] = {
+    Sync[F].delay(new PlanetListComponentReader(webDriver).readPlanetList())
   }
 }
