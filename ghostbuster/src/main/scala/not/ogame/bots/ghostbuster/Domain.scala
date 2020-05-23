@@ -61,29 +61,6 @@ object Wish {
   case class BuildShip(shipType: ShipType, planetId: String, amount: Int Refined Positive) extends Wish
 }
 
-case class PlanetState(
-    id: String,
-    coords: Coordinates,
-    suppliesPage: SuppliesPageData,
-    facilityBuildingLevels: FacilitiesBuildingLevels,
-    fleetOnPlanet: Map[ShipType, Int]
-) {
-  def buildingInProgress: Boolean = suppliesPage.currentBuildingProgress.isDefined
-  def shipInProgress: Boolean = suppliesPage.currentShipyardProgress.isDefined
-  def isBusy: Boolean = buildingInProgress || shipInProgress
-  def isIdle: Boolean = !isBusy
-}
-
-//sealed trait State {
-//  def scheduledTasks: List[Action]
-//}
-//
-//object State {
-//  case class LoggedOut(scheduledTasks: List[Action]) extends State
-//
-//  case class LoggedIn(scheduledTasks: List[Action], planets: List[PlanetState], fleets: List[Fleet]) extends State
-//}
-
 case class BotConfig(
     wishlist: List[Wish],
     buildMtUpToCapacity: Boolean,
