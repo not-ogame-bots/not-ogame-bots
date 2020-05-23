@@ -165,7 +165,8 @@ case class Fleet(
     fleetAttitude: FleetAttitude,
     fleetMissionType: FleetMissionType,
     from: Coordinates,
-    to: Coordinates
+    to: Coordinates,
+    isReturning: Boolean
 )
 
 sealed trait FleetAttitude extends EnumEntry

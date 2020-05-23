@@ -27,12 +27,14 @@ class AllFleetsComponentReaderSpec extends munit.FunSuite {
     assertEquals(firstFleet.fleetAttitude, Friendly)
     assertEquals(firstFleet.fleetMissionType, Deployment)
     assertEquals(firstFleet.from, Coordinates(3, 133, 6))
+    assertEquals(firstFleet.isReturning, false)
     //TODO: Handle different CoordinatesTypes
     //assertEquals(firstFleet.to, Coordinates(3, 133, 6, Moon))
     val secondFleet = allFleets(1)
     assertEquals(secondFleet.fleetMissionType, Expedition)
     assertEquals(secondFleet.from, Coordinates(3, 133, 5))
     assertEquals(secondFleet.to, Coordinates(3, 133, 16))
+    assertEquals(secondFleet.isReturning, true)
   }
 
   private def testReadAllFleets(driver: WebDriver): List[Fleet] =

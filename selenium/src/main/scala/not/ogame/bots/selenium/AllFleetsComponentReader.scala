@@ -18,7 +18,8 @@ class AllFleetsComponentReader(webDriver: WebDriver) {
       getFleetAttitude(fleetElement),
       getFleetMissionType(fleetElement),
       getFrom(fleetElement),
-      getTo(fleetElement)
+      getTo(fleetElement),
+      getFleetDataReturnFlight(fleetElement)
     )
   }
 
@@ -48,5 +49,9 @@ class AllFleetsComponentReader(webDriver: WebDriver) {
       case 15 => FleetMissionType.Expedition
       case _  => FleetMissionType.Unknown
     }
+  }
+
+  private def getFleetDataReturnFlight(fleetElement: WebElement): Boolean = {
+    fleetElement.getAttribute("data-return-flight") == "true"
   }
 }
