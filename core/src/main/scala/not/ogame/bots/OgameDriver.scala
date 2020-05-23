@@ -204,8 +204,15 @@ case class SendFleetRequest(
     ships: SendFleetRequestShips,
     targetCoordinates: Coordinates,
     fleetMissionType: FleetMissionType,
-    resources: Resources
+    resources: FleetResources
 )
+
+sealed trait FleetResources
+
+object FleetResources {
+  case class Given(resources: Resources) extends FleetResources
+  case object Max extends FleetResources
+}
 
 sealed trait SendFleetRequestShips
 

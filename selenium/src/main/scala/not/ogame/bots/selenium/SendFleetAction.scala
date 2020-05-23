@@ -48,15 +48,22 @@ class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
     webDriver.findElement(By.id("continueToFleet3")).click()
   }
 
-  def fillResources(resources: Resources, fleetMissionType: FleetMissionType): Unit = {
+  def fillResources(resources: FleetResources, fleetMissionType: FleetMissionType): Unit = {
     webDriver.waitForElement(By.id("sendFleet"))
     Thread.sleep(3_000)
     webDriver.findElement(By.id(buttonFleetMissionType(fleetMissionType))).click()
     webDriver.asInstanceOf[JavascriptExecutor].executeScript("javascript:window.scrollBy(0,1000)")
     Thread.sleep(200)
-    webDriver.findElement(By.id("crystal")).sendKeys(resources.crystal.toString)
-    webDriver.findElement(By.id("deuterium")).sendKeys(resources.deuterium.toString)
-    webDriver.findElement(By.id("metal")).sendKeys(resources.metal.toString)
+    resources match {
+      case FleetResources.Given(resources) =>
+        webDriver.findElement(By.id("crystal")).sendKeys(resources.crystal.toString)
+        webDriver.findElement(By.id("deuterium")).sendKeys(resources.deuterium.toString)
+        webDriver.findElement(By.id("metal")).sendKeys(resources.metal.toString)
+      case FleetResources.Max =>
+        webDriver.findElement(By.id("selectMaxMetal")).click()
+        webDriver.findElement(By.id("selectMaxCrystal")).click()
+        webDriver.findElement(By.id("selectMaxDeuterium")).click()
+    }
     webDriver.findElement(By.id("sendFleet")).click()
   }
 
