@@ -3,6 +3,7 @@ package not.ogame.bots.ordon
 import java.time.Instant
 
 import cats.Monad
+import cats.implicits._
 import not.ogame.bots.FleetMissionType.Expedition
 import not.ogame.bots.SendFleetRequestShips.Ships
 import not.ogame.bots._
@@ -14,12 +15,15 @@ class ExpeditionOgameAction[T[_]: Monad](
     val targetCoordinates: Coordinates
 ) extends OgameAction[T] {
   override def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] = {
-    Monad[T].map(Monad[T].flatMap(ogame.readAllFleets())(processFleet(ogame, _)))(resumeOn => List(ScheduledAction(resumeOn, this)))
+    ogame
+      .readAllFleets()
+      .flatMap(processFleet(ogame, _))
+      .map(resumeOn => List(ScheduledAction(resumeOn, this)))
   }
 
   def processFleet(ogame: OgameDriver[T], fleets: List[Fleet]): T[Instant] = {
     if (fleets.count(returningExpedition) >= maxNumberOfExpeditions) {
-      Monad[T].pure(fleets.filter(_.fleetMissionType == Expedition).map(_.arrivalTime).min)
+      fleets.filter(_.fleetMissionType == Expedition).map(_.arrivalTime).min.pure
     } else {
       sendFleet(ogame)
     }
@@ -30,8 +34,8 @@ class ExpeditionOgameAction[T[_]: Monad](
   }
 
   def sendFleet(ogame: OgameDriver[T]): T[Instant] = {
-    Monad[T].map(
-      ogame.sendFleet(
+    ogame
+      .sendFleet(
         SendFleetRequest(
           startPlanetId,
           Ships(expeditionFleet),
@@ -40,6 +44,6 @@ class ExpeditionOgameAction[T[_]: Monad](
           FleetResources.Given(Resources.Zero)
         )
       )
-    )(_ => Instant.now())
+      .map(_ => Instant.now())
   }
 }
