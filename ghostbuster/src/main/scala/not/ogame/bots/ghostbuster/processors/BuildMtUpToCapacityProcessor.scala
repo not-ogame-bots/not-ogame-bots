@@ -32,6 +32,35 @@ class BuildMtUpToCapacityProcessor(botConfig: BotConfig, jitterProvider: RandomT
         .getOrElse(
           List(Task.RefreshFleetOnPlanetStatus(ShipType.SmallCargoShip, clock.instant(), planetState.id))
         ) //TODO add next case with refresh after building one ship, also shipInProgress should have richer information
+    } else if (planetState.shipInProgress) {
+      refreshShipIfNecessary(planetState, tasks) ++ refreshBuildQueueIfNecessary(planetState, tasks)
+    } else {
+      List.empty
+    }
+  }
+
+  private def refreshShipIfNecessary(planetState: PlanetState, tasks: List[Task]): List[Task] = {
+    if (!refreshShipScheduled(tasks, planetState.id, ShipType.SmallCargoShip)) {
+      List(
+        Task.RefreshFleetOnPlanetStatus(
+          ShipType.SmallCargoShip,
+          planetState.suppliesPage.currentShipyardProgress.get.finishTimestamp,
+          planetState.id
+        )
+      )
+    } else {
+      List.empty
+    }
+  }
+
+  private def refreshBuildQueueIfNecessary(planetState: PlanetState, tasks: List[Task]): List[Task] = {
+    if (!refreshScheduled(tasks, planetState.id)) {
+      List(
+        Task.RefreshSupplyAndFacilityPage(
+          planetState.suppliesPage.currentShipyardProgress.get.finishTimestamp,
+          planetState.id
+        )
+      )
     } else {
       List.empty
     }

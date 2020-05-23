@@ -1,5 +1,7 @@
 package not.ogame.bots.ghostbuster
 
+import not.ogame.bots.ShipType
+
 package object processors {
   private[processors] def checkAlreadyInQueue(tasks: List[Task])(p: PartialFunction[Task, Task]): Boolean = {
     tasks.collectFirst(p).isDefined
@@ -11,6 +13,10 @@ package object processors {
 
   private[processors] def refreshScheduled(tasks: List[Task], planetId: String): Boolean = {
     tasks.collectFirst { case t: Task.RefreshSupplyAndFacilityPage if t.planetId == planetId => t }.isDefined
+  }
+
+  private[processors] def refreshShipScheduled(tasks: List[Task], planetId: String, shipType: ShipType): Boolean = {
+    tasks.collectFirst { case t: Task.RefreshFleetOnPlanetStatus if t.planetId == planetId && t.shipType == shipType => t }.isDefined
   }
 
   private[processors] def noBuildingsInQueue(tasks: List[Task], planetId: String): Boolean = !buildingScheduled(tasks, planetId)
