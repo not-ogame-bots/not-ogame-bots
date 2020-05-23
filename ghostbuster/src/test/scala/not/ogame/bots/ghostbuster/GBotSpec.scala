@@ -16,7 +16,7 @@ class GBotSpec extends munit.FunSuite {
   private val bigCapacity = Resources(10000, 10000, 10000, 0)
 
   test("should do nothing if wishlist is empty") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List.empty, buildMtUpToCapacity = false))
+    val bot = new GBot(randomTimeJitter, BotConfig(List.empty, buildMtUpToCapacity = false, useWishlist = true))
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
         unused,
@@ -36,7 +36,7 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should refresh fleet state on planet if wishlist is empty") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List.empty, buildMtUpToCapacity = true))
+    val bot = new GBot(randomTimeJitter, BotConfig(List.empty, buildMtUpToCapacity = true, useWishlist = true))
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
         unused,
@@ -56,7 +56,10 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should schedule building metal factory now if there is enough resources") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false, useWishlist = true)
+    )
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
         unused,
@@ -76,7 +79,10 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should remove building from wishlist if it is already built") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false, useWishlist = true)
+    )
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
         unused,
@@ -96,7 +102,10 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should schedule building metal factory now if there is enough resources - with a jump") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 10)), buildMtUpToCapacity = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 10)), buildMtUpToCapacity = false, useWishlist = true)
+    )
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
         unused,
@@ -116,7 +125,10 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should not schedule building metal factory if there is something scheduled") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false, useWishlist = true)
+    )
 
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
@@ -136,7 +148,10 @@ class GBotSpec extends munit.FunSuite {
     assertEquals(nextState.scheduledTasks, List(Task.BuildSupply(SuppliesBuilding.CrystalMine, 1, now)))
   }
   test("should schedule building metal factory in the future if there is not enough resources") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false, useWishlist = true)
+    )
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
         unused,
@@ -156,7 +171,10 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should schedule building metal factory in the future if there is not enough resources - with a jump") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 10)), buildMtUpToCapacity = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 10)), buildMtUpToCapacity = false, useWishlist = true)
+    )
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
         unused,
@@ -176,7 +194,10 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should not build building if it is already built") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false, useWishlist = true)
+    )
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
         unused,
@@ -196,7 +217,10 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should schedule refresh after building finishes") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 1)), buildMtUpToCapacity = false, useWishlist = true)
+    )
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
         unused,
@@ -216,7 +240,10 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should build storage if there is not enough capacity") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 11)), buildMtUpToCapacity = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 11)), buildMtUpToCapacity = false, useWishlist = true)
+    )
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
         unused,
@@ -236,7 +263,10 @@ class GBotSpec extends munit.FunSuite {
   }
 
   test("should build power plant if there is not enough energy") {
-    val bot = new GBot(randomTimeJitter, BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 11)), buildMtUpToCapacity = false))
+    val bot = new GBot(
+      randomTimeJitter,
+      BotConfig(List(Wish.buildSupply(SuppliesBuilding.MetalMine, 11)), buildMtUpToCapacity = false, useWishlist = true)
+    )
     val prevState = PlanetState.LoggedIn(
       SuppliesPageData(
         unused,

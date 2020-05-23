@@ -10,7 +10,7 @@ import not.ogame.bots.selenium.SeleniumOgameDriverCreator
 import pureconfig.error.CannotConvert
 import pureconfig.module.enumeratum._
 import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
-
+import pureconfig.generic.auto._
 import scala.concurrent.duration._
 
 object Main extends IOApp {

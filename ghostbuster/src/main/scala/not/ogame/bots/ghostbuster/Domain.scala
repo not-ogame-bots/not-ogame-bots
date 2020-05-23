@@ -63,4 +63,4 @@ object PlanetState {
   }
 }
 
-case class BotConfig(wishlist: List[Wish], buildMtUpToCapacity: Boolean)
+case class BotConfig(wishlist: List[Wish], buildMtUpToCapacity: Boolean, useWishlist: Boolean)
