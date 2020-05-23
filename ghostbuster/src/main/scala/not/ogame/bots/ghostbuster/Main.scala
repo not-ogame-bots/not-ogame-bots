@@ -25,8 +25,7 @@ object Main {
       e.printStackTrace()
     }
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
-    val botConfig =
-      ConfigSource.file("/home/kghost/workspace/not-ogame-bots/ghostbuster/src/main/resources/application.conf").loadOrThrow[BotConfig]
+    val botConfig = ConfigSource.default.loadOrThrow[BotConfig]
     val credentials = ConfigSource.file(s"${System.getenv("HOME")}/.not-ogame-bots/credentials.conf").loadOrThrow[Credentials]
 
     new SeleniumOgameDriverCreator[Task]()
@@ -34,13 +33,7 @@ object Main {
       .use { ogame =>
         val taskExecutor = new TaskExecutorImpl(ogame, clock)
         val fbp = new FlyAndBuildProcessor(taskExecutor, clock, botConfig.wishlist)
-        Task.raceMany(List(taskExecutor.run(), fbp.run())).handleError { e =>
-          e.printStackTrace()
-        } >> Task.eval(println("zamykac"))
-
-//        taskExecutor.run().runToFuture
-//        fbp.run().runToFuture
-//        Task.never
+        Task.raceMany(List(taskExecutor.run(), fbp.run()))
       }
       .runSyncUnsafe()
   }
