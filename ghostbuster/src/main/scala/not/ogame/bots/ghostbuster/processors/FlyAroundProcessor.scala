@@ -8,8 +8,12 @@ import com.softwaremill.quicklens._
 
 class FlyAroundProcessor(jitter: RandomTimeJitter) {
   def apply(state: State.LoggedIn): State.LoggedIn = {
-    val myFleet = state.fleets.find(_.fleetAttitude == FleetAttitude.Friendly).head
-    state.modify(_.scheduledTasks).using(_ ++ singleFleet(myFleet, state.scheduledTasks, state.planets))
+    state.fleets
+      .find(_.fleetAttitude == FleetAttitude.Friendly)
+      .map { myFleet =>
+        state.modify(_.scheduledTasks).using(_ ++ singleFleet(myFleet, state.scheduledTasks, state.planets))
+      }
+      .getOrElse(state)
   }
 
   def singleFleet(fleet: Fleet, tasks: List[Task], planets: List[PlanetState]): List[Task] = {
