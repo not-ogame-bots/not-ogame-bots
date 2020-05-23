@@ -17,7 +17,8 @@ object EasySelenium {
       }
     }
 
-    def waitForElement(by: By, attempts: Int = 100): Unit = {
+    @scala.annotation.tailrec
+    final def waitForElement(by: By, attempts: Int = 100): Unit = {
       val elements = webDriver.findElements(by)
       if (elements.isEmpty) {
         if (attempts > 0) {
@@ -35,7 +36,8 @@ object EasySelenium {
   }
 
   implicit class EasyWebElement(webElement: WebElement) {
-    def waitForElement(by: By, attempts: Int = 100): Unit = {
+    @scala.annotation.tailrec
+    final def waitForElement(by: By, attempts: Int = 100): Unit = {
       val elements = webElement.findElements(by)
       if (elements.isEmpty) {
         if (attempts > 0) {
