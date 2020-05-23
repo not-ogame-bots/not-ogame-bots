@@ -221,3 +221,41 @@ object SendFleetRequestShips {
 
   case class Ships(ships: Map[ShipType, Int]) extends SendFleetRequestShips
 }
+
+sealed trait Technology extends EnumEntry
+
+object Technology extends Enum[Technology] {
+  case object Energy extends Technology
+
+  case object Laser extends Technology
+
+  case object Ion extends Technology
+
+  case object Hyperspace extends Technology
+
+  case object Plasma extends Technology
+
+  case object CombustionDrive extends Technology
+
+  case object ImpulseDrive extends Technology
+
+  case object HyperspaceDrive extends Technology
+
+  case object Espionage extends Technology
+
+  case object Computer extends Technology
+
+  case object Astrophysics extends Technology
+
+  case object ResearchNetwork extends Technology
+
+  case object Graviton extends Technology
+
+  case object Weapons extends Technology
+
+  case object Shielding extends Technology
+
+  case object Armor extends Technology
+
+  val values: IndexedSeq[Technology] = findValues
+}
