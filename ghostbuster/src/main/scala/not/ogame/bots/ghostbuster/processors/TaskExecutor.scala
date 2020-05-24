@@ -5,13 +5,11 @@ import java.time.Instant
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import monix.eval.Task
-import not.ogame.bots.ghostbuster.PlanetFleet
 import not.ogame.bots._
-
-import scala.concurrent.duration.FiniteDuration
+import not.ogame.bots.ghostbuster.PlanetFleet
 
 trait TaskExecutor {
-  def waitSeconds(duration: FiniteDuration): Task[Unit]
+  def waitTo(instant: Instant): Task[Unit]
 
   def readAllFleets(): Task[List[Fleet]]
 

@@ -1,6 +1,8 @@
 package not.ogame.bots.ghostbuster.executor
 
+import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant}
+import java.util.concurrent.TimeUnit
 
 import cats.implicits._
 import eu.timepit.refined.api.Refined
@@ -106,7 +108,14 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
     }
   }
 
-  override def waitSeconds(duration: FiniteDuration): Task[Unit] = Task.sleep(duration)
+  override def waitTo(instant: Instant): Task[Unit] = {
+    val sleepTime = calculateSleepTime(instant)
+    Task.eval(println(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til ${instant.plus(2, ChronoUnit.HOURS)}")) >> Task.sleep(sleepTime)
+  }
+
+  private def calculateSleepTime(futureTime: Instant) = {
+    FiniteDuration(futureTime.toEpochMilli - clock.instant().toEpochMilli, TimeUnit.MILLISECONDS)
+  }
 
   override def readAllFleets(): Task[List[Fleet]] = {
     val action = Action.GetAirFleet(clock.instant())

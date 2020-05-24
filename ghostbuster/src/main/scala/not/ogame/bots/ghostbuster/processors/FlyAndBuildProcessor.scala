@@ -1,8 +1,5 @@
 package not.ogame.bots.ghostbuster.processors
 
-import java.time.{Clock, Instant}
-import java.util.concurrent.TimeUnit
-
 import cats.implicits._
 import eu.timepit.refined.numeric.Positive
 import monix.eval.Task
@@ -11,9 +8,7 @@ import not.ogame.bots.facts.SuppliesBuildingCosts
 import not.ogame.bots.ghostbuster.Wish
 import not.ogame.bots.selenium.refineVUnsafe
 
-import scala.concurrent.duration._
-
-class FlyAndBuildProcessor(taskExecutor: TaskExecutor, clock: Clock, wishList: List[Wish]) {
+class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
   println(s"wishlist: ${pprint.apply(wishList)}")
   private var planetSendingCount = 0
 
@@ -28,16 +23,10 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, clock: Clock, wishList: L
       ) match {
         case Some(fleet) =>
           val toPlanet = planets.find(p => fleet.to == p.coordinates).get
-          val sleepTime = calculateSleepTime(fleet.arrivalTime)
-          println(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes")
-          taskExecutor.waitSeconds(sleepTime) >> buildAndSend(toPlanet, planets)
+          taskExecutor.waitTo(fleet.arrivalTime) >> buildAndSend(toPlanet, planets)
         case None => lookAndSend(planets)
       }
     } yield ()
-  }
-
-  private def calculateSleepTime(futureTime: Instant) = {
-    FiniteDuration(futureTime.toEpochMilli - clock.instant().toEpochMilli, TimeUnit.MILLISECONDS)
   }
 
   private def lookAndSend(planets: List[PlayerPlanet]): Task[Unit] = {
@@ -63,17 +52,19 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, clock: Clock, wishList: L
     } yield ()
   }
 
-  private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[Instant] = {
+  private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[Unit] = {
     planetSendingCount = planetSendingCount + 1
-    taskExecutor.sendFleet(
-      SendFleetRequest(
-        from.id,
-        SendFleetRequestShips.AllShips,
-        to.coordinates,
-        FleetMissionType.Deployment,
-        FleetResources.Max
+    taskExecutor
+      .sendFleet(
+        SendFleetRequest(
+          from.id,
+          SendFleetRequestShips.AllShips,
+          to.coordinates,
+          FleetMissionType.Deployment,
+          FleetResources.Max
+        )
       )
-    )
+      .flatMap(arrivalTime => taskExecutor.waitTo(arrivalTime))
   }
 
   private def buildNextThingFromWishList(planet: PlayerPlanet): Task[Unit] = {
