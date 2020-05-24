@@ -6,7 +6,7 @@ import eu.timepit.refined.pureconfig._
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots.Credentials
-import not.ogame.bots.ghostbuster.two.{FlyAndBuildProcessor, TaskExecutorImpl}
+import not.ogame.bots.ghostbuster.two.{FlyAndBuildProcessor, ActivityFakerProcessor, TaskExecutorImpl}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
@@ -30,7 +30,8 @@ object Main {
       .use { ogame =>
         val taskExecutor = new TaskExecutorImpl(ogame, clock)
         val fbp = new FlyAndBuildProcessor(taskExecutor, clock, botConfig.wishlist)
-        Task.raceMany(List(taskExecutor.run(), fbp.run()))
+        val activityFaker = new ActivityFakerProcessor(taskExecutor)
+        Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run()))
       }
       .runSyncUnsafe()
   }

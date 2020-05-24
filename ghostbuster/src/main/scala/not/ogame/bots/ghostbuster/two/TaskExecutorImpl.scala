@@ -29,13 +29,17 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
     for {
       action <- queue.poll
       _ <- Task.eval(println(s"executing action: ${pprint.apply(action)}"))
-      _ <- handleAction(action)
-        .handleErrorWith { e =>
-          e.printStackTrace()
-          safeLogin >> handleAction(action)
-        }
+      _ <- safeHandleAction(action)
       _ <- processNextAction()
     } yield ()
+  }
+
+  private def safeHandleAction(action: Action[_]): Task[Unit] = {
+    handleAction(action).void
+      .handleErrorWith { e =>
+        e.printStackTrace()
+        safeLogin >> safeHandleAction(action)
+      }
   }
 
   private def safeLogin(): Task[Unit] = {
@@ -84,8 +88,6 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
           .flatMap { sp =>
             Task.fromFuture(subject.onNext(a.response(sp)))
           }
-      case a @ Action.DumpActivity(executionTime, planets, uuid) =>
-        Task.unit //TODO
       case a @ Action.SendFleet(executionTime, sendFleetRequest, uuid) =>
         ogameDriver.sendFleet(sendFleetRequest).flatMap { _ =>
           ogameDriver
@@ -98,7 +100,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
       case a @ Action.GetAirFleet(executionTime, uuid) =>
         ogameDriver.readAllFleets().flatMap { fleets =>
           Task.fromFuture(subject.onNext(a.response(fleets)))
-        }
+        } >> ogameDriver.readPlanets()
       case a @ Action.ReadPlanets(executionTime, uuid) =>
         ogameDriver.readPlanets().flatMap { planets =>
           Task.fromFuture(subject.onNext(a.response(planets)))

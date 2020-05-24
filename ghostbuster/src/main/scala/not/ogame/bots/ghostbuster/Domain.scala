@@ -43,8 +43,6 @@ object Action {
   case class BuildShip(amount: Int, shipType: ShipType, executionTime: Instant, planetId: String, uuid: UUID = UUID.randomUUID())
       extends Action[SuppliesPageData]
 
-  case class DumpActivity(executionTime: Instant, planets: List[String], uuid: UUID = UUID.randomUUID()) extends Action[Unit]
-
   case class SendFleet(executionTime: Instant, sendFleetRequest: SendFleetRequest, uuid: UUID = UUID.randomUUID()) extends Action[Instant]
 
   case class GetAirFleet(executionTime: Instant, uuid: UUID = UUID.randomUUID()) extends Action[List[Fleet]]

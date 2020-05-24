@@ -5,8 +5,9 @@ import not.ogame.bots.selenium.ParsingUtils.parseCoordinates
 import not.ogame.bots.{PlayerPlanet, _}
 import org.openqa.selenium.{By, WebDriver, WebElement}
 
-class PlanetListComponentReader(webDriver: WebDriver) {
+class PlanetListComponentReader(webDriver: WebDriver, credentials: Credentials) {
   def readPlanetList(): List[PlayerPlanet] = {
+    webDriver.get(s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=overview")
     webDriver.waitForElement(By.id("planetList"))
     webDriver.findElement(By.id("planetList")).findElementsS(By.xpath("*")).map(readPlanet)
   }
