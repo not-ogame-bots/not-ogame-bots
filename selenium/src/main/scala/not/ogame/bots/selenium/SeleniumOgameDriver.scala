@@ -311,6 +311,9 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
   }
 
   override def readPlanets(): F[List[PlayerPlanet]] = {
-    Sync[F].delay(new PlanetListComponentReader(webDriver, credentials).readPlanetList())
+    Sync[F].delay {
+      webDriver.get(s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=overview")
+      new PlanetListComponentReader(webDriver, credentials).readPlanetList()
+    }
   }
 }
