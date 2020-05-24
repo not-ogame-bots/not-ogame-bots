@@ -19,7 +19,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     Thread.setDefaultUncaughtExceptionHandler { (t, e) =>
-      println("Uncaught exception in thread: " + t, e)
+      println("Uncaught exception in thread: " + t)
       e.printStackTrace()
     }
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")

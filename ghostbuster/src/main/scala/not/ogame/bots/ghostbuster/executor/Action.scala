@@ -43,8 +43,6 @@ object Action {
       uuid: UUID = UUID.randomUUID()
   ) extends Action[FacilitiesBuildingLevels]
 
-  case class RefreshSupplyAndFacilityPage(executionTime: Instant, planetId: String, uuid: UUID = UUID.randomUUID()) extends Action[Any]
-
   case class ReadSupplyPage(executionTime: Instant, planetId: String, uuid: UUID = UUID.randomUUID()) extends Action[SuppliesPageData]
 
   case class RefreshFleetOnPlanetStatus(executionTime: Instant, playerPlanet: PlayerPlanet, uuid: UUID = UUID.randomUUID())

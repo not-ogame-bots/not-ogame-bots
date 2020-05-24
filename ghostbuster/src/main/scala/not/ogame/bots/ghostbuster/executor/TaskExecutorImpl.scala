@@ -53,7 +53,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
 
   private def handleAction(action: Action[_]) = {
     action match {
-      case a @ Action.BuildSupply(suppliesBuilding, level, executionTime, planetId, uuid) =>
+      case a @ Action.BuildSupply(suppliesBuilding, _, _, planetId, _) =>
         ogameDriver
           .buildSuppliesBuilding(planetId, suppliesBuilding)
           .flatMap { _ =>
@@ -62,7 +62,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
           .flatMap { suppliesPage =>
             Task.fromFuture(subject.onNext(a.response(suppliesPage.finishTimestamp)))
           }
-      case a @ Action.BuildFacility(suppliesBuilding, level, executionTime, planetId, uuid) =>
+      case a @ Action.BuildFacility(suppliesBuilding, _, _, planetId, _) =>
         ogameDriver
           .buildFacilityBuilding(planetId, suppliesBuilding)
           .flatMap { _ =>
@@ -71,15 +71,13 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
           .flatMap { sp =>
             Task.from(subject.onNext(a.response(sp)))
           }
-      case a @ Action.RefreshSupplyAndFacilityPage(executionTime, planetId, uuid) =>
-        Task.unit //TODO? deliberately
-      case a @ Action.ReadSupplyPage(executionTime, planetId, uuid) =>
+      case a @ Action.ReadSupplyPage(_, planetId, _) =>
         ogameDriver.readSuppliesPage(planetId).flatMap(sp => Task.fromFuture(subject.onNext(a.response(sp))))
-      case a @ Action.RefreshFleetOnPlanetStatus(executionTime, planetId, uuid) =>
+      case a @ Action.RefreshFleetOnPlanetStatus(_, planetId, _) =>
         ogameDriver
           .checkFleetOnPlanet(planetId.id)
           .flatMap(f => Task.fromFuture(subject.onNext(a.response(PlanetFleet(planetId, f)))))
-      case a @ Action.BuildShip(amount, shipType, executionTime, planetId, uuid) =>
+      case a @ Action.BuildShip(amount, shipType, _, planetId, _) =>
         ogameDriver
           .buildShips(planetId, shipType, amount)
           .flatMap { _ =>
@@ -88,7 +86,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
           .flatMap { sp =>
             Task.fromFuture(subject.onNext(a.response(sp)))
           }
-      case a @ Action.SendFleet(executionTime, sendFleetRequest, uuid) =>
+      case a @ Action.SendFleet(_, sendFleetRequest, _) =>
         ogameDriver.sendFleet(sendFleetRequest).flatMap { _ =>
           ogameDriver
             .readAllFleets()
@@ -97,11 +95,11 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
             }
             .flatMap(f => Task.fromFuture(subject.onNext(a.response(f.arrivalTime))))
         }
-      case a @ Action.GetAirFleet(executionTime, uuid) =>
+      case a @ Action.GetAirFleet(_, _) =>
         ogameDriver.readAllFleets().flatMap { fleets =>
           Task.fromFuture(subject.onNext(a.response(fleets)))
         } >> ogameDriver.readPlanets()
-      case a @ Action.ReadPlanets(executionTime, uuid) =>
+      case a @ Action.ReadPlanets(_, _) =>
         ogameDriver.readPlanets().flatMap { planets =>
           Task.fromFuture(subject.onNext(a.response(planets)))
         }
