@@ -1,17 +1,17 @@
 package not.ogame.bots.selenium
 
+import not.ogame.bots.FleetSpeed._
 import not.ogame.bots._
 import not.ogame.bots.selenium.EasySelenium._
 import org.openqa.selenium.{By, JavascriptExecutor, WebDriver}
 
 import scala.util.Random
-import scala.jdk.CollectionConverters._
 
 class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
   def sendFleet(request: SendFleetRequest): Unit = {
     webDriver.safeUrl(getFleetDispatchUrl(credentials, request.startPlanetId))
     fillFleet(request.ships)
-    selectSpeed(request.speed.value)
+    selectSpeed(request.speed)
     fillTarget(request.targetCoordinates)
     fillResources(request.resources, request.fleetMissionType)
   }
@@ -105,9 +105,23 @@ class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
     }
   }
 
-  private def selectSpeed(speedLevel: Int): Unit = {
-    webDriver.waitForElement(By.id("continueToFleet3"))
-    val steps = webDriver.findElements(By.className("step")).asScala
-    steps(speedLevel - 1).click()
+  private def selectSpeed(speedLevel: FleetSpeed): Unit = {
+    webDriver.waitForElement(By.className("step"))
+    webDriver.findElementsS(By.className("step")).find(_.getText == getSpeedLevelText(speedLevel)).get.click()
+  }
+
+  private def getSpeedLevelText(speedLevel: FleetSpeed): String = {
+    speedLevel match {
+      case Percent10  => "10"
+      case Percent20  => "20"
+      case Percent30  => "30"
+      case Percent40  => "40"
+      case Percent50  => "50"
+      case Percent60  => "60"
+      case Percent70  => "70"
+      case Percent80  => "80"
+      case Percent90  => "90"
+      case Percent100 => "100"
+    }
   }
 }
