@@ -1,21 +1,21 @@
-package not.ogame.bots.ghostbuster.two
+package not.ogame.bots.ghostbuster.executor
 
 import java.time.{Clock, Instant}
 
+import cats.implicits._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import monix.catnap.ConcurrentQueue
 import monix.eval.Task
 import monix.execution.BufferCapacity
+import monix.execution.Scheduler.Implicits.global
 import monix.reactive.subjects.ConcurrentSubject
 import monix.reactive.{Consumer, MulticastStrategy}
-import not.ogame.bots.ghostbuster.{Action, PlanetFleet, Response}
 import not.ogame.bots._
+import not.ogame.bots.ghostbuster.processors.TaskExecutor
+import not.ogame.bots.ghostbuster.PlanetFleet
 
-import scala.concurrent.duration.FiniteDuration
-import cats.implicits._
-import monix.execution.Scheduler.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.duration.{FiniteDuration, _}
 
 class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends TaskExecutor {
   private val subject = ConcurrentSubject(MulticastStrategy.publish[Response])

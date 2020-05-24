@@ -1,7 +1,8 @@
-package not.ogame.bots.ghostbuster.two
+package not.ogame.bots.ghostbuster.processors
 
-import monix.eval.Task
 import cats.implicits._
+import monix.eval.Task
+
 import scala.concurrent.duration._
 
 class ActivityFakerProcessor(taskExecutor: TaskExecutor) {

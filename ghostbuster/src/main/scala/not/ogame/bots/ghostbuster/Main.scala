@@ -6,7 +6,8 @@ import eu.timepit.refined.pureconfig._
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots.Credentials
-import not.ogame.bots.ghostbuster.two.{FlyAndBuildProcessor, ActivityFakerProcessor, TaskExecutorImpl}
+import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
+import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, FlyAndBuildProcessor}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._

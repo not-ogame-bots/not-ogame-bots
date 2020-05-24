@@ -1,4 +1,4 @@
-package not.ogame.bots.ghostbuster.two
+package not.ogame.bots.ghostbuster.processors
 
 import java.time.Instant
 
