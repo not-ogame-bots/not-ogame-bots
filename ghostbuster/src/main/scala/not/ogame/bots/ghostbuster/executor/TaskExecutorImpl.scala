@@ -58,21 +58,13 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
       case a @ Action.BuildSupply(suppliesBuilding, _, _, planetId, _) =>
         ogameDriver
           .buildSuppliesBuilding(planetId, suppliesBuilding)
-          .flatMap { _ =>
-            ogameDriver.readSuppliesPage(planetId).map(_.currentBuildingProgress.get)
-          }
-          .flatMap { suppliesPage =>
-            Task.fromFuture(subject.onNext(a.response(suppliesPage.finishTimestamp)))
-          }
+          .flatMap(_ => ogameDriver.readSuppliesPage(planetId).map(_.currentBuildingProgress.get))
+          .flatMap(suppliesPage => Task.fromFuture(subject.onNext(a.response(suppliesPage.finishTimestamp))))
       case a @ Action.BuildFacility(suppliesBuilding, _, _, planetId, _) =>
         ogameDriver
           .buildFacilityBuilding(planetId, suppliesBuilding)
-          .flatMap { _ =>
-            ogameDriver.readFacilityBuildingsLevels(planetId)
-          }
-          .flatMap { sp =>
-            Task.from(subject.onNext(a.response(sp)))
-          }
+          .flatMap(_ => ogameDriver.readFacilityBuildingsLevels(planetId))
+          .flatMap(sp => Task.from(subject.onNext(a.response(sp))))
       case a @ Action.ReadSupplyPage(_, planetId, _) =>
         ogameDriver.readSuppliesPage(planetId).flatMap(sp => Task.fromFuture(subject.onNext(a.response(sp))))
       case a @ Action.RefreshFleetOnPlanetStatus(_, planetId, _) =>
@@ -82,12 +74,8 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
       case a @ Action.BuildShip(amount, shipType, _, planetId, _) =>
         ogameDriver
           .buildShips(planetId, shipType, amount)
-          .flatMap { _ =>
-            ogameDriver.readSuppliesPage(planetId)
-          }
-          .flatMap { sp =>
-            Task.fromFuture(subject.onNext(a.response(sp)))
-          }
+          .flatMap(_ => ogameDriver.readSuppliesPage(planetId))
+          .flatMap(sp => Task.fromFuture(subject.onNext(a.response(sp))))
       case a @ Action.SendFleet(_, sendFleetRequest, _) =>
         ogameDriver.sendFleet(sendFleetRequest).flatMap { _ =>
           ogameDriver
@@ -96,11 +84,13 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
               fleets.find(f => f.to == sendFleetRequest.targetCoordinates && f.fleetMissionType == sendFleetRequest.fleetMissionType).get
             }
             .flatMap(f => Task.fromFuture(subject.onNext(a.response(f.arrivalTime))))
+            .flatMap(_ => ogameDriver.readPlanets())
         }
       case a @ Action.GetAirFleet(_, _) =>
-        ogameDriver.readAllFleets().flatMap { fleets =>
-          Task.fromFuture(subject.onNext(a.response(fleets)))
-        } >> ogameDriver.readPlanets()
+        ogameDriver
+          .readAllFleets()
+          .flatMap(fleets => Task.fromFuture(subject.onNext(a.response(fleets))))
+          .flatMap(_ => ogameDriver.readPlanets())
       case a @ Action.ReadPlanets(_, _) =>
         ogameDriver.readPlanets().flatMap { planets =>
           Task.fromFuture(subject.onNext(a.response(planets)))

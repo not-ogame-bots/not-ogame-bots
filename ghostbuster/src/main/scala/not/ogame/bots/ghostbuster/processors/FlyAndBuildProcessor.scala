@@ -35,9 +35,10 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
         taskExecutor.getFleetOnPlanet(planet)
       }
       .sequence
-      .map(_.maxBy(_.fleet.size))
+      .map(_.maxBy(_.fleet.count { case (_, c) => c > 0 }))
 
     planetWithBiggestFleet.flatMap { planet =>
+      println(s"Planet with biggest fleet ${pprint.apply(planet)}")
       buildAndSend(planet.playerPlanet, planets)
     }
   }
@@ -72,9 +73,10 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
       if (suppliesPageData.isIdle) {
         wishList
           .collectFirst {
-            case w: Wish.BuildSupply
-                if suppliesPageData.suppliesLevels.values(w.suppliesBuilding).value < w.level.value && w.planetId == planet.id =>
-              buildSupplyBuilding(w, suppliesPageData, planet)
+            case w: Wish.BuildSupply if getLevel(suppliesPageData, w.suppliesBuilding) < w.level.value && w.planetId == planet.id =>
+              buildSupplyBuildingOrNothing(w.suppliesBuilding, suppliesPageData, planet)
+            case w: Wish.SmartSupplyBuilder if isSmartBuilderApplicable(planet, suppliesPageData, w) =>
+              smartBuilder(planet, suppliesPageData)
           }
           .sequence
           .void
@@ -84,12 +86,71 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
     }
   }
 
-  private def buildSupplyBuilding(buildWish: Wish.BuildSupply, suppliesPageData: SuppliesPageData, planet: PlayerPlanet) = {
-    val level = nextLevel(suppliesPageData, buildWish.suppliesBuilding)
+  private def smartBuilder(planet: PlayerPlanet, suppliesPageData: SuppliesPageData) = {
+    if (suppliesPageData.currentResources.energy < 0) {
+      buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
+    } else {
+      val shouldBuildDeuter = getLevel(suppliesPageData, SuppliesBuilding.MetalMine) - getLevel(
+        suppliesPageData,
+        SuppliesBuilding.DeuteriumSynthesizer
+      ) > 3
+      val shouldBuildCrystal = getLevel(suppliesPageData, SuppliesBuilding.MetalMine) - getLevel(
+        suppliesPageData,
+        SuppliesBuilding.CrystalStorage
+      ) > 1
+      if (shouldBuildDeuter) {
+        buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
+      } else if (shouldBuildCrystal) {
+        buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.CrystalMine)
+      } else {
+        buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.MetalMine)
+      }
+    }
+  }
+
+  private def buildBuildingOrStorage(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, building: SuppliesBuilding) = {
+    val level = nextLevel(suppliesPageData, building)
+    val requiredResources = SuppliesBuildingCosts.buildingCost(building, level)
+    if (suppliesPageData.currentCapacity.gtEqTo(requiredResources)) {
+      buildSupplyBuildingOrNothing(building, suppliesPageData, planet)
+    } else {
+      buildStorage(suppliesPageData, requiredResources, planet)
+    }
+  }
+
+  private def buildStorage(
+      suppliesPage: SuppliesPageData,
+      requiredResources: Resources,
+      planet: PlayerPlanet
+  ): Task[Unit] = {
+    requiredResources.difference(suppliesPage.currentCapacity) match {
+      case Resources(m, _, _, _) if m > 0 =>
+        buildSupplyBuildingOrNothing(SuppliesBuilding.MetalStorage, suppliesPage, planet)
+      case Resources(_, c, _, _) if c > 0 =>
+        buildSupplyBuildingOrNothing(SuppliesBuilding.CrystalStorage, suppliesPage, planet)
+      case Resources(_, _, d, _) if d > 0 =>
+        buildSupplyBuildingOrNothing(SuppliesBuilding.DeuteriumStorage, suppliesPage, planet)
+    }
+  }
+
+  private def isSmartBuilderApplicable(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, w: Wish.SmartSupplyBuilder) = {
+    val correctPlanet = w.planetId == planet.id
+    val metalMineUnderLevel = w.metalLevel.value < getLevel(suppliesPageData, SuppliesBuilding.MetalMine)
+    val crystalMineUnderLevel = w.crystalLevel.value < getLevel(suppliesPageData, SuppliesBuilding.CrystalMine)
+    val deuterMineUnderLevel = w.deuterLevel.value < getLevel(suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
+    correctPlanet && (metalMineUnderLevel || crystalMineUnderLevel || deuterMineUnderLevel)
+  }
+
+  private def getLevel(suppliesPageData: SuppliesPageData, suppliesBuilding: SuppliesBuilding) = {
+    suppliesPageData.suppliesLevels.values(suppliesBuilding).value
+  }
+
+  private def buildSupplyBuildingOrNothing(suppliesBuilding: SuppliesBuilding, suppliesPageData: SuppliesPageData, planet: PlayerPlanet) = {
+    val level = nextLevel(suppliesPageData, suppliesBuilding)
     val requiredResources =
-      SuppliesBuildingCosts.buildingCost(buildWish.suppliesBuilding, level)
-    if (suppliesPageData.currentResources.gtEqTo(requiredResources)) { //TODO can be simplified
-      taskExecutor.buildSupplyBuilding(buildWish.suppliesBuilding, level, planet).void
+      SuppliesBuildingCosts.buildingCost(suppliesBuilding, level)
+    if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
+      taskExecutor.buildSupplyBuilding(suppliesBuilding, level, planet).void
     } else {
       Task.unit
     }

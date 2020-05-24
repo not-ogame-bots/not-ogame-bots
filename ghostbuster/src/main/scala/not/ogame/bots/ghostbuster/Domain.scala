@@ -11,6 +11,13 @@ object Wish {
   case class BuildFacility(facility: FacilityBuilding, level: Int Refined Positive, planetId: String) extends Wish
 
   case class BuildShip(shipType: ShipType, planetId: String, amount: Int Refined Positive) extends Wish
+
+  case class SmartSupplyBuilder(
+      metalLevel: Int Refined Positive,
+      crystalLevel: Int Refined Positive,
+      deuterLevel: Int Refined Positive,
+      planetId: String
+  ) extends Wish
 }
 
 case class BotConfig(

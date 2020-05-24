@@ -50,6 +50,7 @@ object Main {
     case "build_supply"   => implicitly[ConfigReader[Wish.BuildSupply]].from(objCur)
     case "build_facility" => implicitly[ConfigReader[Wish.BuildFacility]].from(objCur)
     case "build_ship"     => implicitly[ConfigReader[Wish.BuildShip]].from(objCur)
+    case "smart_builder"  => implicitly[ConfigReader[Wish.SmartSupplyBuilder]].from(objCur)
     case t =>
       objCur.failed(CannotConvert(objCur.value.toString, "Wish", s"unknown type: $t"))
   }
