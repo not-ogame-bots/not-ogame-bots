@@ -30,7 +30,7 @@ object Main {
       .create(credentials)
       .use { ogame =>
         val taskExecutor = new TaskExecutorImpl(ogame, clock)
-        val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.wishlist)
+        val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.wishlist, clock)
         val activityFaker = new ActivityFakerProcessor(taskExecutor)
         Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run()))
       }

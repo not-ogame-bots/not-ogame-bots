@@ -1,5 +1,8 @@
 package not.ogame.bots.ghostbuster.processors
 
+import java.time.{Clock, Instant}
+import java.util.concurrent.TimeUnit
+
 import cats.implicits._
 import eu.timepit.refined.numeric.Positive
 import monix.eval.Task
@@ -8,7 +11,10 @@ import not.ogame.bots.facts.SuppliesBuildingCosts
 import not.ogame.bots.ghostbuster.Wish
 import not.ogame.bots.selenium.refineVUnsafe
 
-class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
+import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
+
+class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clock: Clock) {
   println(s"wishlist: ${pprint.apply(wishList)}")
   private var planetSendingCount = 0
 
@@ -48,7 +54,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
     val otherPlanets = planets.filterNot(p => p.id == currentPlanet.id)
     val targetPlanet = otherPlanets(planetSendingCount % otherPlanets.size)
     for {
-      _ <- buildNextThingFromWishList(currentPlanet)
+      _ <- buildAndContinue(currentPlanet)
       _ <- sendFleet(from = currentPlanet, to = targetPlanet)
       _ <- buildAndSend(currentPlanet = targetPlanet, planets)
     } yield ()
@@ -69,7 +75,19 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
       .flatMap(arrivalTime => taskExecutor.waitTo(arrivalTime))
   }
 
-  private def buildNextThingFromWishList(planet: PlayerPlanet): Task[Unit] = {
+  private def buildAndContinue(planet: PlayerPlanet): Task[Unit] = {
+    buildNextThingFromWishList(planet).flatMap {
+      case Some(elapsedTime) if timeDiff(elapsedTime, clock.instant()) < (10 minutes) =>
+        taskExecutor.waitTo(elapsedTime) >> buildAndContinue(planet)
+      case None => Task.unit
+    }
+  }
+
+  private def timeDiff(first: Instant, seconds: Instant): FiniteDuration = {
+    FiniteDuration(first.toEpochMilli - seconds.toEpochMilli, TimeUnit.MILLISECONDS)
+  }
+
+  private def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[Instant]] = {
     taskExecutor.readSupplyPage(planet).flatMap { suppliesPageData =>
       if (suppliesPageData.isIdle) {
         wishList
@@ -80,9 +98,9 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
               smartBuilder(planet, suppliesPageData)
           }
           .sequence
-          .void
+          .map(_.flatten)
       } else {
-        Task.unit
+        Task.unit.map(_ => None)
       }
     }
   }
@@ -119,7 +137,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
       suppliesPage: SuppliesPageData,
       requiredResources: Resources,
       planet: PlayerPlanet
-  ): Task[Unit] = {
+  ): Task[Option[Instant]] = {
     requiredResources.difference(suppliesPage.currentCapacity) match {
       case Resources(m, _, _, _) if m > 0 =>
         buildSupplyBuildingOrNothing(SuppliesBuilding.MetalStorage, suppliesPage, planet)
@@ -143,9 +161,9 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
     val requiredResources =
       SuppliesBuildingCosts.buildingCost(suppliesBuilding, level)
     if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
-      taskExecutor.buildSupplyBuilding(suppliesBuilding, level, planet).void
+      taskExecutor.buildSupplyBuilding(suppliesBuilding, level, planet).map(Some(_))
     } else {
-      Task.unit
+      Task.unit.map(_ => None)
     }
   }
 
