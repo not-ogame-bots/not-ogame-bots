@@ -3,6 +3,7 @@ package not.ogame.bots.ghostbuster.processors
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 
+import cats.effect.concurrent.Ref
 import cats.implicits._
 import eu.timepit.refined.numeric.Positive
 import monix.eval.Task
@@ -16,7 +17,7 @@ import scala.concurrent.duration.FiniteDuration
 
 class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clock: Clock) {
   println(s"wishlist: ${pprint.apply(wishList)}")
-  private var planetSendingCount = 0
+  private val planetSendingCount = Ref.unsafe[Task, Int](0)
 
   def run(): Task[Unit] = {
     for {
@@ -52,33 +53,37 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clo
 
   private def buildAndSend(currentPlanet: PlayerPlanet, planets: List[PlayerPlanet]): Task[Unit] = {
     val otherPlanets = planets.filterNot(p => p.id == currentPlanet.id)
-    val targetPlanet = otherPlanets(planetSendingCount % otherPlanets.size)
     for {
-      _ <- buildAndContinue(currentPlanet)
+      counter <- planetSendingCount.get
+      targetPlanet = otherPlanets(counter % otherPlanets.size)
+      _ <- buildAndContinue(currentPlanet, clock.instant())
       _ <- sendFleet(from = currentPlanet, to = targetPlanet)
       _ <- buildAndSend(currentPlanet = targetPlanet, planets)
     } yield ()
   }
 
   private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[Unit] = {
-    planetSendingCount = planetSendingCount + 1
-    taskExecutor
-      .sendFleet(
-        SendFleetRequest(
-          from.id,
-          SendFleetRequestShips.AllShips,
-          to.coordinates,
-          FleetMissionType.Deployment,
-          FleetResources.Max
+    for {
+      _ <- planetSendingCount.update(_ + 1)
+      arrivalTime <- taskExecutor
+        .sendFleet(
+          SendFleetRequest(
+            from.id,
+            SendFleetRequestShips.AllShips,
+            to.coordinates,
+            FleetMissionType.Deployment,
+            FleetResources.Max
+          )
         )
-      )
-      .flatMap(arrivalTime => taskExecutor.waitTo(arrivalTime))
+      _ <- taskExecutor.waitTo(arrivalTime)
+    } yield ()
   }
 
-  private def buildAndContinue(planet: PlayerPlanet): Task[Unit] = {
+  private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: Instant): Task[Unit] = { //TODO it should be inside smart builder not outside
     buildNextThingFromWishList(planet).flatMap {
-      case Some(elapsedTime) if timeDiff(elapsedTime, clock.instant()) < (10 minutes) =>
-        taskExecutor.waitTo(elapsedTime) >> buildAndContinue(planet)
+      case Some(elapsedTime)
+          if timeDiff(elapsedTime, clock.instant()) < (10 minutes) && timeDiff(startedBuildingAt, clock.instant()) < (20 minutes) =>
+        taskExecutor.waitTo(elapsedTime) >> buildAndContinue(planet, startedBuildingAt)
       case None => Task.unit
     }
   }
@@ -87,7 +92,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clo
     FiniteDuration(first.toEpochMilli - seconds.toEpochMilli, TimeUnit.MILLISECONDS)
   }
 
-  private def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[Instant]] = {
+  private def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[Instant]] = { //TODO add little delay to building maybe in taskExecutor? globally?
     taskExecutor.readSupplyPage(planet).flatMap { suppliesPageData =>
       if (suppliesPageData.isIdle) {
         wishList
@@ -100,7 +105,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clo
           .sequence
           .map(_.flatten)
       } else {
-        Task.unit.map(_ => None)
+        suppliesPageData.currentBuildingProgress.get.finishTimestamp.some.pure[Task] //TODO unsafe ship might be building
       }
     }
   }
@@ -112,7 +117,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clo
       val shouldBuildDeuter = suppliesPageData.getLevel(SuppliesBuilding.MetalMine) -
         suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer) > 3
       val shouldBuildCrystal = suppliesPageData.getLevel(SuppliesBuilding.MetalMine) -
-        suppliesPageData.getLevel(SuppliesBuilding.CrystalStorage) > 1
+        suppliesPageData.getLevel(SuppliesBuilding.CrystalMine) > 1
       if (shouldBuildDeuter) {
         buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
       } else if (shouldBuildCrystal) {
