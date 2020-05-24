@@ -22,6 +22,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
             .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
       ) match {
         case Some(fleet) =>
+          println(s"Found our fleet in the air: ${pprint.apply(fleet)}")
           val toPlanet = planets.find(p => fleet.to == p.coordinates).get
           taskExecutor.waitTo(fleet.arrivalTime) >> buildAndSend(toPlanet, planets)
         case None => lookAndSend(planets)
@@ -135,9 +136,9 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish]) {
 
   private def isSmartBuilderApplicable(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, w: Wish.SmartSupplyBuilder) = {
     val correctPlanet = w.planetId == planet.id
-    val metalMineUnderLevel = w.metalLevel.value < getLevel(suppliesPageData, SuppliesBuilding.MetalMine)
-    val crystalMineUnderLevel = w.crystalLevel.value < getLevel(suppliesPageData, SuppliesBuilding.CrystalMine)
-    val deuterMineUnderLevel = w.deuterLevel.value < getLevel(suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
+    val metalMineUnderLevel = w.metalLevel.value > getLevel(suppliesPageData, SuppliesBuilding.MetalMine)
+    val crystalMineUnderLevel = w.crystalLevel.value > getLevel(suppliesPageData, SuppliesBuilding.CrystalMine)
+    val deuterMineUnderLevel = w.deuterLevel.value > getLevel(suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
     correctPlanet && (metalMineUnderLevel || crystalMineUnderLevel || deuterMineUnderLevel)
   }
 
