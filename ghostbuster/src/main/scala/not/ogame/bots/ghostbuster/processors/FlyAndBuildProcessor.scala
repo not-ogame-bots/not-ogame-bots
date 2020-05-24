@@ -9,7 +9,7 @@ import eu.timepit.refined.numeric.Positive
 import monix.eval.Task
 import not.ogame.bots._
 import not.ogame.bots.facts.SuppliesBuildingCosts
-import not.ogame.bots.ghostbuster.{BotConfig, Wish}
+import not.ogame.bots.ghostbuster.{BotConfig, PlanetFleet, Wish}
 import not.ogame.bots.selenium.refineVUnsafe
 
 import scala.concurrent.duration._
@@ -38,17 +38,25 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
   }
 
   private def lookAndSend(planets: List[PlayerPlanet]): Task[Unit] = {
-    val planetWithBiggestFleet = planets
+    val planetWithFsFleet = planets
       .map { planet =>
         taskExecutor.getFleetOnPlanet(planet)
       }
       .sequence
-      .map(_.maxBy(_.fleet.count { case (_, c) => c > 0 }))
+      .map(planetFleets => planetFleets.find(isFsFleet))
 
-    planetWithBiggestFleet.flatMap { planet =>
-      println(s"Planet with biggest fleet ${pprint.apply(planet)}")
-      buildAndSend(planet.playerPlanet, planets)
+    planetWithFsFleet.flatMap {
+      case Some(planet) =>
+        println(s"Planet with fs fleet ${pprint.apply(planet)}")
+        buildAndSend(planet.playerPlanet, planets)
+      case None =>
+        println("Couldn't find fs fleet on any planet")
+        Task.never
     }
+  }
+
+  private def isFsFleet(planetFleet: PlanetFleet): Boolean = {
+    botConfig.fs.ships.forall(fsShip => fsShip.amount <= planetFleet.fleet(fsShip.shipType))
   }
 
   private def buildAndSend(currentPlanet: PlayerPlanet, planets: List[PlayerPlanet]): Task[Unit] = {
