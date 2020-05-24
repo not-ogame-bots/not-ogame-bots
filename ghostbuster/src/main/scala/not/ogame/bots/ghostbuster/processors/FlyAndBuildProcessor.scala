@@ -84,7 +84,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clo
       case Some(elapsedTime)
           if timeDiff(elapsedTime, clock.instant()) < (10 minutes) && timeDiff(startedBuildingAt, clock.instant()) < (20 minutes) =>
         taskExecutor.waitTo(elapsedTime) >> buildAndContinue(planet, startedBuildingAt)
-      case None => Task.unit
+      case _ => Task.unit
     }
   }
 
