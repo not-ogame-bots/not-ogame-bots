@@ -139,8 +139,11 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
   }
 
   private def exec[T](action: Action[T]) = {
-    queue.tryOffer(action) >> subject
-      .collect { case r if r.uuid == action.uuid => action.defer(r.value) }
-      .consumeWith(Consumer.head)
+    Task.parMap2(
+      queue.offer(action),
+      subject
+        .collect { case r if r.uuid == action.uuid => action.defer(r.value) }
+        .consumeWith(Consumer.head)
+    )((_, result) => result)
   }
 }
