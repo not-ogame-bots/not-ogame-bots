@@ -9,14 +9,14 @@ import eu.timepit.refined.numeric.Positive
 import monix.eval.Task
 import not.ogame.bots._
 import not.ogame.bots.facts.SuppliesBuildingCosts
-import not.ogame.bots.ghostbuster.Wish
+import not.ogame.bots.ghostbuster.{BotConfig, Wish}
 import not.ogame.bots.selenium.refineVUnsafe
 
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 
-class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clock: Clock) {
-  println(s"wishlist: ${pprint.apply(wishList)}")
+class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: Clock) {
+  println(s"wishlist: ${pprint.apply(botConfig)}")
   private val planetSendingCount = Ref.unsafe[Task, Int](0)
 
   def run(): Task[Unit] = {
@@ -69,7 +69,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clo
         .sendFleet(
           SendFleetRequest(
             from.id,
-            SendFleetRequestShips.AllShips,
+            SendFleetRequestShips.Ships(botConfig.fs.ships.map(s => s.shipType -> s.amount).toMap),
             to.coordinates,
             FleetMissionType.Deployment,
             FleetResources.Max
@@ -95,7 +95,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clo
   private def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[Instant]] = {
     taskExecutor.readSupplyPage(planet).flatMap { suppliesPageData =>
       if (!suppliesPageData.buildingInProgress) {
-        wishList
+        botConfig.wishlist
           .collectFirst {
             case w: Wish.BuildSupply if suppliesPageData.getLevel(w.suppliesBuilding) < w.level.value && w.planetId == planet.id =>
               buildSupplyBuildingOrNothing(w.suppliesBuilding, suppliesPageData, planet)

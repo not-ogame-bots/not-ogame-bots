@@ -5,7 +5,7 @@ import java.time.Clock
 import eu.timepit.refined.pureconfig._
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
-import not.ogame.bots.Credentials
+import not.ogame.bots.{Credentials, ShipType}
 import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
 import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, FlyAndBuildProcessor}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
@@ -30,7 +30,7 @@ object Main {
       .create(credentials)
       .use { ogame =>
         val taskExecutor = new TaskExecutorImpl(ogame, clock)
-        val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.wishlist, clock)
+        val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig, clock)
         val activityFaker = new ActivityFakerProcessor(taskExecutor)
         Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run()))
       }

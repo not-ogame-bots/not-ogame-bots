@@ -22,9 +22,10 @@ object Wish {
 
 case class BotConfig(
     wishlist: List[Wish],
-    buildMtUpToCapacity: Boolean,
-    useWishlist: Boolean,
-    activityFaker: Boolean,
-    allowWaiting: Boolean
+    fs: FsConfig
 )
+
+case class FsConfig(ships: List[FsShip])
+case class FsShip(shipType: ShipType, amount: Int)
+
 case class PlanetFleet(playerPlanet: PlayerPlanet, fleet: Map[ShipType, Int])
