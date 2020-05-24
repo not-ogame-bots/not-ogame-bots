@@ -118,7 +118,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
       val shouldBuildDeuter = suppliesPageData.getLevel(SuppliesBuilding.MetalMine) -
         suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer) > 3
       val shouldBuildCrystal = suppliesPageData.getLevel(SuppliesBuilding.MetalMine) -
-        suppliesPageData.getLevel(SuppliesBuilding.CrystalMine) > 1
+        suppliesPageData.getLevel(SuppliesBuilding.CrystalMine) > 2
       if (shouldBuildDeuter) {
         buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
       } else if (shouldBuildCrystal) {
