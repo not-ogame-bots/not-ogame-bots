@@ -5,17 +5,8 @@ import java.util.UUID
 
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
-import not.ogame.bots.{
-  FacilitiesBuildingLevels,
-  FacilityBuilding,
-  Fleet,
-  PlayerPlanet,
-  SendFleetRequest,
-  ShipType,
-  SuppliesBuilding,
-  SuppliesPageData
-}
 import not.ogame.bots.ghostbuster.PlanetFleet
+import not.ogame.bots._
 
 sealed trait Action[T] {
   def uuid: UUID
@@ -41,7 +32,7 @@ object Action {
       executionTime: Instant,
       planetId: String,
       uuid: UUID = UUID.randomUUID()
-  ) extends Action[FacilitiesBuildingLevels]
+  ) extends Action[FacilityPageData]
 
   case class ReadSupplyPage(executionTime: Instant, planetId: String, uuid: UUID = UUID.randomUUID()) extends Action[SuppliesPageData]
 

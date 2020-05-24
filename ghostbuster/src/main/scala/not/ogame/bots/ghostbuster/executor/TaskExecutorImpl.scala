@@ -63,7 +63,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
       case a @ Action.BuildFacility(suppliesBuilding, _, _, planetId, _) =>
         ogameDriver
           .buildFacilityBuilding(planetId, suppliesBuilding)
-          .flatMap(_ => ogameDriver.readFacilityBuildingsLevels(planetId))
+          .flatMap(_ => ogameDriver.readFacilityPage(planetId))
           .flatMap(sp => Task.from(subject.onNext(a.response(sp))))
       case a @ Action.ReadSupplyPage(_, planetId, _) =>
         ogameDriver.readSuppliesPage(planetId).flatMap(sp => Task.fromFuture(subject.onNext(a.response(sp))))

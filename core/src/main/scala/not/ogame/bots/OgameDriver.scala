@@ -23,7 +23,7 @@ trait OgameDriver[F[_]] {
 
   def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): F[Unit]
 
-  def readFacilityBuildingsLevels(planetId: String): F[FacilitiesBuildingLevels]
+  def readFacilityPage(planetId: String): F[FacilityPageData]
 
   def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): F[Unit]
 
@@ -56,6 +56,15 @@ case class SuppliesPageData(
     suppliesLevels.values(suppliesBuilding).value
   }
 }
+
+case class FacilityPageData(
+    timestamp: Instant,
+    currentResources: Resources,
+    currentProduction: Resources,
+    currentCapacity: Resources,
+    facilityLevels: FacilitiesBuildingLevels,
+    currentBuildingProgress: Option[BuildingProgress]
+)
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
   def gtEqTo(requiredResources: Resources): Boolean =

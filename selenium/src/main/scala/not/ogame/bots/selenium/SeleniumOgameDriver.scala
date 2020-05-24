@@ -86,14 +86,18 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       currentShipyardProgress
     )
 
-  override def readFacilityBuildingsLevels(planetId: String): F[FacilitiesBuildingLevels] =
+  override def readFacilityPage(planetId: String): F[FacilityPageData] =
     for {
       _ <- webDriver.safeUrlF(facilitiesPageUrl(planetId))
+      currentResources <- readCurrentResources
+      currentProduction <- readCurrentProduction
+      currentCapacity <- readCurrentCapacity
       facilityLevels <- FacilityBuilding.values.toList
         .map(facilityBuilding => facilityBuilding -> getFacilityBuildingLevel(facilityBuilding))
         .traverse { case (building, fetchLevel) => fetchLevel.map(level => building -> refineVUnsafe[NonNegative, Int](level)) }
         .map(list => FacilitiesBuildingLevels(list.toMap))
-    } yield facilityLevels
+      currentBuildingProgress <- readCurrentBuildingProgress
+    } yield FacilityPageData(clock.instant(), currentResources, currentProduction, currentCapacity, facilityLevels, currentBuildingProgress)
 
   private def suppliesPageUrl(planetId: String) = {
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
