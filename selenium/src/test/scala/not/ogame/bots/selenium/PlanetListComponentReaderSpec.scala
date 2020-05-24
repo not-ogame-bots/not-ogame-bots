@@ -1,6 +1,6 @@
 package not.ogame.bots.selenium
 
-import not.ogame.bots.{Coordinates, PlayerPlanet}
+import not.ogame.bots.{Coordinates, Credentials, PlayerPlanet}
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.firefox.FirefoxDriver
 
@@ -22,5 +22,5 @@ class PlanetListComponentReaderSpec extends munit.FunSuite {
   }
 
   private def testReadPlanet(driver: WebDriver): List[PlayerPlanet] =
-    new PlanetListComponentReader(driver).readPlanetList()
+    new PlanetListComponentReader(driver, Credentials("", "", "", "")).readPlanetList()
 }

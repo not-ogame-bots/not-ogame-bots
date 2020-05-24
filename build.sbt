@@ -53,6 +53,7 @@ lazy val ghostbuster: Project = (project in file("ghostbuster"))
       "eu.timepit" %% "refined-pureconfig" % refinedVersion,
       "com.softwaremill.quicklens" %% "quicklens" % "1.5.0",
       "com.lihaoyi" %% "pprint" % "0.5.6",
+      "io.monix" %% "monix" % "3.2.1",
       "org.scalameta" %% "munit" % "0.7.7" % Test
     ),
     testFrameworks += new TestFramework("munit.Framework")

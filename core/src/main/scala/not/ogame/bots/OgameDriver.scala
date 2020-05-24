@@ -44,7 +44,16 @@ case class SuppliesPageData(
     suppliesLevels: SuppliesBuildingLevels,
     currentBuildingProgress: Option[BuildingProgress],
     currentShipyardProgress: Option[BuildingProgress]
-)
+) {
+  def buildingInProgress: Boolean = currentBuildingProgress.isDefined
+  def shipInProgress: Boolean = currentShipyardProgress.isDefined
+  def isBusy: Boolean = buildingInProgress || shipInProgress
+  def isIdle: Boolean = !isBusy
+
+  def getLevel(suppliesBuilding: SuppliesBuilding): Int = {
+    suppliesLevels.values(suppliesBuilding).value
+  }
+}
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
   def gtEqTo(requiredResources: Resources): Boolean =
@@ -77,7 +86,7 @@ object Resources {
   def Zero: Resources = Resources(0, 0, 0)
 }
 
-case class SuppliesBuildingLevels(map: Map[SuppliesBuilding, Int Refined NonNegative])
+case class SuppliesBuildingLevels(values: Map[SuppliesBuilding, Int Refined NonNegative])
 
 case class FacilitiesBuildingLevels(map: Map[FacilityBuilding, Int Refined NonNegative])
 

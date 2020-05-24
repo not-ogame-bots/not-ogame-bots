@@ -23,7 +23,7 @@ class ExpeditionOgameAction[T[_]: Monad](
 
   def processFleet(ogame: OgameDriver[T], fleets: List[Fleet]): T[Instant] = {
     if (fleets.count(returningExpedition) >= maxNumberOfExpeditions) {
-      fleets.filter(_.fleetMissionType == Expedition).map(_.arrivalTime).min.pure
+      fleets.filter(_.fleetMissionType == Expedition).map(_.arrivalTime).min.pure[T]
     } else {
       sendFleet(ogame)
     }

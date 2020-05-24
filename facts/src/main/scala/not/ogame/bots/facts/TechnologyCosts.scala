@@ -28,7 +28,7 @@ object TechnologyCosts {
   }
 
   private def gravitonTechnologyCost(level: Int Refined Positive): Resources = {
-    if (level != 1) throw new IllegalStateException("Graviton Technology should not be developed to higher levels.")
+    if (level.value != 1) throw new IllegalStateException("Graviton Technology should not be developed to higher levels.")
     Resources(0, 0, 0, 300_000)
   }
 

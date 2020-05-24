@@ -20,9 +20,9 @@ object ParsingUtils {
     val now = LocalDateTime.now()
     val localDateTime = now.withHour(timeList(0)).withMinute(timeList(1)).withSecond(timeList(2))
     if (localDateTime.isBefore(now)) {
-      localDateTime.plusDays(1).toInstant(ZoneOffset.UTC)
+      localDateTime.plusDays(1).toInstant(ZoneOffset.ofHours(2))
     } else {
-      localDateTime.toInstant(ZoneOffset.UTC)
+      localDateTime.toInstant(ZoneOffset.ofHours(2))
     }
   }
 }
