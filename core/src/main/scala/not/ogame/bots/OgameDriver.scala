@@ -49,6 +49,10 @@ case class SuppliesPageData(
   def shipInProgress: Boolean = currentShipyardProgress.isDefined
   def isBusy: Boolean = buildingInProgress || shipInProgress
   def isIdle: Boolean = !isBusy
+
+  def getLevel(suppliesBuilding: SuppliesBuilding): Int = {
+    suppliesLevels.values(suppliesBuilding).value
+  }
 }
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
