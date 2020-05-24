@@ -6,7 +6,9 @@ import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.NonNegative
+import eu.timepit.refined.auto._
+import eu.timepit.refined.boolean.And
+import eu.timepit.refined.numeric.{Greater, LessEqual, NonNegative}
 
 trait OgameDriverCreator[F[_]] {
   def create(credentials: Credentials): Resource[F, OgameDriver[F]]
@@ -141,9 +143,9 @@ object CoordinatesType extends Enum[CoordinatesType] {
   val values: IndexedSeq[CoordinatesType] = findValues
 }
 
-sealed trait ShipType extends EnumEntry
+sealed trait ShipType extends EnumEntry with Snakecase
 
-object ShipType extends Enum[ShipType] with Snakecase {
+object ShipType extends Enum[ShipType] {
   case object LightFighter extends ShipType
 
   case object HeavyFighter extends ShipType
@@ -213,7 +215,8 @@ case class SendFleetRequest(
     ships: SendFleetRequestShips,
     targetCoordinates: Coordinates,
     fleetMissionType: FleetMissionType,
-    resources: FleetResources
+    resources: FleetResources,
+    speed: Int Refined (Greater[0] And LessEqual[10]) = 10
 )
 
 sealed trait FleetResources

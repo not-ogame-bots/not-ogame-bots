@@ -5,11 +5,13 @@ import not.ogame.bots.selenium.EasySelenium._
 import org.openqa.selenium.{By, JavascriptExecutor, WebDriver}
 
 import scala.util.Random
+import scala.jdk.CollectionConverters._
 
 class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
   def sendFleet(request: SendFleetRequest): Unit = {
     webDriver.safeUrl(getFleetDispatchUrl(credentials, request.startPlanetId))
     fillFleet(request.ships)
+    selectSpeed(request.speed.value)
     fillTarget(request.targetCoordinates)
     fillResources(request.resources, request.fleetMissionType)
   }
@@ -101,5 +103,11 @@ class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
       case FleetMissionType.Expedition => "missionButton15"
       case FleetMissionType.Unknown    => ???
     }
+  }
+
+  private def selectSpeed(speedLevel: Int): Unit = {
+    webDriver.waitForElement(By.id("continueToFleet3"))
+    val steps = webDriver.findElements(By.className("step")).asScala
+    steps(speedLevel - 1).click()
   }
 }
