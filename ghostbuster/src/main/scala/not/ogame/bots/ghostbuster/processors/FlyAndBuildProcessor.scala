@@ -62,7 +62,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clo
     } yield ()
   }
 
-  private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[Unit] = {
+  private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[Unit] = { //TODO if couldn't take all resources then build mt
     for {
       _ <- planetSendingCount.update(_ + 1)
       arrivalTime <- taskExecutor
