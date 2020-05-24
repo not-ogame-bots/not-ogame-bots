@@ -6,9 +6,8 @@ import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.auto._
-import eu.timepit.refined.boolean.And
-import eu.timepit.refined.numeric.{Greater, LessEqual, NonNegative}
+import eu.timepit.refined.numeric.NonNegative
+import not.ogame.bots.FleetSpeed.Percent100
 
 trait OgameDriverCreator[F[_]] {
   def create(credentials: Credentials): Resource[F, OgameDriver[F]]
@@ -225,7 +224,7 @@ case class SendFleetRequest(
     targetCoordinates: Coordinates,
     fleetMissionType: FleetMissionType,
     resources: FleetResources,
-    speed: Int Refined (Greater[0] And LessEqual[10]) = 10
+    speed: FleetSpeed = Percent100
 )
 
 sealed trait FleetResources
@@ -241,6 +240,32 @@ object SendFleetRequestShips {
   case object AllShips extends SendFleetRequestShips
 
   case class Ships(ships: Map[ShipType, Int]) extends SendFleetRequestShips
+}
+
+sealed trait FleetSpeed extends EnumEntry
+
+object FleetSpeed extends Enum[FleetSpeed] {
+  case object Percent10 extends FleetSpeed
+
+  case object Percent20 extends FleetSpeed
+
+  case object Percent30 extends FleetSpeed
+
+  case object Percent40 extends FleetSpeed
+
+  case object Percent50 extends FleetSpeed
+
+  case object Percent60 extends FleetSpeed
+
+  case object Percent70 extends FleetSpeed
+
+  case object Percent80 extends FleetSpeed
+
+  case object Percent90 extends FleetSpeed
+
+  case object Percent100 extends FleetSpeed
+
+  val values: IndexedSeq[FleetSpeed] = findValues
 }
 
 sealed trait Technology extends EnumEntry
