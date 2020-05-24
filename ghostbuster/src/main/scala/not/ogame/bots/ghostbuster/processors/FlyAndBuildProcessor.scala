@@ -92,7 +92,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clo
     FiniteDuration(first.toEpochMilli - seconds.toEpochMilli, TimeUnit.MILLISECONDS)
   }
 
-  private def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[Instant]] = { //TODO add little delay to building maybe in taskExecutor? globally?
+  private def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[Instant]] = {
     taskExecutor.readSupplyPage(planet).flatMap { suppliesPageData =>
       if (suppliesPageData.isIdle) {
         wishList
