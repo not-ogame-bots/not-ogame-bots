@@ -98,15 +98,23 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
         botConfig.wishlist
           .collectFirst {
             case w: Wish.BuildSupply if suppliesPageData.getLevel(w.suppliesBuilding) < w.level.value && w.planetId == planet.id =>
-              buildSupplyBuildingOrNothing(w.suppliesBuilding, suppliesPageData, planet)
+              if (!suppliesPageData.buildingInProgress) {
+                buildSupplyBuildingOrNothing(w.suppliesBuilding, suppliesPageData, planet)
+              } else {
+                suppliesPageData.currentBuildingProgress.map(_.finishTimestamp).pure[Task]
+              }
             case w: Wish.SmartSupplyBuilder if isSmartBuilderApplicable(planet, suppliesPageData, w) =>
               println("Smart builder applicable")
-              smartBuilder(planet, suppliesPageData)
+              if (!suppliesPageData.buildingInProgress) {
+                smartBuilder(planet, suppliesPageData)
+              } else {
+                suppliesPageData.currentBuildingProgress.map(_.finishTimestamp).pure[Task]
+              }
           }
           .sequence
           .map(_.flatten)
       } else {
-        suppliesPageData.currentBuildingProgress.get.finishTimestamp.some.pure[Task] //TODO unsafe ship might be building
+        Option.empty[Instant].pure[Task]
       }
     }
   }

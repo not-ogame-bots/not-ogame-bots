@@ -18,6 +18,8 @@ object Wish {
       deuterLevel: Int Refined Positive,
       planetId: String
   ) extends Wish
+
+  case class Research(technology: Technology, level: Int Refined Positive, planetId: String) extends Wish
 }
 
 case class BotConfig(
