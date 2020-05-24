@@ -94,12 +94,13 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, wishList: List[Wish], clo
 
   private def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[Instant]] = {
     taskExecutor.readSupplyPage(planet).flatMap { suppliesPageData =>
-      if (suppliesPageData.isIdle) {
+      if (!suppliesPageData.buildingInProgress) {
         wishList
           .collectFirst {
             case w: Wish.BuildSupply if suppliesPageData.getLevel(w.suppliesBuilding) < w.level.value && w.planetId == planet.id =>
               buildSupplyBuildingOrNothing(w.suppliesBuilding, suppliesPageData, planet)
             case w: Wish.SmartSupplyBuilder if isSmartBuilderApplicable(planet, suppliesPageData, w) =>
+              println("Smart builder applicable")
               smartBuilder(planet, suppliesPageData)
           }
           .sequence
