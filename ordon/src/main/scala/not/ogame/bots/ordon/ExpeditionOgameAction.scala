@@ -37,7 +37,7 @@ class ExpeditionOgameAction[T[_]: Monad](
     ogame
       .sendFleet(
         SendFleetRequest(
-          startPlanetId,
+          ???,
           Ships(expeditionFleet),
           targetCoordinates,
           Expedition,

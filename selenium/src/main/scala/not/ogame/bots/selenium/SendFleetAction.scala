@@ -9,7 +9,7 @@ import scala.util.Random
 
 class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
   def sendFleet(request: SendFleetRequest): Unit = {
-    webDriver.safeUrl(getFleetDispatchUrl(credentials, request.startPlanetId))
+    webDriver.safeUrl(getFleetDispatchUrl(credentials, request.from.id))
     fillFleet(request.ships)
     selectSpeed(request.speed)
     fillTarget(request.targetCoordinates)

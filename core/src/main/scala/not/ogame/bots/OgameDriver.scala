@@ -219,7 +219,7 @@ object FleetMissionType extends Enum[FleetMissionType] {
 }
 
 case class SendFleetRequest(
-    startPlanetId: String,
+    from: PlayerPlanet,
     ships: SendFleetRequestShips,
     targetCoordinates: Coordinates,
     fleetMissionType: FleetMissionType,

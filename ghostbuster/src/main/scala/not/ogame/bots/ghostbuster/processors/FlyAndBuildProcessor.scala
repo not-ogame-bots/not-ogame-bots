@@ -20,21 +20,25 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
   private val planetSendingCount = Ref.unsafe[Task, Int](0)
 
   def run(): Task[Unit] = {
-    for {
-      planets <- taskExecutor.readPlanets()
-      fleets <- taskExecutor.readAllFleets()
-      _ <- fleets.find(
-        f =>
-          f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Deployment && planets
-            .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
-      ) match {
-        case Some(fleet) =>
-          println(s"Found our fleet in the air: ${pprint.apply(fleet)}")
-          val toPlanet = planets.find(p => fleet.to == p.coordinates).get
-          taskExecutor.waitTo(fleet.arrivalTime) >> buildAndSend(toPlanet, planets)
-        case None => lookAndSend(planets)
-      }
-    } yield ()
+    if (botConfig.fsConfig.isOn) {
+      for {
+        planets <- taskExecutor.readPlanets()
+        fleets <- taskExecutor.readAllFleets()
+        _ <- fleets.find( //TODO check size
+          f =>
+            f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Deployment && planets
+              .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
+        ) match {
+          case Some(fleet) =>
+            println(s"Found our fleet in the air: ${pprint.apply(fleet)}")
+            val toPlanet = planets.find(p => fleet.to == p.coordinates).get
+            taskExecutor.waitTo(fleet.arrivalTime) >> buildAndSend(toPlanet, planets)
+          case None => lookAndSend(planets)
+        }
+      } yield ()
+    } else {
+      Task.never
+    }
   }
 
   private def lookAndSend(planets: List[PlayerPlanet]): Task[Unit] = {
@@ -50,13 +54,13 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
         println(s"Planet with fs fleet ${pprint.apply(planet)}")
         buildAndSend(planet.playerPlanet, planets)
       case None =>
-        println("Couldn't find fs fleet on any planet")
-        Task.never
+        println("Couldn't find fs fleet on any planet, retrying in 10 minutes")
+        Task.sleep(10 minutes) >> lookAndSend(planets)
     }
   }
 
   private def isFsFleet(planetFleet: PlanetFleet): Boolean = {
-    botConfig.fs.ships.forall(fsShip => fsShip.amount <= planetFleet.fleet(fsShip.shipType))
+    botConfig.fsConfig.ships.forall(fsShip => fsShip.amount <= planetFleet.fleet(fsShip.shipType))
   }
 
   private def buildAndSend(currentPlanet: PlayerPlanet, planets: List[PlayerPlanet]): Task[Unit] = {
@@ -76,8 +80,8 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
       arrivalTime <- taskExecutor
         .sendFleet(
           SendFleetRequest(
-            from.id,
-            SendFleetRequestShips.Ships(botConfig.fs.ships.map(s => s.shipType -> s.amount).toMap),
+            from,
+            SendFleetRequestShips.Ships(botConfig.fsConfig.ships.map(s => s.shipType -> s.amount).toMap),
             to.coordinates,
             FleetMissionType.Deployment,
             FleetResources.Max
@@ -132,7 +136,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
       buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
     } else {
       val shouldBuildDeuter = suppliesPageData.getLevel(SuppliesBuilding.MetalMine) -
-        suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer) > 3
+        suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer) > 2
       val shouldBuildCrystal = suppliesPageData.getLevel(SuppliesBuilding.MetalMine) -
         suppliesPageData.getLevel(SuppliesBuilding.CrystalMine) > 2
       if (shouldBuildDeuter) {

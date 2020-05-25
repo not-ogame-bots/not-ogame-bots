@@ -14,8 +14,8 @@ import monix.execution.Scheduler.Implicits.global
 import monix.reactive.subjects.ConcurrentSubject
 import monix.reactive.{Consumer, MulticastStrategy}
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.processors.TaskExecutor
 import not.ogame.bots.ghostbuster.PlanetFleet
+import not.ogame.bots.ghostbuster.processors.TaskExecutor
 
 import scala.concurrent.duration.{FiniteDuration, _}
 
@@ -81,8 +81,10 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
           ogameDriver
             .readAllFleets()
             .map { fleets =>
-              fleets.find(f => f.to == sendFleetRequest.targetCoordinates && f.fleetMissionType == sendFleetRequest.fleetMissionType).get
-            }
+              fleets
+                .collect { case f if isSameFleet(sendFleetRequest, f) => f }
+                .maxBy(_.arrivalTime)
+            } //TODO or min?
             .flatMap(f => Task.fromFuture(subject.onNext(a.response(f.arrivalTime))))
             .flatMap(_ => ogameDriver.readPlanets())
         }
@@ -96,6 +98,12 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
           Task.fromFuture(subject.onNext(a.response(planets)))
         }
     }
+  }
+
+  private def isSameFleet(sendFleetRequest: SendFleetRequest, f: Fleet) = {
+    f.to == sendFleetRequest.targetCoordinates &&
+    f.fleetMissionType == sendFleetRequest.fleetMissionType &&
+    f.from == sendFleetRequest.from.coordinates
   }
 
   override def waitTo(instant: Instant): Task[Unit] = {

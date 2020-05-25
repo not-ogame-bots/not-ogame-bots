@@ -24,10 +24,11 @@ object Wish {
 
 case class BotConfig(
     wishlist: List[Wish],
-    fs: FsConfig
+    fsConfig: FleetConfig,
+    expeditionConfig: FleetConfig
 )
 
-case class FsConfig(ships: List[FsShip])
-case class FsShip(shipType: ShipType, amount: Int)
+case class FleetConfig(ships: List[FleetShip], isOn: Boolean)
+case class FleetShip(shipType: ShipType, amount: Int)
 
 case class PlanetFleet(playerPlanet: PlayerPlanet, fleet: Map[ShipType, Int])
