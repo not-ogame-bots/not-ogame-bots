@@ -41,17 +41,18 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) exte
   }
 
   private def sendExpedition(fromPlanet: PlayerPlanet): Task[Unit] = {
-    taskExecutor
-      .sendFleet(
-        SendFleetRequest(
-          fromPlanet,
-          SendFleetRequestShips.Ships(botConfig.expeditionConfig.ships.map(s => s.shipType -> s.amount).toMap),
-          fromPlanet.coordinates.copy(position = 16),
-          FleetMissionType.Expedition,
-          FleetResources.Given(Resources.Zero)
+    Logger[Task].info("Sending fleet...") >>
+      taskExecutor
+        .sendFleet(
+          SendFleetRequest(
+            fromPlanet,
+            SendFleetRequestShips.Ships(botConfig.expeditionConfig.ships.map(s => s.shipType -> s.amount).toMap),
+            fromPlanet.coordinates.copy(position = 16),
+            FleetMissionType.Expedition,
+            FleetResources.Given(Resources.Zero)
+          )
         )
-      )
-      .void
+        .void
   }
 
   private def lookForFleetOnPlanets(planets: List[PlayerPlanet]) = {

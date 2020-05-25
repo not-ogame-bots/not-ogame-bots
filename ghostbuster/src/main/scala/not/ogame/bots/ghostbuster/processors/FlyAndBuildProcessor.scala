@@ -1,15 +1,15 @@
 package not.ogame.bots.ghostbuster.processors
 
-import java.time.{Clock, Instant, ZonedDateTime, Period}
-import java.util.concurrent.TimeUnit
+import java.time.ZonedDateTime
 
 import cats.implicits._
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.{BotConfig, FLogger, PlanetFleet}
-import scala.jdk.DurationConverters._
+
 import scala.concurrent.duration.{FiniteDuration, _}
+import scala.jdk.DurationConverters._
 
 class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: LocalClock) extends FLogger {
   private val builder = new Builder(taskExecutor, botConfig)
@@ -26,8 +26,15 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
         ) match {
           case Some(fleet) =>
             Logger[Task].info(s"Found our fleet in the air: ${pprint.apply(fleet)}").flatMap { _ =>
-              val toPlanet = planets.find(p => fleet.to == p.coordinates).get
-              taskExecutor.waitTo(fleet.arrivalTime) >> buildAndSend(toPlanet, planets) // TODO if it is returning then from!!
+              taskExecutor.waitTo(fleet.arrivalTime).flatMap { _ =>
+                if (fleet.isReturning) {
+                  val fromPlanet = planets.find(p => fleet.from == p.coordinates).get
+                  buildAndSend(fromPlanet, planets)
+                } else {
+                  val toPlanet = planets.find(p => fleet.to == p.coordinates).get
+                  buildAndSend(toPlanet, planets)
+                }
+              }
             }
           case None => lookAndSend(planets)
         }
@@ -76,6 +83,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
 
   private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[Unit] = { //TODO if couldn't take all resources then build mt
     for {
+      _ <- Logger[Task].info("Sending fleet...")
       arrivalTime <- taskExecutor
         .sendFleet(
           SendFleetRequest(
@@ -96,14 +104,14 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
 
   private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: ZonedDateTime): Task[Unit] = { //TODO it should be inside smart builder not outside
     builder.buildNextThingFromWishList(planet).flatMap {
-      case Some(elapsedTime)
-          if timeDiff(elapsedTime, clock.now()) < (10 minutes) && timeDiff(startedBuildingAt, clock.now()) < (20 minutes) =>
-        taskExecutor.waitTo(elapsedTime) >> buildAndContinue(planet, startedBuildingAt)
+      case Some(finishTime)
+          if timeDiff(clock.now(), finishTime) < (10 minutes) && timeDiff(startedBuildingAt, clock.now()) < (20 minutes) =>
+        taskExecutor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
       case _ => Task.unit
     }
   }
 
-  private def timeDiff(first: ZonedDateTime, second: ZonedDateTime): FiniteDuration = {
-    java.time.Duration.between(first, second).toScala
+  private def timeDiff(earlier: ZonedDateTime, later: ZonedDateTime): FiniteDuration = {
+    java.time.Duration.between(earlier, later).toScala
   }
 }

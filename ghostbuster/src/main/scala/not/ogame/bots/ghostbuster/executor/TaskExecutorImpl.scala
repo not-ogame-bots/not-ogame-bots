@@ -114,7 +114,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
   }
 
   private def calculateSleepTime(futureTime: ZonedDateTime) = {
-    java.time.Duration.between(futureTime, clock.now()).toScala
+    java.time.Duration.between(clock.now(), futureTime).toScala
   }
 
   override def readAllFleets(): Task[List[Fleet]] = {

@@ -11,11 +11,15 @@ class BuilderProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) extends
   private val builder = new Builder(taskExecutor, botConfig)
 
   def run(): Task[List[Unit]] = {
-    taskExecutor
-      .readPlanets()
-      .flatMap { planets =>
-        Task.parSequence(planets.map(loopBuilder))
-      }
+    if (botConfig.smartBuilder) {
+      taskExecutor
+        .readPlanets()
+        .flatMap { planets =>
+          Task.parSequence(planets.map(loopBuilder))
+        }
+    } else {
+      Task.never
+    }
   }
 
   private def loopBuilder(planet: PlayerPlanet): Task[Unit] = {

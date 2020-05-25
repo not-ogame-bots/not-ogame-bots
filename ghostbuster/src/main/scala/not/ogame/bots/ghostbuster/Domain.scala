@@ -25,7 +25,8 @@ object Wish {
 case class BotConfig(
     wishlist: List[Wish],
     fsConfig: FsConfig,
-    expeditionConfig: ExpeditionConfig
+    expeditionConfig: ExpeditionConfig,
+    smartBuilder: Boolean
 )
 
 case class FsConfig(ships: List[FleetShip], isOn: Boolean, takeResources: Boolean)
