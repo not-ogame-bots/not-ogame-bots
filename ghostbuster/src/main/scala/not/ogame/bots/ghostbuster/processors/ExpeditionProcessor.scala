@@ -21,7 +21,7 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) {
       expeditions = fleets.filter(fleet => isExpedition(planets, fleet))
       returningExpeditions = expeditions.filter(_.isReturning)
       _ <- if (returningExpeditions.size < botConfig.expeditionConfig.maxNumberOfExpeditions) {
-        println(s"Only ${returningExpeditions.size}/${botConfig.expeditionConfig.maxNumberOfExpeditions} are in the air")
+        println(s"Only ${returningExpeditions.size}/${botConfig.expeditionConfig.maxNumberOfExpeditions} expeditions are in the air")
         lookForFleetOnPlanets(planets) >> lookForFleet(planets)
       } else {
         val min = expeditions.map(_.arrivalTime).min
