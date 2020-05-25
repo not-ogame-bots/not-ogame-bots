@@ -2,8 +2,9 @@ package not.ogame.bots.ghostbuster.processors
 
 import cats.implicits._
 import monix.eval.Task
-import not.ogame.bots.ghostbuster.{BotConfig, PlanetFleet}
 import not.ogame.bots._
+import not.ogame.bots.ghostbuster.{BotConfig, PlanetFleet}
+import scala.concurrent.duration._
 
 class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) {
   def run(): Task[Unit] = {
@@ -17,22 +18,22 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) {
   private def lookForFleet(planets: List[PlayerPlanet]): Task[Unit] = {
     for {
       fleets <- taskExecutor.readAllFleets()
-      matchedFleets = fleets.filter( //TODO check size
-        f =>
-          f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Expedition && planets
-            .exists(p => p.coordinates == f.from)
-      )
-      _ <- matchedFleets.find(!_.isReturning).orElse(matchedFleets.find(_.isReturning)) match {
-        case Some(fleet) if fleet.isReturning =>
-          println(s"Found our returning expedition fleet in the air: ${pprint.apply(fleet)}")
-          val fromPlanet = planets.find(p => fleet.from == p.coordinates).get
-          taskExecutor.waitTo(fleet.arrivalTime) >> sendExpedition(fromPlanet)
-        case Some(fleet) if !fleet.isReturning =>
-          println(s"Found our outgoing expedition fleet in the air: ${pprint.apply(fleet)}")
-          taskExecutor.waitTo(fleet.arrivalTime) >> lookForFleet(planets)
-        case None => lookForFleetOnPlanets(planets)
+      expeditions = fleets.filter(fleet => isExpedition(planets, fleet))
+      returningExpeditions = expeditions.filter(_.isReturning)
+      _ <- if (returningExpeditions.size < botConfig.expeditionConfig.maxNumberOfExpeditions) {
+        println(s"Only ${returningExpeditions.size}/${botConfig.expeditionConfig.maxNumberOfExpeditions} are in the air")
+        lookForFleetOnPlanets(planets) >> lookForFleet(planets)
+      } else {
+        val min = expeditions.map(_.arrivalTime).min
+        println(s"All expeditions are in the air, waiting for first to reach its target - $min")
+        taskExecutor.waitTo(min) >> lookForFleet(planets)
       }
     } yield ()
+  }
+
+  private def isExpedition(planets: List[PlayerPlanet], fleet: Fleet) = {
+    fleet.fleetAttitude == FleetAttitude.Friendly && fleet.fleetMissionType == FleetMissionType.Expedition &&
+    planets.exists(p => p.coordinates == fleet.from)
   }
 
   private def sendExpedition(fromPlanet: PlayerPlanet): Task[Unit] = {
@@ -46,26 +47,23 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) {
           FleetResources.Given(Resources.Zero)
         )
       )
-      .flatMap(arrivalTime => taskExecutor.waitTo(arrivalTime))
-      .flatMap(_ => sendExpedition(fromPlanet)) //TODO can the fleet be delayed by expedition?
+      .void
   }
 
   private def lookForFleetOnPlanets(planets: List[PlayerPlanet]) = {
     planets
-      .map(p => taskExecutor.getFleetOnPlanet(p))
+      .map(taskExecutor.getFleetOnPlanet)
       .sequence
       .flatMap { planetFleets =>
-        planetFleets.find(isExpeditionFleet) match {
-          case Some(planet) =>
-            println(s"Planet with expedition fleet ${pprint.apply(planet)}")
-            sendExpedition(planet.playerPlanet)
-          case None =>
-            println("Couldn't find expedition fleet on any planet")
-            Task.never
-        }
+        planetFleets
+          .collectFirst { case PlanetFleet(planet, fleet) if isExpeditionFleet(fleet) => planet }
+          .map(sendExpedition)
+          .getOrElse {
+            Task.eval(println("Could find expedition fleet on any planet. Waiting 10 minutes....")) >> Task.sleep(10 minutes)
+          }
       }
   }
-  private def isExpeditionFleet(planetFleet: PlanetFleet): Boolean = {
-    botConfig.expeditionConfig.ships.forall(ship => ship.amount <= planetFleet.fleet(ship.shipType))
+  private def isExpeditionFleet(fleet: Map[ShipType, Int]): Boolean = {
+    botConfig.expeditionConfig.ships.forall(ship => ship.amount <= fleet(ship.shipType))
   }
 }
