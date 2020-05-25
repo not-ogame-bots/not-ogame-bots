@@ -1,12 +1,14 @@
 package not.ogame.bots.ghostbuster.processors
 
 import cats.implicits._
+import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.{BotConfig, PlanetFleet}
+import not.ogame.bots.ghostbuster.{BotConfig, FLogger, PlanetFleet}
+
 import scala.concurrent.duration._
 
-class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) {
+class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) extends FLogger {
   def run(): Task[Unit] = {
     if (botConfig.expeditionConfig.isOn) {
       taskExecutor.readPlanets().flatMap(lookForFleet)
@@ -21,12 +23,14 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) {
       expeditions = fleets.filter(fleet => isExpedition(planets, fleet))
       returningExpeditions = expeditions.filter(_.isReturning)
       _ <- if (returningExpeditions.size < botConfig.expeditionConfig.maxNumberOfExpeditions) {
-        println(s"Only ${returningExpeditions.size}/${botConfig.expeditionConfig.maxNumberOfExpeditions} expeditions are in the air")
-        lookForFleetOnPlanets(planets) >> lookForFleet(planets)
+        Logger[Task].info(
+          s"Only ${returningExpeditions.size}/${botConfig.expeditionConfig.maxNumberOfExpeditions} expeditions are in the air"
+        ) >>
+          lookForFleetOnPlanets(planets) >> lookForFleet(planets)
       } else {
         val min = expeditions.map(_.arrivalTime).min
-        println(s"All expeditions are in the air, waiting for first to reach its target - $min")
-        taskExecutor.waitTo(min) >> lookForFleet(planets)
+        Logger[Task].info(s"All expeditions are in the air, waiting for first to reach its target - $min") >>
+          taskExecutor.waitTo(min) >> lookForFleet(planets)
       }
     } yield ()
   }
@@ -59,7 +63,7 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) {
           .collectFirst { case PlanetFleet(planet, fleet) if isExpeditionFleet(fleet) => planet }
           .map(sendExpedition)
           .getOrElse {
-            Task.eval(println("Could find expedition fleet on any planet. Waiting 10 minutes....")) >> Task.sleep(10 minutes)
+            Logger[Task].info("Could find expedition fleet on any planet. Waiting 10 minutes....") >> Task.sleep(10 minutes)
           }
       }
   }

@@ -4,15 +4,14 @@ import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 
 import cats.implicits._
+import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.{BotConfig, PlanetFleet}
+import not.ogame.bots.ghostbuster.{BotConfig, FLogger, PlanetFleet}
 
 import scala.concurrent.duration.{FiniteDuration, _}
 
-class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: Clock) {
-  println(s"wishlist: ${pprint.apply(botConfig)}")
-
+class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: Clock) extends FLogger {
   private val builder = new Builder(taskExecutor, botConfig)
 
   def run(): Task[Unit] = {
@@ -26,9 +25,10 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
               .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
         ) match {
           case Some(fleet) =>
-            println(s"Found our fleet in the air: ${pprint.apply(fleet)}")
-            val toPlanet = planets.find(p => fleet.to == p.coordinates).get
-            taskExecutor.waitTo(fleet.arrivalTime) >> buildAndSend(toPlanet, planets) // TODO if it is returning then from!!
+            Logger[Task].info(s"Found our fleet in the air: ${pprint.apply(fleet)}").flatMap { _ =>
+              val toPlanet = planets.find(p => fleet.to == p.coordinates).get
+              taskExecutor.waitTo(fleet.arrivalTime) >> buildAndSend(toPlanet, planets) // TODO if it is returning then from!!
+            }
           case None => lookAndSend(planets)
         }
       } yield ()

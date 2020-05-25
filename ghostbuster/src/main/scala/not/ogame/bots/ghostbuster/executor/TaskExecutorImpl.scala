@@ -1,12 +1,13 @@
 package not.ogame.bots.ghostbuster.executor
 
-import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 
 import cats.implicits._
+import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
+import io.chrisdavenport.log4cats.Logger
 import monix.catnap.ConcurrentQueue
 import monix.eval.Task
 import monix.execution.BufferCapacity
@@ -14,12 +15,12 @@ import monix.execution.Scheduler.Implicits.global
 import monix.reactive.subjects.ConcurrentSubject
 import monix.reactive.{Consumer, MulticastStrategy}
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.PlanetFleet
+import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet}
 import not.ogame.bots.ghostbuster.processors.TaskExecutor
 
 import scala.concurrent.duration.{FiniteDuration, _}
 
-class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends TaskExecutor {
+class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends TaskExecutor with FLogger with StrictLogging {
   private val subject = ConcurrentSubject(MulticastStrategy.publish[Response])
   private val queue = ConcurrentQueue[Task].unsafe[Action[_]](BufferCapacity.Unbounded())
 
@@ -30,7 +31,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
   private def processNextAction(): Task[Unit] = {
     for {
       action <- queue.poll
-      _ <- Task.eval(println(s"executing action: ${pprint.apply(action)}"))
+      _ <- Logger[Task].debug(s"executing action: ${pprint.apply(action)}")
       _ <- safeHandleAction(action)
       _ <- processNextAction()
     } yield ()
@@ -39,8 +40,9 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
   private def safeHandleAction(action: Action[_]): Task[Unit] = {
     handleAction(action).void
       .handleErrorWith { e =>
-        e.printStackTrace()
-        safeLogin >> safeHandleAction(action)
+        Logger[Task].error(e)(e.getMessage) >>
+          safeLogin >>
+          safeHandleAction(action)
       }
   }
 
@@ -48,8 +50,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
     ogameDriver
       .login()
       .handleErrorWith { e =>
-        e.printStackTrace()
-        Task.eval(println("Login failed, retrying in 10 seconds")) >> Task.sleep(10 seconds) >> safeLogin()
+        Logger[Task].error(e)("Login failed, retrying in 10 seconds") >> Task.sleep(10 seconds) >> safeLogin()
       }
   }
 
@@ -108,7 +109,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
 
   override def waitTo(instant: Instant): Task[Unit] = {
     val sleepTime = calculateSleepTime(instant)
-    Task.eval(println(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til ${instant.plus(2, ChronoUnit.HOURS)}")) >>
+    Logger[Task].debug(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til $instant") >>
       Task.sleep(sleepTime.plus(1 seconds)) // additional 1 seconds to make things go smooth
   }
 
@@ -153,7 +154,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
         .collect {
           case r if r.uuid == action.uuid =>
             val value = action.defer(r.value)
-            println(s"action response: ${pprint.apply(value)}")
+            logger.debug(s"action response: ${pprint.apply(value)}")
             value
         }
         .consumeWith(Consumer.head)

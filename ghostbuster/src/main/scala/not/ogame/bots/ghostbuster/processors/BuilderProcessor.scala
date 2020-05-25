@@ -1,11 +1,13 @@
 package not.ogame.bots.ghostbuster.processors
 
+import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots.PlayerPlanet
-import not.ogame.bots.ghostbuster.BotConfig
+import not.ogame.bots.ghostbuster.{BotConfig, FLogger}
+
 import scala.concurrent.duration._
 
-class BuilderProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) {
+class BuilderProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) extends FLogger {
   private val builder = new Builder(taskExecutor, botConfig)
 
   def run(): Task[List[Unit]] = {
@@ -21,7 +23,7 @@ class BuilderProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) {
       .buildNextThingFromWishList(planet)
       .flatMap {
         case Some(buildingFinished) => taskExecutor.waitTo(buildingFinished)
-        case None                   => Task.eval(println("Cannot build anything right now, sleeping for 10 minutes")) >> Task.sleep(10 minutes)
+        case None                   => Logger[Task].info("Cannot build anything right now, sleeping for 10 minutes") >> Task.sleep(10 minutes)
       }
       .flatMap(_ => loopBuilder(planet))
   }

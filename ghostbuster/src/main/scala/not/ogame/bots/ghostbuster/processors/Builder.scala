@@ -6,11 +6,12 @@ import eu.timepit.refined.numeric.Positive
 import monix.eval.Task
 import not.ogame.bots.facts.SuppliesBuildingCosts
 import not.ogame.bots.{PlayerPlanet, Resources, SuppliesBuilding, SuppliesPageData}
-import not.ogame.bots.ghostbuster.{BotConfig, Wish}
+import not.ogame.bots.ghostbuster.{BotConfig, FLogger, Wish}
 import not.ogame.bots.selenium.refineVUnsafe
 import cats.implicits._
+import io.chrisdavenport.log4cats.Logger
 
-class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) {
+class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger {
   def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[Instant]] = {
     taskExecutor.readSupplyPage(planet).flatMap { suppliesPageData =>
       if (!suppliesPageData.buildingInProgress) {
@@ -23,7 +24,6 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) {
                 suppliesPageData.currentBuildingProgress.map(_.finishTimestamp).pure[Task]
               }
             case w: Wish.SmartSupplyBuilder if isSmartBuilderApplicable(planet, suppliesPageData, w) =>
-              println("Smart builder applicable")
               if (!suppliesPageData.buildingInProgress) {
                 smartBuilder(planet, suppliesPageData, w)
               } else {
@@ -45,8 +45,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) {
     if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
       taskExecutor.buildSupplyBuilding(suppliesBuilding, level, planet).map(Some(_))
     } else {
-      println(s"Wanted to build $suppliesBuilding but there were not enough resources")
-      Task.unit.map(_ => None)
+      Logger[Task].info(s"Wanted to build $suppliesBuilding but there were not enough resources").map(_ => None)
     }
   }
 
