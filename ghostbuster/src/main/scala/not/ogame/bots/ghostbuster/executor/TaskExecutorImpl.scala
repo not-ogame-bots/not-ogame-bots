@@ -150,7 +150,12 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
     Task.parMap2(
       queue.offer(action),
       subject
-        .collect { case r if r.uuid == action.uuid => action.defer(r.value) }
+        .collect {
+          case r if r.uuid == action.uuid =>
+            val value = action.defer(r.value)
+            println(s"action response: ${pprint.apply(value)}")
+            value
+        }
         .consumeWith(Consumer.head)
     )((_, result) => result)
   }
