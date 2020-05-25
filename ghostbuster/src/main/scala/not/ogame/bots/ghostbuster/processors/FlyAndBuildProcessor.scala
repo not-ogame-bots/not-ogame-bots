@@ -3,7 +3,6 @@ package not.ogame.bots.ghostbuster.processors
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 
-import cats.effect.concurrent.Ref
 import cats.implicits._
 import eu.timepit.refined.numeric.Positive
 import monix.eval.Task
@@ -12,19 +11,17 @@ import not.ogame.bots.facts.SuppliesBuildingCosts
 import not.ogame.bots.ghostbuster.{BotConfig, PlanetFleet, Wish}
 import not.ogame.bots.selenium.refineVUnsafe
 
-import scala.concurrent.duration._
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{FiniteDuration, _}
 
 class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: Clock) {
   println(s"wishlist: ${pprint.apply(botConfig)}")
-  private val planetSendingCount = Ref.unsafe[Task, Int](0)
 
   def run(): Task[Unit] = {
     if (botConfig.fsConfig.isOn) {
       for {
         planets <- taskExecutor.readPlanets()
         fleets <- taskExecutor.readAllFleets()
-        _ <- fleets.find( //TODO check size
+        _ <- fleets.find( //TODO if there is more than one fleet should wait
           f =>
             f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Deployment && planets
               .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
@@ -32,7 +29,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
           case Some(fleet) =>
             println(s"Found our fleet in the air: ${pprint.apply(fleet)}")
             val toPlanet = planets.find(p => fleet.to == p.coordinates).get
-            taskExecutor.waitTo(fleet.arrivalTime) >> buildAndSend(toPlanet, planets)
+            taskExecutor.waitTo(fleet.arrivalTime) >> buildAndSend(toPlanet, planets) // TODO if it is returning then from!!
           case None => lookAndSend(planets)
         }
       } yield ()
@@ -64,19 +61,22 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
   }
 
   private def buildAndSend(currentPlanet: PlayerPlanet, planets: List[PlayerPlanet]): Task[Unit] = {
-    val otherPlanets = planets.filterNot(p => p.id == currentPlanet.id)
+    val targetPlanet = nextPlanet(currentPlanet, planets)
     for {
-      counter <- planetSendingCount.get
-      targetPlanet = otherPlanets(counter % otherPlanets.size)
       _ <- buildAndContinue(currentPlanet, clock.instant())
       _ <- sendFleet(from = currentPlanet, to = targetPlanet)
+      _ <- Task.eval("sleeping 2 minutes before taking off") >> Task.sleep(2 minutes)
       _ <- buildAndSend(currentPlanet = targetPlanet, planets)
     } yield ()
   }
 
+  private def nextPlanet(currentPlanet: PlayerPlanet, planets: List[PlayerPlanet]) = {
+    val idx = (planets.indexOf(currentPlanet) + 1) % planets.size
+    planets(idx)
+  }
+
   private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[Unit] = { //TODO if couldn't take all resources then build mt
     for {
-      _ <- planetSendingCount.update(_ + 1)
       arrivalTime <- taskExecutor
         .sendFleet(
           SendFleetRequest(
