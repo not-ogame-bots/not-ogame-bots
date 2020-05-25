@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.pureconfig._
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
-import not.ogame.bots.Credentials
+import not.ogame.bots.{Credentials, LocalClock, RealLocalClock}
 import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
 import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, BuilderProcessor, ExpeditionProcessor, FlyAndBuildProcessor}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
@@ -16,7 +16,7 @@ import pureconfig.module.enumeratum._
 import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
 
 object Main extends StrictLogging {
-  private implicit val clock: Clock = Clock.systemUTC()
+  private implicit val clock: LocalClock = new RealLocalClock()
 
   def main(args: Array[String]): Unit = {
     Thread.setDefaultUncaughtExceptionHandler { (t, e) =>

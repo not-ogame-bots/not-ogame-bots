@@ -1,7 +1,6 @@
 package not.ogame.bots.ghostbuster.executor
 
-import java.time.{Clock, Instant}
-import java.util.concurrent.TimeUnit
+import java.time.ZonedDateTime
 
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
@@ -15,12 +14,13 @@ import monix.execution.Scheduler.Implicits.global
 import monix.reactive.subjects.ConcurrentSubject
 import monix.reactive.{Consumer, MulticastStrategy}
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet}
 import not.ogame.bots.ghostbuster.processors.TaskExecutor
+import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet}
 
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration._
+import scala.jdk.DurationConverters._
 
-class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends TaskExecutor with FLogger with StrictLogging {
+class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extends TaskExecutor with FLogger with StrictLogging {
   private val subject = ConcurrentSubject(MulticastStrategy.publish[Response])
   private val queue = ConcurrentQueue[Task].unsafe[Action[_]](BufferCapacity.Unbounded())
 
@@ -107,43 +107,47 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
     f.from == sendFleetRequest.from.coordinates
   }
 
-  override def waitTo(instant: Instant): Task[Unit] = {
-    val sleepTime = calculateSleepTime(instant)
-    Logger[Task].debug(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til $instant") >>
+  override def waitTo(now: ZonedDateTime): Task[Unit] = {
+    val sleepTime = calculateSleepTime(now)
+    Logger[Task].debug(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til $now") >>
       Task.sleep(sleepTime.plus(1 seconds)) // additional 1 seconds to make things go smooth
   }
 
-  private def calculateSleepTime(futureTime: Instant) = {
-    FiniteDuration(futureTime.toEpochMilli - clock.instant().toEpochMilli, TimeUnit.MILLISECONDS)
+  private def calculateSleepTime(futureTime: ZonedDateTime) = {
+    java.time.Duration.between(futureTime, clock.now()).toScala
   }
 
   override def readAllFleets(): Task[List[Fleet]] = {
-    val action = Action.GetAirFleet(clock.instant())
+    val action = Action.GetAirFleet(clock.now())
     exec(action)
   }
 
   override def readPlanets(): Task[List[PlayerPlanet]] = {
-    val action = Action.ReadPlanets(clock.instant())
+    val action = Action.ReadPlanets(clock.now())
     exec(action)
   }
 
-  override def sendFleet(req: SendFleetRequest): Task[Instant] = {
-    val action = Action.SendFleet(clock.instant(), req)
+  override def sendFleet(req: SendFleetRequest): Task[ZonedDateTime] = {
+    val action = Action.SendFleet(clock.now(), req)
     exec(action)
   }
 
   override def getFleetOnPlanet(planet: PlayerPlanet): Task[PlanetFleet] = {
-    val action = Action.RefreshFleetOnPlanetStatus(clock.instant(), planet)
+    val action = Action.RefreshFleetOnPlanetStatus(clock.now(), planet)
     exec(action)
   }
 
   override def readSupplyPage(playerPlanet: PlayerPlanet): Task[SuppliesPageData] = {
-    val action = Action.ReadSupplyPage(clock.instant(), playerPlanet.id)
+    val action = Action.ReadSupplyPage(clock.now(), playerPlanet.id)
     exec(action)
   }
 
-  override def buildSupplyBuilding(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, planet: PlayerPlanet): Task[Instant] = {
-    val action = Action.BuildSupply(suppliesBuilding, level, clock.instant(), planet.id)
+  override def buildSupplyBuilding(
+      suppliesBuilding: SuppliesBuilding,
+      level: Int Refined Positive,
+      planet: PlayerPlanet
+  ): Task[ZonedDateTime] = {
+    val action = Action.BuildSupply(suppliesBuilding, level, clock.now(), planet.id)
     exec(action)
   }
 

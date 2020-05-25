@@ -1,11 +1,9 @@
 package not.ogame.bots.ordon
 
-import java.time.Instant
-
 import cats.effect.IO
 import cats.implicits._
 import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
-import not.ogame.bots.{Coordinates, CoordinatesType, Credentials, PlayerPlanet}
+import not.ogame.bots.{Coordinates, CoordinatesType, Credentials, LocalClock, PlayerPlanet}
 
 object OrdonConfig {
   def getCredentials: Credentials = {
@@ -18,12 +16,12 @@ object OrdonConfig {
     Credentials(credentials.head, credentials(1), credentials(2), credentials(3))
   }
 
-  def getInitialActions: IO[List[ScheduledAction[IO]]] = {
+  def getInitialActions(implicit clock: LocalClock): IO[List[ScheduledAction[IO]]] = {
     val listOfActions = List(createExpeditionAction, createFlyAroundActionCargo, createFlyAroundActionBattle)
-    IO.pure(listOfActions.map(ScheduledAction(Instant.now(), _)))
+    IO.pure(listOfActions.map(ScheduledAction(clock.now(), _)))
   }
 
-  private def createExpeditionAction: ExpeditionOgameAction[IO] = {
+  private def createExpeditionAction(implicit clock: LocalClock): ExpeditionOgameAction[IO] = {
     new ExpeditionOgameAction[IO](
       maxNumberOfExpeditions = 5,
       startPlanetId = "33645302",

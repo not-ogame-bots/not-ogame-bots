@@ -1,6 +1,6 @@
 package not.ogame.bots
 
-import java.time.Instant
+import java.time.{Instant, ZonedDateTime}
 
 import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
@@ -38,7 +38,7 @@ trait OgameDriver[F[_]] {
 }
 
 case class SuppliesPageData(
-    timestamp: Instant,
+    timestamp: ZonedDateTime,
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
@@ -57,7 +57,7 @@ case class SuppliesPageData(
 }
 
 case class FacilityPageData(
-    timestamp: Instant,
+    timestamp: ZonedDateTime,
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
@@ -100,7 +100,7 @@ case class SuppliesBuildingLevels(values: Map[SuppliesBuilding, Int Refined NonN
 
 case class FacilitiesBuildingLevels(map: Map[FacilityBuilding, Int Refined NonNegative])
 
-case class BuildingProgress(finishTimestamp: Instant)
+case class BuildingProgress(finishTimestamp: ZonedDateTime)
 
 sealed trait SuppliesBuilding extends EnumEntry with Snakecase
 
@@ -188,7 +188,7 @@ object ShipType extends Enum[ShipType] {
 }
 
 case class Fleet(
-    arrivalTime: Instant,
+    arrivalTime: ZonedDateTime,
     fleetAttitude: FleetAttitude,
     fleetMissionType: FleetMissionType,
     from: Coordinates,
@@ -214,6 +214,8 @@ object FleetMissionType extends Enum[FleetMissionType] {
   case object Expedition extends FleetMissionType
 
   case object Colonization extends FleetMissionType
+
+  case object Transport extends FleetMissionType
 
   case object Unknown extends FleetMissionType
 

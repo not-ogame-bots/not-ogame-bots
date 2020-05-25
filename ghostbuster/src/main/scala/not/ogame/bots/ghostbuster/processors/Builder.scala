@@ -1,6 +1,6 @@
 package not.ogame.bots.ghostbuster.processors
 
-import java.time.Instant
+import java.time.{Instant, ZonedDateTime}
 
 import eu.timepit.refined.numeric.Positive
 import monix.eval.Task
@@ -12,7 +12,7 @@ import cats.implicits._
 import io.chrisdavenport.log4cats.Logger
 
 class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger {
-  def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[Instant]] = {
+  def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[ZonedDateTime]] = {
     taskExecutor.readSupplyPage(planet).flatMap { suppliesPageData =>
       if (!suppliesPageData.buildingInProgress) {
         botConfig.wishlist
@@ -70,7 +70,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
       } else if (suppliesPageData.getLevel(SuppliesBuilding.MetalMine) < w.metalLevel.value) {
         buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.MetalMine)
       } else {
-        Option.empty[Instant].pure[Task]
+        Option.empty[ZonedDateTime].pure[Task]
       }
     }
   }
@@ -89,7 +89,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
       suppliesPage: SuppliesPageData,
       requiredResources: Resources,
       planet: PlayerPlanet
-  ): Task[Option[Instant]] = {
+  ): Task[Option[ZonedDateTime]] = {
     requiredResources.difference(suppliesPage.currentCapacity) match {
       case Resources(m, _, _, _) if m > 0 =>
         buildSupplyBuildingOrNothing(SuppliesBuilding.MetalStorage, suppliesPage, planet)

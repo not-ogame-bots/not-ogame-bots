@@ -1,6 +1,6 @@
 package not.ogame.bots.ghostbuster.processors
 
-import java.time.{Clock, Instant}
+import java.time.{Clock, Instant, ZonedDateTime, Period}
 import java.util.concurrent.TimeUnit
 
 import cats.implicits._
@@ -8,10 +8,10 @@ import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.{BotConfig, FLogger, PlanetFleet}
-
+import scala.jdk.DurationConverters._
 import scala.concurrent.duration.{FiniteDuration, _}
 
-class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: Clock) extends FLogger {
+class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: LocalClock) extends FLogger {
   private val builder = new Builder(taskExecutor, botConfig)
 
   def run(): Task[Unit] = {
@@ -62,7 +62,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
   private def buildAndSend(currentPlanet: PlayerPlanet, planets: List[PlayerPlanet]): Task[Unit] = {
     val targetPlanet = nextPlanet(currentPlanet, planets)
     for {
-      _ <- buildAndContinue(currentPlanet, clock.instant())
+      _ <- buildAndContinue(currentPlanet, clock.now())
       _ <- sendFleet(from = currentPlanet, to = targetPlanet)
       _ <- Task.eval("sleeping 2 minutes before taking off") >> Task.sleep(2 minutes)
       _ <- buildAndSend(currentPlanet = targetPlanet, planets)
@@ -94,16 +94,16 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
     } yield ()
   }
 
-  private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: Instant): Task[Unit] = { //TODO it should be inside smart builder not outside
+  private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: ZonedDateTime): Task[Unit] = { //TODO it should be inside smart builder not outside
     builder.buildNextThingFromWishList(planet).flatMap {
       case Some(elapsedTime)
-          if timeDiff(elapsedTime, clock.instant()) < (10 minutes) && timeDiff(startedBuildingAt, clock.instant()) < (20 minutes) =>
+          if timeDiff(elapsedTime, clock.now()) < (10 minutes) && timeDiff(startedBuildingAt, clock.now()) < (20 minutes) =>
         taskExecutor.waitTo(elapsedTime) >> buildAndContinue(planet, startedBuildingAt)
       case _ => Task.unit
     }
   }
 
-  private def timeDiff(first: Instant, seconds: Instant): FiniteDuration = {
-    FiniteDuration(first.toEpochMilli - seconds.toEpochMilli, TimeUnit.MILLISECONDS)
+  private def timeDiff(first: ZonedDateTime, second: ZonedDateTime): FiniteDuration = {
+    java.time.Duration.between(first, second).toScala
   }
 }

@@ -3,11 +3,13 @@ package not.ogame.bots.selenium
 import not.ogame.bots.CoordinatesType.{Moon, Planet}
 import not.ogame.bots.FleetAttitude.Friendly
 import not.ogame.bots.FleetMissionType.{Deployment, Expedition}
-import not.ogame.bots.{Coordinates, Fleet}
+import not.ogame.bots.{Coordinates, Fleet, LocalClock, RealLocalClock}
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.firefox.FirefoxDriver
 
 class AllFleetsComponentReaderSpec extends munit.FunSuite {
+  implicit val clock: LocalClock = new RealLocalClock()
+
   private val driverFixture = FunFixture[WebDriver](
     setup = { _ =>
       new FirefoxDriver()

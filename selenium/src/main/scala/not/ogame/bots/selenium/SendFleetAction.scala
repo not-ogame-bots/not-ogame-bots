@@ -99,9 +99,11 @@ class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
 
   private def buttonFleetMissionType(fleetMissionType: FleetMissionType): String = {
     fleetMissionType match {
-      case FleetMissionType.Deployment => "missionButton4"
-      case FleetMissionType.Expedition => "missionButton15"
-      case FleetMissionType.Unknown    => ???
+      case FleetMissionType.Deployment   => "missionButton4"
+      case FleetMissionType.Expedition   => "missionButton15"
+      case FleetMissionType.Colonization => "missionButton7"
+      case FleetMissionType.Transport    => "missionButton3"
+      case FleetMissionType.Unknown      => ???
     }
   }
 

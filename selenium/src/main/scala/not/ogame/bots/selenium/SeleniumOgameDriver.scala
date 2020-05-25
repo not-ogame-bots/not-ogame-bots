@@ -1,7 +1,5 @@
 package not.ogame.bots.selenium
 
-import java.time.{Clock, Instant}
-
 import cats.effect.{Sync, Timer}
 import cats.implicits._
 import eu.timepit.refined.numeric.NonNegative
@@ -12,7 +10,7 @@ import org.openqa.selenium.{By, WebDriver}
 
 import scala.concurrent.duration._
 
-class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriver: WebDriver, timer: Timer[F], clock: Clock)
+class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriver: WebDriver, timer: Timer[F], clock: LocalClock)
     extends OgameDriver[F] {
   override def login(): F[Unit] = {
     val universeListUrl = "https://lobby.ogame.gameforge.com/pl_PL/accounts"
@@ -77,7 +75,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       currentBuildingProgress <- readCurrentBuildingProgress
       currentShipyardProgress <- readCurrentShipyardProgress
     } yield SuppliesPageData(
-      clock.instant(),
+      clock.now(),
       currentResources,
       currentProduction,
       currentCapacity,
@@ -97,7 +95,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
         .traverse { case (building, fetchLevel) => fetchLevel.map(level => building -> refineVUnsafe[NonNegative, Int](level)) }
         .map(list => FacilitiesBuildingLevels(list.toMap))
       currentBuildingProgress <- readCurrentBuildingProgress
-    } yield FacilityPageData(clock.instant(), currentResources, currentProduction, currentCapacity, facilityLevels, currentBuildingProgress)
+    } yield FacilityPageData(clock.now(), currentResources, currentProduction, currentCapacity, facilityLevels, currentBuildingProgress)
 
   private def suppliesPageUrl(planetId: String) = {
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
@@ -150,7 +148,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       _ <- webDriver.waitForElementF(By.className("construction"))
       buildingCountdown <- webDriver.findMany(By.id("buildingCountdown")).map(_.headOption)
       seconds = buildingCountdown.map(_.getText).map(timeTextToSeconds)
-      buildingProgress = seconds.map(s => BuildingProgress(Instant.now().plusSeconds(s)))
+      buildingProgress = seconds.map(s => BuildingProgress(clock.now().plusSeconds(s)))
     } yield buildingProgress
 
   private def readCurrentShipyardProgress: F[Option[BuildingProgress]] =
@@ -158,7 +156,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       _ <- webDriver.waitForElementF(By.className("construction"))
       shipyardCountdown <- webDriver.findMany(By.id("shipyardCountdown")).map(_.headOption)
       seconds = shipyardCountdown.map(_.getText).map(timeTextToSeconds)
-      buildingProgress = seconds.map(s => BuildingProgress(Instant.now().plusSeconds(s)))
+      buildingProgress = seconds.map(s => BuildingProgress(clock.now().plusSeconds(s)))
     } yield buildingProgress
 
   private def timeTextToSeconds(timeText: String): Int =
