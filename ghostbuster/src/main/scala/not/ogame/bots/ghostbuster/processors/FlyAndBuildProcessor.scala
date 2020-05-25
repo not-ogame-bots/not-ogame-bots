@@ -148,7 +148,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
       } else if (suppliesPageData.getLevel(SuppliesBuilding.MetalMine) < w.metalLevel.value) {
         buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.MetalMine)
       } else {
-        Option.empty[Instant].pure
+        Option.empty[Instant].pure[Task]
       }
     }
   }

@@ -22,7 +22,7 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) {
           f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Expedition && planets
             .exists(p => p.coordinates == f.from)
       )
-      _ <- matchedFleets.find(!_.isReturning).orElse(fleets.find(_.isReturning)) match {
+      _ <- matchedFleets.find(!_.isReturning).orElse(matchedFleets.find(_.isReturning)) match {
         case Some(fleet) if fleet.isReturning =>
           println(s"Found our returning expedition fleet in the air: ${pprint.apply(fleet)}")
           val fromPlanet = planets.find(p => fleet.from == p.coordinates).get

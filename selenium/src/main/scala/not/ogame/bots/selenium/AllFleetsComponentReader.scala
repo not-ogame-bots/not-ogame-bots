@@ -62,6 +62,7 @@ class AllFleetsComponentReader(webDriver: WebDriver) {
     fleetElement.getAttribute("data-mission-type").toInt match {
       case 4  => FleetMissionType.Deployment
       case 15 => FleetMissionType.Expedition
+      case 7  => FleetMissionType.Colonization
       case _  => FleetMissionType.Unknown
     }
   }

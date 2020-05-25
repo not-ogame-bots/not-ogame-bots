@@ -213,6 +213,8 @@ object FleetMissionType extends Enum[FleetMissionType] {
 
   case object Expedition extends FleetMissionType
 
+  case object Colonization extends FleetMissionType
+
   case object Unknown extends FleetMissionType
 
   val values: IndexedSeq[FleetMissionType] = findValues
