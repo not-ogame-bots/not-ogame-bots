@@ -109,7 +109,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: Clock) extends Tas
   override def waitTo(instant: Instant): Task[Unit] = {
     val sleepTime = calculateSleepTime(instant)
     Task.eval(println(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til ${instant.plus(2, ChronoUnit.HOURS)}")) >>
-      Task.sleep(sleepTime.plus(5 seconds)) // additional 5 seconds to make things go smooth
+      Task.sleep(sleepTime.plus(1 seconds)) // additional 1 seconds to make things go smooth
   }
 
   private def calculateSleepTime(futureTime: Instant) = {

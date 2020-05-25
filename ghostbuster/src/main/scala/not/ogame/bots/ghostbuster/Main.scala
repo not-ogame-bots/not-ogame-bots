@@ -7,7 +7,7 @@ import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots.Credentials
 import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
-import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, ExpeditionProcessor, FlyAndBuildProcessor}
+import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, BuilderProcessor, ExpeditionProcessor, FlyAndBuildProcessor}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
@@ -33,7 +33,8 @@ object Main {
         val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig, clock)
         val ep = new ExpeditionProcessor(botConfig, taskExecutor)
         val activityFaker = new ActivityFakerProcessor(taskExecutor)
-        Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run(), ep.run()))
+        val bp = new BuilderProcessor(botConfig, taskExecutor)
+        Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run(), ep.run(), bp.run()))
       }
       .runSyncUnsafe()
   }
