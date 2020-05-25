@@ -12,3 +12,4 @@ project/boot/
 project/plugins/project/
 
 .idea*
+ghostbuster/src/main/resources/application.conf
