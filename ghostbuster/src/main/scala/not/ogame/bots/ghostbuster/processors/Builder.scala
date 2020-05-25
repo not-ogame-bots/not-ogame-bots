@@ -33,7 +33,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) {
           .sequence
           .map(_.flatten)
       } else {
-        Option.empty[Instant].pure[Task]
+        suppliesPageData.currentBuildingProgress.map(_.finishTimestamp).pure[Task]
       }
     }
   }
