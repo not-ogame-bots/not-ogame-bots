@@ -118,7 +118,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
             case w: Wish.SmartSupplyBuilder if isSmartBuilderApplicable(planet, suppliesPageData, w) =>
               println("Smart builder applicable")
               if (!suppliesPageData.buildingInProgress) {
-                smartBuilder(planet, suppliesPageData)
+                smartBuilder(planet, suppliesPageData, w)
               } else {
                 suppliesPageData.currentBuildingProgress.map(_.finishTimestamp).pure[Task]
               }
@@ -131,20 +131,24 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
     }
   }
 
-  private def smartBuilder(planet: PlayerPlanet, suppliesPageData: SuppliesPageData) = {
+  private def smartBuilder(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, w: Wish.SmartSupplyBuilder) = {
     if (suppliesPageData.currentResources.energy < 0) {
       buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
     } else {
       val shouldBuildDeuter = suppliesPageData.getLevel(SuppliesBuilding.MetalMine) -
-        suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer) > 2
+        suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer) > 2 &&
+        suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer) < w.deuterLevel.value
       val shouldBuildCrystal = suppliesPageData.getLevel(SuppliesBuilding.MetalMine) -
-        suppliesPageData.getLevel(SuppliesBuilding.CrystalMine) > 2
+        suppliesPageData.getLevel(SuppliesBuilding.CrystalMine) > 2 &&
+        suppliesPageData.getLevel(SuppliesBuilding.CrystalMine) < w.crystalLevel.value
       if (shouldBuildDeuter) {
         buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
       } else if (shouldBuildCrystal) {
         buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.CrystalMine)
-      } else {
+      } else if (suppliesPageData.getLevel(SuppliesBuilding.MetalMine) < w.metalLevel.value) {
         buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.MetalMine)
+      } else {
+        Option.empty[Instant].pure
       }
     }
   }
