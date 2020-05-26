@@ -228,15 +228,18 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
     }
   }
 
-  override def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): F[Unit] =
-    buildBuilding(planetId, getComponentName(suppliesBuilding))
+  override def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): F[Unit] = {
+    webDriver.goto(suppliesPageUrl(planetId)) >>
+      buildBuilding(planetId, getComponentName(suppliesBuilding))
+  }
 
-  override def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): F[Unit] =
-    buildBuilding(planetId, getComponentName(facilityBuilding))
+  override def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): F[Unit] = {
+    webDriver.goto(facilitiesPageUrl(planetId)) >>
+      buildBuilding(planetId, getComponentName(facilityBuilding))
+  }
 
   private def buildBuilding(planetId: String, componentName: String) = {
     for {
-      _ <- webDriver.goto(suppliesPageUrl(planetId))
       technologies <- webDriver.waitForElementF(By.id("technologies"))
       buildingComponent <- technologies.find(By.className(componentName))
       upgrade <- buildingComponent.find(By.className("upgrade"))

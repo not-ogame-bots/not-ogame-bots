@@ -65,7 +65,11 @@ case class FacilityPageData(
     currentCapacity: Resources,
     facilityLevels: FacilitiesBuildingLevels,
     currentBuildingProgress: Option[BuildingProgress]
-)
+) {
+  def getLevel(facilityBuilding: FacilityBuilding): Int = {
+    facilityLevels.values(facilityBuilding).value
+  }
+}
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
   def gtEqTo(requiredResources: Resources): Boolean =
@@ -100,7 +104,7 @@ object Resources {
 
 case class SuppliesBuildingLevels(values: Map[SuppliesBuilding, Int Refined NonNegative])
 
-case class FacilitiesBuildingLevels(map: Map[FacilityBuilding, Int Refined NonNegative])
+case class FacilitiesBuildingLevels(values: Map[FacilityBuilding, Int Refined NonNegative])
 
 case class BuildingProgress(finishTimestamp: ZonedDateTime)
 
@@ -124,7 +128,7 @@ object SuppliesBuilding extends Enum[SuppliesBuilding] {
   val values: IndexedSeq[SuppliesBuilding] = findValues
 }
 
-sealed trait FacilityBuilding extends EnumEntry
+sealed trait FacilityBuilding extends EnumEntry with Snakecase
 object FacilityBuilding extends Enum[FacilityBuilding] {
   case object RoboticsFactory extends FacilityBuilding
 
