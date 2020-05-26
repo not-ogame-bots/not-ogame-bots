@@ -54,6 +54,9 @@ lazy val ghostbuster: Project = (project in file("ghostbuster"))
       "com.softwaremill.quicklens" %% "quicklens" % "1.5.0",
       "com.lihaoyi" %% "pprint" % "0.5.6",
       "io.monix" %% "monix" % "3.2.1",
+      "ch.qos.logback" % "logback-classic" % "1.2.3",
+      "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.1",
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
       "org.scalameta" %% "munit" % "0.7.7" % Test
     ),
     testFrameworks += new TestFramework("munit.Framework")

@@ -1,12 +1,12 @@
 package not.ogame.bots.selenium
 
-import java.time.Instant
+import java.time.ZonedDateTime
 
 import not.ogame.bots._
 import not.ogame.bots.selenium.EasySelenium._
 import org.openqa.selenium.{By, WebDriver, WebElement}
 
-class AllFleetsComponentReader(webDriver: WebDriver) {
+class AllFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) {
   def readAllFleets(): List[Fleet] = {
     val elements = webDriver.findElementsS(By.className("eventFleet"))
     elements.map(readFleet)
@@ -48,7 +48,7 @@ class AllFleetsComponentReader(webDriver: WebDriver) {
     }
   }
 
-  private def getArrivalTime(fleetElement: WebElement): Instant = {
+  private def getArrivalTime(fleetElement: WebElement): ZonedDateTime = {
     val timeText = fleetElement.findElement(By.className("arrivalTime")).getText
     ParsingUtils.parseTimeInFuture(timeText)
   }
@@ -62,6 +62,8 @@ class AllFleetsComponentReader(webDriver: WebDriver) {
     fleetElement.getAttribute("data-mission-type").toInt match {
       case 4  => FleetMissionType.Deployment
       case 15 => FleetMissionType.Expedition
+      case 7  => FleetMissionType.Colonization
+      case 3  => FleetMissionType.Transport
       case _  => FleetMissionType.Unknown
     }
   }

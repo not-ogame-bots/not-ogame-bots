@@ -9,7 +9,7 @@ import scala.util.Random
 
 class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
   def sendFleet(request: SendFleetRequest): Unit = {
-    webDriver.safeUrl(getFleetDispatchUrl(credentials, request.startPlanetId))
+    webDriver.safeUrl(getFleetDispatchUrl(credentials, request.from.id))
     fillFleet(request.ships)
     selectSpeed(request.speed)
     fillTarget(request.targetCoordinates)
@@ -26,10 +26,12 @@ class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
     ships match {
       case SendFleetRequestShips.AllShips => webDriver.findElement(By.id("sendall")).click()
       case SendFleetRequestShips.Ships(map) =>
-        map.foreachEntry((shipType, number) => {
-          webDriver.findElement(By.name(shipTypeToClassName(shipType))).sendKeys(number.toString)
-          Thread.sleep(Random.nextLong(10) + 10)
-        })
+        map
+          .filter(_._2 > 0)
+          .foreachEntry((shipType, number) => {
+            webDriver.findElement(By.name(shipTypeToClassName(shipType))).sendKeys(number.toString)
+            Thread.sleep(Random.nextLong(10) + 10)
+          })
     }
     webDriver.findElement(By.id("continueToFleet2")).click()
   }
@@ -99,9 +101,11 @@ class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
 
   private def buttonFleetMissionType(fleetMissionType: FleetMissionType): String = {
     fleetMissionType match {
-      case FleetMissionType.Deployment => "missionButton4"
-      case FleetMissionType.Expedition => "missionButton15"
-      case FleetMissionType.Unknown    => ???
+      case FleetMissionType.Deployment   => "missionButton4"
+      case FleetMissionType.Expedition   => "missionButton15"
+      case FleetMissionType.Colonization => "missionButton7"
+      case FleetMissionType.Transport    => "missionButton3"
+      case FleetMissionType.Unknown      => ???
     }
   }
 

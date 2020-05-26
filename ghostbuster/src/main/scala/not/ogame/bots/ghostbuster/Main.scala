@@ -1,38 +1,41 @@
 package not.ogame.bots.ghostbuster
 
-import java.time.Clock
+import java.time.{Clock, ZoneOffset}
 
+import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.pureconfig._
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
-import not.ogame.bots.Credentials
+import not.ogame.bots.{Credentials, LocalClock, RealLocalClock}
 import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
-import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, FlyAndBuildProcessor}
+import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, BuilderProcessor, ExpeditionProcessor, FlyAndBuildProcessor}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import pureconfig.module.enumeratum._
 import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
 
-object Main {
-  private implicit val clock: Clock = Clock.systemUTC()
+object Main extends StrictLogging {
+  private implicit val clock: LocalClock = new RealLocalClock()
 
   def main(args: Array[String]): Unit = {
     Thread.setDefaultUncaughtExceptionHandler { (t, e) =>
-      println("Uncaught exception in thread: " + t)
-      e.printStackTrace()
+      logger.error(s"Uncaught exception in thread: $t", e)
     }
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
     val botConfig = ConfigSource.default.loadOrThrow[BotConfig]
     val credentials = ConfigSource.file(s"${System.getenv("HOME")}/.not-ogame-bots/credentials.conf").loadOrThrow[Credentials]
+    logger.info(pprint.apply(botConfig).render)
 
     new SeleniumOgameDriverCreator[Task]()
       .create(credentials)
       .use { ogame =>
         val taskExecutor = new TaskExecutorImpl(ogame, clock)
         val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig, clock)
+        val ep = new ExpeditionProcessor(botConfig, taskExecutor)
         val activityFaker = new ActivityFakerProcessor(taskExecutor)
-        Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run()))
+        val bp = new BuilderProcessor(botConfig, taskExecutor)
+        Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run(), ep.run(), bp.run()))
       }
       .runSyncUnsafe()
   }
