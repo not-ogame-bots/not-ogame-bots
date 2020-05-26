@@ -78,7 +78,6 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
     for {
       _ <- buildAndContinue(currentPlanet, clock.now())
       _ <- sendFleet(from = currentPlanet, to = targetPlanet)
-      _ <- Task.eval("sleeping 2 minutes before taking off") >> Task.sleep(2 minutes)
       _ <- buildAndSend(currentPlanet = targetPlanet, planets)
     } yield ()
   }
