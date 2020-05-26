@@ -26,10 +26,12 @@ class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
     ships match {
       case SendFleetRequestShips.AllShips => webDriver.findElement(By.id("sendall")).click()
       case SendFleetRequestShips.Ships(map) =>
-        map.foreachEntry((shipType, number) => {
-          webDriver.findElement(By.name(shipTypeToClassName(shipType))).sendKeys(number.toString)
-          Thread.sleep(Random.nextLong(10) + 10)
-        })
+        map
+          .filter(_._2 > 0)
+          .foreachEntry((shipType, number) => {
+            webDriver.findElement(By.name(shipTypeToClassName(shipType))).sendKeys(number.toString)
+            Thread.sleep(Random.nextLong(10) + 10)
+          })
     }
     webDriver.findElement(By.id("continueToFleet2")).click()
   }
