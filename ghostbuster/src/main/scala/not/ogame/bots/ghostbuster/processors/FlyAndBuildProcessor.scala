@@ -25,11 +25,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
   private def lookAtInTheAir(planets: List[PlayerPlanet]): Task[Unit] = {
     for {
       fleets <- taskExecutor.readAllFleets()
-      possibleFsFleets = fleets.filter( //TODO if there is more than one fleet should wait
-        f =>
-          f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Deployment && planets
-            .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
-      )
+      possibleFsFleets = fleets.filter(f => isFsFleet(planets, f))
       _ <- possibleFsFleets match {
         case fleet :: Nil =>
           Logger[Task].info(s"Found our fleet in the air: ${pprint.apply(fleet)}").flatMap { _ =>
@@ -49,6 +45,11 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
         case Nil => lookOnPlanets(planets)
       }
     } yield ()
+  }
+
+  private def isFsFleet(planets: List[PlayerPlanet], f: Fleet) = {
+    f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Deployment && planets
+      .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
   }
 
   private def lookOnPlanets(planets: List[PlayerPlanet]): Task[Unit] = {
