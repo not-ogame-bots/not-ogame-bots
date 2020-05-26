@@ -318,4 +318,11 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       new PlanetListComponentReader(webDriver, credentials).readPlanetList()
     }
   }
+
+  override def checkIsLoggedIn(): F[Boolean] = {
+    webDriver
+      .waitForElementF(By.className("OGameClock"))
+      .map(_ => true)
+      .handleError(_ => false)
+  }
 }

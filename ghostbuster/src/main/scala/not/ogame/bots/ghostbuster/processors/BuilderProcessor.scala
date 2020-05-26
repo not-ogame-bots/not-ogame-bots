@@ -14,9 +14,8 @@ class BuilderProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) extends
     if (botConfig.smartBuilder) {
       taskExecutor
         .readPlanets()
-        .flatMap { planets =>
-          Task.parSequence(planets.map(loopBuilder))
-        }
+        .flatMap(planets => Task.parSequence(planets.map(loopBuilder)))
+        .restartUntil(_ => false)
     } else {
       Task.never
     }

@@ -12,10 +12,17 @@ sealed trait Action[T] {
   def uuid: UUID
   def executionTime: ZonedDateTime
   def defer(any: Any): T = any.asInstanceOf[T]
-  def response(value: T): Response = Response(value, uuid)
+  def success(value: T): Response = Response.Success(value, uuid)
+  def failure(): Response = Response.Failure(uuid)
 }
 
-case class Response(value: Any, uuid: UUID)
+sealed trait Response {
+  def uuid: UUID
+}
+object Response {
+  case class Success(value: Any, uuid: UUID) extends Response
+  case class Failure(uuid: UUID) extends Response
+}
 
 object Action {
   case class BuildSupply(

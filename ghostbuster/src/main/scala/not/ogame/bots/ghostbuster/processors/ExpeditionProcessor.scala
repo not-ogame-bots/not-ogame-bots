@@ -11,7 +11,10 @@ import scala.concurrent.duration._
 class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) extends FLogger {
   def run(): Task[Unit] = {
     if (botConfig.expeditionConfig.isOn) {
-      taskExecutor.readPlanets().flatMap(lookForFleet)
+      taskExecutor
+        .readPlanets()
+        .flatMap(lookForFleet)
+        .restartUntil(_ => false)
     } else {
       Task.never
     }

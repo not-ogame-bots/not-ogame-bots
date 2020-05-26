@@ -41,9 +41,15 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
     handleAction(action)
       .flatMap(response => Task.fromFuture(subject.onNext(response)).void)
       .handleErrorWith { e =>
-        Logger[Task].error(e)(e.getMessage) >>
-          safeLogin >>
-          safeHandleAction(action)
+        for {
+          _ <- Logger[Task].error(e)(e.getMessage)
+          isStillLogged <- ogameDriver.checkIsLoggedIn()
+          _ <- if (isStillLogged) {
+            Task.fromFuture(subject.onNext(action.failure()))
+          } else {
+            safeLogin >> safeHandleAction(action)
+          }
+        } yield ()
       }
   }
 
@@ -51,8 +57,9 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
     ogameDriver
       .login()
       .handleErrorWith { e =>
-        Logger[Task].error(e)("Login failed, retrying in 10 seconds") >> Task.sleep(10 seconds) >> safeLogin()
+        Logger[Task].error(e)("Login failed, retrying in 2 seconds") >> Task.sleep(2 seconds) >> Task.raiseError(e)
       }
+      .onErrorRestart(5)
   }
 
   private def handleAction(action: Action[_]) = {
@@ -61,25 +68,25 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
         ogameDriver
           .buildSuppliesBuilding(planetId, suppliesBuilding)
           .flatMap(_ => ogameDriver.readSuppliesPage(planetId).map(_.currentBuildingProgress.get))
-          .map(suppliesPage => a.response(suppliesPage.finishTimestamp))
+          .map(suppliesPage => a.success(suppliesPage.finishTimestamp))
       case a @ Action.BuildFacility(suppliesBuilding, _, _, planetId, _) =>
         ogameDriver
           .buildFacilityBuilding(planetId, suppliesBuilding)
           .flatMap(_ => ogameDriver.readFacilityPage(planetId))
-          .map(sp => a.response(sp))
+          .map(sp => a.success(sp))
       case a @ Action.ReadSupplyPage(_, planetId, _) =>
         ogameDriver
           .readSuppliesPage(planetId)
-          .map(sp => a.response(sp))
+          .map(sp => a.success(sp))
       case a @ Action.RefreshFleetOnPlanetStatus(_, planetId, _) =>
         ogameDriver
           .checkFleetOnPlanet(planetId.id)
-          .map(f => a.response(PlanetFleet(planetId, f)))
+          .map(f => a.success(PlanetFleet(planetId, f)))
       case a @ Action.BuildShip(amount, shipType, _, planetId, _) =>
         ogameDriver
           .buildShips(planetId, shipType, amount)
           .flatMap(_ => ogameDriver.readSuppliesPage(planetId))
-          .map(sp => a.response(sp))
+          .map(sp => a.success(sp))
       case a @ Action.SendFleet(_, sendFleetRequest, _) =>
         ogameDriver.sendFleet(sendFleetRequest).flatMap { _ =>
           ogameDriver
@@ -90,17 +97,17 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
                 .maxBy(_.arrivalTime)
             } //TODO or min?
             .flatTap(_ => ogameDriver.readPlanets())
-            .map(f => a.response(f.arrivalTime))
+            .map(f => a.success(f.arrivalTime))
         }
       case a @ Action.GetAirFleet(_, _) =>
         ogameDriver
           .readAllFleets()
           .flatTap(_ => ogameDriver.readPlanets())
-          .map(fleets => a.response(fleets))
+          .map(fleets => a.success(fleets))
       case a @ Action.ReadPlanets(_, _) =>
         ogameDriver
           .readPlanets()
-          .map(planets => a.response(planets))
+          .map(planets => a.success(planets))
     }
   }
 
@@ -158,11 +165,13 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
     Task.parMap2(
       queue.offer(action),
       subject
-        .collect {
-          case r if r.uuid == action.uuid =>
-            val value = action.defer(r.value)
-            logger.debug(s"action response: ${pprint.apply(value)}")
-            value
+        .filter(r => r.uuid == action.uuid)
+        .mapEval {
+          case Response.Success(anyValue, _) =>
+            val value = action.defer(anyValue)
+            Logger[Task].debug(s"action response: ${pprint.apply(value)}").map(_ => value)
+          case Response.Failure(_) =>
+            Task.raiseError[T](new RuntimeException("Could execute operation"))
         }
         .consumeWith(Consumer.head)
     )((_, result) => result)

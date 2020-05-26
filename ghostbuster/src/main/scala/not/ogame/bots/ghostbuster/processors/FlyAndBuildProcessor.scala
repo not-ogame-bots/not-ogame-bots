@@ -16,7 +16,10 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
 
   def run(): Task[Unit] = {
     if (botConfig.fsConfig.isOn) {
-      taskExecutor.readPlanets().flatMap(lookAtInTheAir)
+      taskExecutor
+        .readPlanets()
+        .flatMap(lookAtInTheAir)
+        .restartUntil(_ => false)
     } else {
       Task.never
     }
