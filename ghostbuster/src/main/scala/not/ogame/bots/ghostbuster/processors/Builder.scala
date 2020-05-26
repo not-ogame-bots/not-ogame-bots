@@ -1,15 +1,15 @@
 package not.ogame.bots.ghostbuster.processors
 
-import java.time.{Instant, ZonedDateTime}
+import java.time.ZonedDateTime
 
+import cats.implicits._
 import eu.timepit.refined.numeric.Positive
+import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots.facts.SuppliesBuildingCosts
-import not.ogame.bots.{PlayerPlanet, Resources, SuppliesBuilding, SuppliesPageData}
 import not.ogame.bots.ghostbuster.{BotConfig, FLogger, Wish}
 import not.ogame.bots.selenium.refineVUnsafe
-import cats.implicits._
-import io.chrisdavenport.log4cats.Logger
+import not.ogame.bots.{PlayerPlanet, Resources, SuppliesBuilding, SuppliesPageData}
 
 class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger {
   def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[ZonedDateTime]] = {
@@ -56,7 +56,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
   private def smartBuilder(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, w: Wish.SmartSupplyBuilder) = {
     if (suppliesPageData.currentResources.energy < 0) {
       buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
-    } else {
+    } else { //TODO can we get rid of hardcoded ratio?
       val shouldBuildDeuter = suppliesPageData.getLevel(SuppliesBuilding.MetalMine) -
         suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer) > 2 &&
         suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer) < w.deuterLevel.value

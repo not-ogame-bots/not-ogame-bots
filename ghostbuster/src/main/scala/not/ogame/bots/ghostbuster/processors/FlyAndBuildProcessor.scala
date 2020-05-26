@@ -16,35 +16,42 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
 
   def run(): Task[Unit] = {
     if (botConfig.fsConfig.isOn) {
-      for {
-        planets <- taskExecutor.readPlanets()
-        fleets <- taskExecutor.readAllFleets()
-        _ <- fleets.find( //TODO if there is more than one fleet should wait
-          f =>
-            f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Deployment && planets
-              .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
-        ) match {
-          case Some(fleet) =>
-            Logger[Task].info(s"Found our fleet in the air: ${pprint.apply(fleet)}").flatMap { _ =>
-              taskExecutor.waitTo(fleet.arrivalTime).flatMap { _ =>
-                if (fleet.isReturning) {
-                  val fromPlanet = planets.find(p => fleet.from == p.coordinates).get
-                  buildAndSend(fromPlanet, planets)
-                } else {
-                  val toPlanet = planets.find(p => fleet.to == p.coordinates).get
-                  buildAndSend(toPlanet, planets)
-                }
-              }
-            }
-          case None => lookAndSend(planets)
-        }
-      } yield ()
+      taskExecutor.readPlanets().flatMap(lookAtInTheAir)
     } else {
       Task.never
     }
   }
 
-  private def lookAndSend(planets: List[PlayerPlanet]): Task[Unit] = {
+  private def lookAtInTheAir(planets: List[PlayerPlanet]): Task[Unit] = {
+    for {
+      fleets <- taskExecutor.readAllFleets()
+      possibleFsFleets = fleets.filter( //TODO if there is more than one fleet should wait
+        f =>
+          f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Deployment && planets
+            .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
+      )
+      _ <- possibleFsFleets match {
+        case fleet :: Nil =>
+          Logger[Task].info(s"Found our fleet in the air: ${pprint.apply(fleet)}").flatMap { _ =>
+            taskExecutor.waitTo(fleet.arrivalTime).flatMap { _ =>
+              if (fleet.isReturning) {
+                val fromPlanet = planets.find(p => fleet.from == p.coordinates).get
+                buildAndSend(fromPlanet, planets)
+              } else {
+                val toPlanet = planets.find(p => fleet.to == p.coordinates).get
+                buildAndSend(toPlanet, planets)
+              }
+            }
+          }
+        case l @ _ :: _ =>
+          Logger[Task].info("Too many fleets in the air. Waiting for the first one to reach its target.") >>
+            taskExecutor.waitTo(l.map(_.arrivalTime).min) >> lookAtInTheAir(planets)
+        case Nil => lookOnPlanets(planets)
+      }
+    } yield ()
+  }
+
+  private def lookOnPlanets(planets: List[PlayerPlanet]): Task[Unit] = {
     val planetWithFsFleet = planets
       .map { planet =>
         taskExecutor.getFleetOnPlanet(planet)
@@ -58,7 +65,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
         buildAndSend(planet.playerPlanet, planets)
       case None =>
         println("Couldn't find fs fleet on any planet, retrying in 10 minutes")
-        Task.sleep(10 minutes) >> lookAndSend(planets)
+        Task.sleep(10 minutes) >> lookOnPlanets(planets)
     }
   }
 
