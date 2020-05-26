@@ -1,6 +1,6 @@
 package not.ogame.bots
 
-import java.time.{Instant, ZonedDateTime}
+import java.time.ZonedDateTime
 
 import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
@@ -49,12 +49,15 @@ case class SuppliesPageData(
     currentShipyardProgress: Option[BuildingProgress]
 ) {
   def buildingInProgress: Boolean = currentBuildingProgress.isDefined
+
   def shipInProgress: Boolean = currentShipyardProgress.isDefined
+
   def isBusy: Boolean = buildingInProgress || shipInProgress
+
   def isIdle: Boolean = !isBusy
 
-  def getLevel(suppliesBuilding: SuppliesBuilding): Int = {
-    suppliesLevels.values(suppliesBuilding).value
+  def getLevel(suppliesBuilding: SuppliesBuilding): Int Refined NonNegative = {
+    suppliesLevels.values(suppliesBuilding)
   }
 }
 
@@ -66,8 +69,9 @@ case class FacilityPageData(
     facilityLevels: FacilitiesBuildingLevels,
     currentBuildingProgress: Option[BuildingProgress]
 ) {
-  def getLevel(facilityBuilding: FacilityBuilding): Int = {
-    facilityLevels.values(facilityBuilding).value
+
+  def getLevel(facilityBuilding: FacilityBuilding): Int Refined NonNegative = {
+    facilityLevels.values(facilityBuilding)
   }
 }
 

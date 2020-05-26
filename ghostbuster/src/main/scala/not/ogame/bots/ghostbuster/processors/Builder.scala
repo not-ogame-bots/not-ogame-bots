@@ -17,7 +17,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
       if (!suppliesPageData.buildingInProgress) {
         botConfig.wishlist
           .collectFirst {
-            case w: Wish.BuildSupply if suppliesPageData.getLevel(w.suppliesBuilding) < w.level.value && w.planetId == planet.id =>
+            case w: Wish.BuildSupply if suppliesPageData.getLevel(w.suppliesBuilding).value < w.level.value && w.planetId == planet.id =>
               if (!suppliesPageData.buildingInProgress) {
                 buildSupplyBuildingOrNothing(w.suppliesBuilding, suppliesPageData, planet)
               } else {
@@ -57,17 +57,17 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
     if (suppliesPageData.currentResources.energy < 0) {
       buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
     } else { //TODO can we get rid of hardcoded ratio?
-      val shouldBuildDeuter = suppliesPageData.getLevel(SuppliesBuilding.MetalMine) -
-        suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer) > 2 &&
-        suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer) < w.deuterLevel.value
-      val shouldBuildCrystal = suppliesPageData.getLevel(SuppliesBuilding.MetalMine) -
-        suppliesPageData.getLevel(SuppliesBuilding.CrystalMine) > 2 &&
-        suppliesPageData.getLevel(SuppliesBuilding.CrystalMine) < w.crystalLevel.value
+      val shouldBuildDeuter = suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value -
+        suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer).value > 2 &&
+        suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer).value < w.deuterLevel.value
+      val shouldBuildCrystal = suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value -
+        suppliesPageData.getLevel(SuppliesBuilding.CrystalMine).value > 2 &&
+        suppliesPageData.getLevel(SuppliesBuilding.CrystalMine).value < w.crystalLevel.value
       if (shouldBuildDeuter) {
         buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
       } else if (shouldBuildCrystal) {
         buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.CrystalMine)
-      } else if (suppliesPageData.getLevel(SuppliesBuilding.MetalMine) < w.metalLevel.value) {
+      } else if (suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value < w.metalLevel.value) {
         buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.MetalMine)
       } else {
         Option.empty[ZonedDateTime].pure[Task]
@@ -102,9 +102,9 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
 
   private def isSmartBuilderApplicable(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, w: Wish.SmartSupplyBuilder) = {
     val correctPlanet = w.planetId == planet.id
-    val metalMineUnderLevel = w.metalLevel.value > suppliesPageData.getLevel(SuppliesBuilding.MetalMine)
-    val crystalMineUnderLevel = w.crystalLevel.value > suppliesPageData.getLevel(SuppliesBuilding.CrystalMine)
-    val deuterMineUnderLevel = w.deuterLevel.value > suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer)
+    val metalMineUnderLevel = w.metalLevel.value > suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value
+    val crystalMineUnderLevel = w.crystalLevel.value > suppliesPageData.getLevel(SuppliesBuilding.CrystalMine).value
+    val deuterMineUnderLevel = w.deuterLevel.value > suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer).value
     correctPlanet && (metalMineUnderLevel || crystalMineUnderLevel || deuterMineUnderLevel)
   }
 }
