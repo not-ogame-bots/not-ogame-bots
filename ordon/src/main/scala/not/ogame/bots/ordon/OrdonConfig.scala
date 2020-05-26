@@ -3,7 +3,7 @@ package not.ogame.bots.ordon
 import cats.effect.IO
 import cats.implicits._
 import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
-import not.ogame.bots.{Coordinates, CoordinatesType, Credentials, LocalClock, PlayerPlanet}
+import not.ogame.bots._
 
 object OrdonConfig {
   def getCredentials: Credentials = {
@@ -23,14 +23,14 @@ object OrdonConfig {
 
   private def createExpeditionAction(implicit clock: LocalClock): ExpeditionOgameAction[IO] = {
     new ExpeditionOgameAction[IO](
-      maxNumberOfExpeditions = 5,
-      startPlanetId = "33645302",
-      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 300, Explorer -> 160, EspionageProbe -> 1),
+      maxNumberOfExpeditions = 6,
+      startPlanet = moon5,
+      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 300, Explorer -> 240, EspionageProbe -> 1),
       targetCoordinates = Coordinates(3, 133, 16)
     )
   }
 
-  private def createFlyAroundActionCargo: FlyAroundOgameAction[IO] = {
+  private def createFlyAroundActionCargo(implicit clock: LocalClock): FlyAroundOgameAction[IO] = {
     new FlyAroundOgameAction[IO](
       targets = List(moon4, moon5),
       fleetSelector = new FleetSelector[IO](
@@ -45,9 +45,9 @@ object OrdonConfig {
     )
   }
 
-  private def createFlyAroundActionBattle: FlyAroundOgameAction[IO] = {
+  private def createFlyAroundActionBattle(implicit clock: LocalClock): FlyAroundOgameAction[IO] = {
     new FlyAroundOgameAction[IO](
-      targets = List(moon4, moon5),
+      targets = List(moon6, moon7),
       fleetSelector = new FleetSelector[IO](),
       resourceSelector = new ResourceSelector[IO]()
     )

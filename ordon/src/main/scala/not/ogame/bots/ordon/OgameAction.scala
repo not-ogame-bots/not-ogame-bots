@@ -13,7 +13,7 @@ trait OgameAction[T[_]] {
 }
 
 abstract class SimpleOgameAction[T[_]: Monad] extends OgameAction[T] {
-  def processSimple(ogame: OgameDriver[T]): T[Instant]
+  def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime]
 
   final def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] =
     processSimple(ogame).map(resumeOn => List(ScheduledAction(resumeOn, this)))

@@ -1,6 +1,6 @@
 package not.ogame.bots.ordon
 
-import java.time.Instant
+import java.time.ZonedDateTime
 
 import cats.Monad
 import cats.implicits._
@@ -15,8 +15,9 @@ class FlyAroundOgameAction[T[_]: Monad](
     targets: List[PlayerPlanet],
     fleetSelector: FleetSelector[T],
     resourceSelector: ResourceSelector[T]
-) extends SimpleOgameAction[T] {
-  override def processSimple(ogame: OgameDriver[T]): T[Instant] = {
+)(implicit clock: LocalClock)
+    extends SimpleOgameAction[T] {
+  override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = {
     ogame.readAllFleets().flatMap(fleets => findThisFleet(fleets).map(getResumeOnForFleet).getOrElse(sendFleet(ogame)))
   }
 
@@ -30,16 +31,16 @@ class FlyAroundOgameAction[T[_]: Monad](
     fleet.fleetMissionType == Deployment
   }
 
-  private def getResumeOnForFleet(fleet: Fleet): T[Instant] = {
+  private def getResumeOnForFleet(fleet: Fleet): T[ZonedDateTime] = {
     // There is an issue in ogame that fleet just after arrival is still on fleet list as returning. In such case we need to just try again.
     if (fleet.isReturning) {
-      Instant.now().plusSeconds(2).pure[T]
+      clock.now().plusSeconds(2).pure[T]
     } else {
       fleet.arrivalTime.pure[T]
     }
   }
 
-  private def sendFleet(ogame: OgameDriver[T]): T[Instant] =
+  private def sendFleet(ogame: OgameDriver[T]): T[ZonedDateTime] =
     for {
       planetToShips <- targets.map(it => fleetSelector.selectShips(ogame, it).map(it -> _)).sequence
       (startPlanet, ships) = planetToShips.maxBy(it => it._2.values.sum)
@@ -47,7 +48,7 @@ class FlyAroundOgameAction[T[_]: Monad](
       resources <- resourceSelector.selectResources(ogame, startPlanet)
       _ <- ogame.sendFleet(
         SendFleetRequest(
-          startPlanetId = startPlanet.id,
+          startPlanet,
           ships = Ships(ships),
           targetCoordinates = targetPlanet.coordinates,
           fleetMissionType = Deployment,
@@ -55,7 +56,7 @@ class FlyAroundOgameAction[T[_]: Monad](
           speed = Percent30
         )
       )
-      now = Instant.now()
+      now = clock.now()
     } yield now
 }
 

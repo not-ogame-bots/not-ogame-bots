@@ -10,7 +10,7 @@ import not.ogame.bots._
 
 class ExpeditionOgameAction[T[_]: Monad](
     maxNumberOfExpeditions: Int,
-    startPlanetId: String,
+    startPlanet: PlayerPlanet,
     expeditionFleet: Map[ShipType, Int],
     targetCoordinates: Coordinates
 )(implicit clock: LocalClock)
@@ -38,7 +38,7 @@ class ExpeditionOgameAction[T[_]: Monad](
     ogame
       .sendFleet(
         SendFleetRequest(
-          ???,
+          startPlanet,
           Ships(expeditionFleet),
           targetCoordinates,
           Expedition,
