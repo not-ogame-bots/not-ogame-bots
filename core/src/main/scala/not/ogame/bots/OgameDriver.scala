@@ -1,6 +1,6 @@
 package not.ogame.bots
 
-import java.time.{Instant, ZonedDateTime}
+import java.time.ZonedDateTime
 
 import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
@@ -49,12 +49,15 @@ case class SuppliesPageData(
     currentShipyardProgress: Option[BuildingProgress]
 ) {
   def buildingInProgress: Boolean = currentBuildingProgress.isDefined
+
   def shipInProgress: Boolean = currentShipyardProgress.isDefined
+
   def isBusy: Boolean = buildingInProgress || shipInProgress
+
   def isIdle: Boolean = !isBusy
 
-  def getLevel(suppliesBuilding: SuppliesBuilding): Int = {
-    suppliesLevels.values(suppliesBuilding).value
+  def getLevel(suppliesBuilding: SuppliesBuilding): Int Refined NonNegative = {
+    suppliesLevels.values(suppliesBuilding)
   }
 }
 
@@ -65,7 +68,11 @@ case class FacilityPageData(
     currentCapacity: Resources,
     facilityLevels: FacilitiesBuildingLevels,
     currentBuildingProgress: Option[BuildingProgress]
-)
+) {
+  def getLevel(facilityBuilding: FacilityBuilding): Int Refined NonNegative = {
+    facilityLevels.values(facilityBuilding)
+  }
+}
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
   def gtEqTo(requiredResources: Resources): Boolean =
@@ -100,7 +107,7 @@ object Resources {
 
 case class SuppliesBuildingLevels(values: Map[SuppliesBuilding, Int Refined NonNegative])
 
-case class FacilitiesBuildingLevels(map: Map[FacilityBuilding, Int Refined NonNegative])
+case class FacilitiesBuildingLevels(values: Map[FacilityBuilding, Int Refined NonNegative])
 
 case class BuildingProgress(finishTimestamp: ZonedDateTime)
 
