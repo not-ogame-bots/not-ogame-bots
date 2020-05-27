@@ -68,16 +68,20 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
         ogameDriver
           .buildSuppliesBuilding(planetId, suppliesBuilding)
           .flatMap(_ => ogameDriver.readSuppliesPage(planetId).map(_.currentBuildingProgress.get))
-          .map(suppliesPage => a.success(suppliesPage.finishTimestamp))
-      case a @ Action.BuildFacility(suppliesBuilding, _, _, planetId, _) =>
+          .map(buildingProgress => a.success(buildingProgress.finishTimestamp))
+      case a @ Action.BuildFacility(facilityBuilding, _, _, planetId, _) =>
         ogameDriver
-          .buildFacilityBuilding(planetId, suppliesBuilding)
-          .flatMap(_ => ogameDriver.readFacilityPage(planetId))
-          .map(sp => a.success(sp))
+          .buildFacilityBuilding(planetId, facilityBuilding)
+          .flatMap(_ => ogameDriver.readFacilityPage(planetId).map(_.currentBuildingProgress.get))
+          .map(buildingProgress => a.success(buildingProgress.finishTimestamp))
       case a @ Action.ReadSupplyPage(_, planetId, _) =>
         ogameDriver
           .readSuppliesPage(planetId)
           .map(sp => a.success(sp))
+      case a @ Action.ReadFacilityPage(_, planetId, _) =>
+        ogameDriver
+          .readFacilityPage(planetId)
+          .map(fp => a.success(fp))
       case a @ Action.RefreshFleetOnPlanetStatus(_, planetId, _) =>
         ogameDriver
           .checkFleetOnPlanet(planetId.id)
@@ -152,12 +156,26 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
     exec(action)
   }
 
+  override def readFacilityPage(playerPlanet: PlayerPlanet): Task[FacilityPageData] = {
+    val action = Action.ReadFacilityPage(clock.now(), playerPlanet.id)
+    exec(action)
+  }
+
   override def buildSupplyBuilding(
       suppliesBuilding: SuppliesBuilding,
       level: Int Refined Positive,
       planet: PlayerPlanet
   ): Task[ZonedDateTime] = {
     val action = Action.BuildSupply(suppliesBuilding, level, clock.now(), planet.id)
+    exec(action)
+  }
+
+  override def buildFacilityBuilding(
+      facilityBuilding: FacilityBuilding,
+      level: Refined[Int, Positive],
+      planet: PlayerPlanet
+  ): Task[ZonedDateTime] = {
+    val action = Action.BuildFacility(facilityBuilding, level, clock.now(), planet.id)
     exec(action)
   }
 
@@ -171,7 +189,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
             val value = action.defer(anyValue)
             Logger[Task].debug(s"action response: ${pprint.apply(value)}").map(_ => value)
           case Response.Failure(_) =>
-            Task.raiseError[T](new RuntimeException("Could execute operation"))
+            Task.raiseError[T](new RuntimeException("Couldn't execute operation"))
         }
         .consumeWith(Consumer.head)
     )((_, result) => result)

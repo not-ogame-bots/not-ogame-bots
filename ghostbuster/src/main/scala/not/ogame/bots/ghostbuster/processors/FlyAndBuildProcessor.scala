@@ -98,7 +98,11 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
         .sendFleet(
           SendFleetRequest(
             from,
-            SendFleetRequestShips.Ships(botConfig.fsConfig.ships.map(s => s.shipType -> s.amount).toMap),
+            if (botConfig.fsConfig.gatherShips) {
+              SendFleetRequestShips.AllShips
+            } else {
+              SendFleetRequestShips.Ships(botConfig.fsConfig.ships.map(s => s.shipType -> s.amount).toMap)
+            },
             to.coordinates,
             FleetMissionType.Deployment,
             if (botConfig.fsConfig.takeResources) {

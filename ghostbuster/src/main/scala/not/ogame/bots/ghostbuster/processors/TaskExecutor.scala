@@ -21,5 +21,9 @@ trait TaskExecutor {
 
   def readSupplyPage(playerPlanet: PlayerPlanet): Task[SuppliesPageData]
 
+  def readFacilityPage(playerPlanet: PlayerPlanet): Task[FacilityPageData]
+
   def buildSupplyBuilding(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, planet: PlayerPlanet): Task[ZonedDateTime]
+
+  def buildFacilityBuilding(facilityBuilding: FacilityBuilding, level: Int Refined Positive, planet: PlayerPlanet): Task[ZonedDateTime]
 }

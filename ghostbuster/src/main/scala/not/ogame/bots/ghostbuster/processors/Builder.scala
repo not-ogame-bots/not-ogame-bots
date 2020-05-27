@@ -6,35 +6,35 @@ import cats.implicits._
 import eu.timepit.refined.numeric.Positive
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
-import not.ogame.bots.facts.SuppliesBuildingCosts
+import not.ogame.bots.facts.{FacilityBuildingCosts, SuppliesBuildingCosts}
 import not.ogame.bots.ghostbuster.{BotConfig, FLogger, Wish}
 import not.ogame.bots.selenium.refineVUnsafe
-import not.ogame.bots.{PlayerPlanet, Resources, SuppliesBuilding, SuppliesPageData}
+import not.ogame.bots.{FacilityBuilding, FacilityPageData, PlayerPlanet, Resources, SuppliesBuilding, SuppliesPageData}
 
 class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger {
   def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[ZonedDateTime]] = {
-    taskExecutor.readSupplyPage(planet).flatMap { suppliesPageData =>
-      if (!suppliesPageData.buildingInProgress) {
-        botConfig.wishlist
-          .collectFirst {
-            case w: Wish.BuildSupply if suppliesPageData.getLevel(w.suppliesBuilding).value < w.level.value && w.planetId == planet.id =>
-              if (!suppliesPageData.buildingInProgress) {
-                buildSupplyBuildingOrNothing(w.suppliesBuilding, suppliesPageData, planet)
-              } else {
-                suppliesPageData.currentBuildingProgress.map(_.finishTimestamp).pure[Task]
-              }
-            case w: Wish.SmartSupplyBuilder if isSmartBuilderApplicable(planet, suppliesPageData, w) =>
-              if (!suppliesPageData.buildingInProgress) {
-                smartBuilder(planet, suppliesPageData, w)
-              } else {
-                suppliesPageData.currentBuildingProgress.map(_.finishTimestamp).pure[Task]
-              }
-          }
-          .sequence
-          .map(_.flatten)
-      } else {
-        suppliesPageData.currentBuildingProgress.map(_.finishTimestamp).pure[Task]
-      }
+    for {
+      sp <- taskExecutor.readSupplyPage(planet)
+      fp <- taskExecutor.readFacilityPage(planet)
+      time <- buildNextThingFromWishList(planet, sp, fp)
+    } yield time
+  }
+
+  private def buildNextThingFromWishList(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, facilityPageData: FacilityPageData) = {
+    if (!suppliesPageData.buildingInProgress) {
+      botConfig.wishlist
+        .collectFirst {
+          case w: Wish.BuildSupply if suppliesPageData.getLevel(w.suppliesBuilding).value < w.level.value && w.planetId == planet.id =>
+            buildSupplyBuildingOrNothing(w.suppliesBuilding, suppliesPageData, planet)
+          case w: Wish.BuildFacility if facilityPageData.getLevel(w.facilityBuilding).value < w.level.value && w.planetId == planet.id =>
+            buildFacilityBuildingOrNothing(w.facilityBuilding, facilityPageData, planet)
+          case w: Wish.SmartSupplyBuilder if isSmartBuilderApplicable(planet, suppliesPageData, w) =>
+            smartBuilder(planet, suppliesPageData, w)
+        }
+        .sequence
+        .map(_.flatten)
+    } else {
+      suppliesPageData.currentBuildingProgress.map(_.finishTimestamp).pure[Task]
     }
   }
 
@@ -49,8 +49,27 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
     }
   }
 
+  private def buildFacilityBuildingOrNothing(
+      facilityBuilding: FacilityBuilding,
+      facilityPageData: FacilityPageData,
+      planet: PlayerPlanet
+  ) = {
+    val level = nextLevel(facilityPageData, facilityBuilding)
+    val requiredResources =
+      FacilityBuildingCosts.buildingCost(facilityBuilding, level)
+    if (facilityPageData.currentResources.gtEqTo(requiredResources)) {
+      taskExecutor.buildFacilityBuilding(facilityBuilding, level, planet).map(Some(_))
+    } else {
+      Logger[Task].info(s"Wanted to build $facilityBuilding but there were not enough resources").map(_ => None)
+    }
+  }
+
   private def nextLevel(suppliesPage: SuppliesPageData, building: SuppliesBuilding) = {
     refineVUnsafe[Positive, Int](suppliesPage.suppliesLevels.values(building).value + 1)
+  }
+
+  private def nextLevel(facilityPageData: FacilityPageData, building: FacilityBuilding) = {
+    refineVUnsafe[Positive, Int](facilityPageData.facilityLevels.values(building).value + 1)
   }
 
   private def smartBuilder(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, w: Wish.SmartSupplyBuilder) = {

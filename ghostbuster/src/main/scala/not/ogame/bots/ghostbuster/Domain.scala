@@ -8,7 +8,7 @@ sealed trait Wish
 object Wish {
   case class BuildSupply(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, planetId: String) extends Wish
 
-  case class BuildFacility(facility: FacilityBuilding, level: Int Refined Positive, planetId: String) extends Wish
+  case class BuildFacility(facilityBuilding: FacilityBuilding, level: Int Refined Positive, planetId: String) extends Wish
 
   case class BuildShip(shipType: ShipType, planetId: String, amount: Int Refined Positive) extends Wish
 
@@ -29,7 +29,7 @@ case class BotConfig(
     smartBuilder: Boolean
 )
 
-case class FsConfig(ships: List[FleetShip], isOn: Boolean, takeResources: Boolean)
+case class FsConfig(ships: List[FleetShip], isOn: Boolean, takeResources: Boolean, gatherShips: Boolean)
 case class ExpeditionConfig(ships: List[FleetShip], isOn: Boolean, maxNumberOfExpeditions: Int)
 case class FleetShip(shipType: ShipType, amount: Int)
 

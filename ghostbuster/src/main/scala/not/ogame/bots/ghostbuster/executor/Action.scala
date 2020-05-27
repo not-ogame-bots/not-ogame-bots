@@ -34,14 +34,16 @@ object Action {
   ) extends Action[ZonedDateTime]
 
   case class BuildFacility(
-      suppliesBuilding: FacilityBuilding,
+      facilityBuilding: FacilityBuilding,
       level: Int Refined Positive,
       executionTime: ZonedDateTime,
       planetId: String,
       uuid: UUID = UUID.randomUUID()
-  ) extends Action[FacilityPageData]
+  ) extends Action[ZonedDateTime]
 
   case class ReadSupplyPage(executionTime: ZonedDateTime, planetId: String, uuid: UUID = UUID.randomUUID()) extends Action[SuppliesPageData]
+  case class ReadFacilityPage(executionTime: ZonedDateTime, planetId: String, uuid: UUID = UUID.randomUUID())
+      extends Action[FacilityPageData]
 
   case class RefreshFleetOnPlanetStatus(executionTime: ZonedDateTime, playerPlanet: PlayerPlanet, uuid: UUID = UUID.randomUUID())
       extends Action[PlanetFleet]
