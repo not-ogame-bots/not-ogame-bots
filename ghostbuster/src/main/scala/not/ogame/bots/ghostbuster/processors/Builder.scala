@@ -45,7 +45,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
     if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
       taskExecutor.buildSupplyBuilding(suppliesBuilding, level, planet).map(Some(_))
     } else {
-      Logger[Task].info(s"Wanted to build $suppliesBuilding but there were not enough resources").map(_ => None)
+      Logger[Task].info(s"Wanted to build $suppliesBuilding but there were not enough resources on ${planet.coordinates}").map(_ => None)
     }
   }
 
@@ -60,7 +60,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
     if (facilityPageData.currentResources.gtEqTo(requiredResources)) {
       taskExecutor.buildFacilityBuilding(facilityBuilding, level, planet).map(Some(_))
     } else {
-      Logger[Task].info(s"Wanted to build $facilityBuilding but there were not enough resources").map(_ => None)
+      Logger[Task].info(s"Wanted to build $facilityBuilding but there were not enough resources on ${planet.coordinates}").map(_ => None)
     }
   }
 
