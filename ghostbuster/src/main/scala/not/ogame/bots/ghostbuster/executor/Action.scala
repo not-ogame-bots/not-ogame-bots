@@ -23,21 +23,21 @@ object Action {
   case class BuildSupply(
       suppliesBuilding: SuppliesBuilding,
       level: Int Refined Positive,
-      planetId: String
+      playerPlanet: PlayerPlanet
   ) extends Action[ZonedDateTime]
 
   case class BuildFacility(
       facilityBuilding: FacilityBuilding,
       level: Int Refined Positive,
-      planetId: String
+      playerPlanet: PlayerPlanet
   ) extends Action[ZonedDateTime]
 
-  case class ReadSupplyPage(planetId: String) extends Action[SuppliesPageData]
-  case class ReadFacilityPage(planetId: String) extends Action[FacilityPageData]
+  case class ReadSupplyPage(playerPlanet: PlayerPlanet) extends Action[SuppliesPageData]
+  case class ReadFacilityPage(playerPlanet: PlayerPlanet) extends Action[FacilityPageData]
 
   case class RefreshFleetOnPlanetStatus(playerPlanet: PlayerPlanet) extends Action[PlanetFleet]
 
-  case class BuildShip(amount: Int, shipType: ShipType, planetId: String) extends Action[SuppliesPageData]
+  case class BuildShip(amount: Int, shipType: ShipType, playerPlanet: PlayerPlanet) extends Action[SuppliesPageData]
 
   case class SendFleet(sendFleetRequest: SendFleetRequest) extends Action[ZonedDateTime]
 

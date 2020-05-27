@@ -2,7 +2,7 @@ package not.ogame.bots.ghostbuster.executor
 
 import java.time.ZonedDateTime
 
-import cats.effect.concurrent.MVar
+import cats.effect.concurrent.{MVar, Ref}
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.api.Refined
@@ -17,7 +17,10 @@ import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet}
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 
-class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extends TaskExecutor with FLogger with StrictLogging {
+class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateAggregator: StateAggregator[Task])
+    extends TaskExecutor
+    with FLogger
+    with StrictLogging {
   type Channel[A] = MVar[Task, A]
 
   private val responses = MVar[Task].empty[Response].runSyncUnsafe()
@@ -65,37 +68,54 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
 
   private def handleAction(action: Action[_]) = {
     action match {
-      case a @ Action.BuildSupply(suppliesBuilding, _, planetId) =>
+      case a @ Action.BuildSupply(suppliesBuilding, _, planet) =>
         ogameDriver
-          .buildSuppliesBuilding(planetId, suppliesBuilding)
-          .flatMap(_ => ogameDriver.readSuppliesPage(planetId).map(_.currentBuildingProgress.get))
+          .buildSuppliesBuilding(planet.id, suppliesBuilding)
+          .flatMap(
+            _ =>
+              ogameDriver
+                .readSuppliesPage(planet.id)
+                .flatTap(supplies => stateAggregator.updateSupplies(planet, supplies))
+                .map(_.currentBuildingProgress.get)
+          )
           .map(buildingProgress => a.success(buildingProgress.finishTimestamp))
-      case a @ Action.BuildFacility(facilityBuilding, _, planetId) =>
+      case a @ Action.BuildFacility(facilityBuilding, _, planet) =>
         ogameDriver
-          .buildFacilityBuilding(planetId, facilityBuilding)
-          .flatMap(_ => ogameDriver.readFacilityPage(planetId).map(_.currentBuildingProgress.get))
+          .buildFacilityBuilding(planet.id, facilityBuilding)
+          .flatMap(
+            _ =>
+              ogameDriver
+                .readFacilityPage(planet.id)
+                .flatTap(facilities => stateAggregator.updateFacilities(planet, facilities))
+                .map(_.currentBuildingProgress.get)
+          )
           .map(buildingProgress => a.success(buildingProgress.finishTimestamp))
-      case a @ Action.ReadSupplyPage(planetId) =>
+      case a @ Action.ReadSupplyPage(planet) =>
         ogameDriver
-          .readSuppliesPage(planetId)
+          .readSuppliesPage(planet.id)
+          .flatTap(supplies => stateAggregator.updateSupplies(planet, supplies))
           .map(sp => a.success(sp))
-      case a @ Action.ReadFacilityPage(planetId) =>
+      case a @ Action.ReadFacilityPage(planet) =>
         ogameDriver
-          .readFacilityPage(planetId)
+          .readFacilityPage(planet.id)
+          .flatTap(facilities => stateAggregator.updateFacilities(planet, facilities))
           .map(fp => a.success(fp))
-      case a @ Action.RefreshFleetOnPlanetStatus(planetId) =>
+      case a @ Action.RefreshFleetOnPlanetStatus(planet) =>
         ogameDriver
-          .checkFleetOnPlanet(planetId.id)
-          .map(f => a.success(PlanetFleet(planetId, f)))
-      case a @ Action.BuildShip(amount, shipType, planetId) =>
+          .checkFleetOnPlanet(planet.id)
+          .flatTap(fleet => stateAggregator.updatePlanetFleet(planet, fleet))
+          .map(f => a.success(PlanetFleet(planet, f)))
+      case a @ Action.BuildShip(amount, shipType, planet) =>
         ogameDriver
-          .buildShips(planetId, shipType, amount)
-          .flatMap(_ => ogameDriver.readSuppliesPage(planetId))
+          .buildShips(planet.id, shipType, amount)
+          .flatMap(_ => ogameDriver.readSuppliesPage(planet.id))
+          .flatTap(supplies => stateAggregator.updateSupplies(planet, supplies))
           .map(sp => a.success(sp))
       case a @ Action.SendFleet(sendFleetRequest) =>
         ogameDriver.sendFleet(sendFleetRequest).flatMap { _ =>
           ogameDriver
             .readAllFleets()
+            .flatTap(fleets => stateAggregator.updateAirFleets(fleets))
             .map { fleets =>
               fleets
                 .collect { case f if isSameFleet(sendFleetRequest, f) => f }
@@ -107,6 +127,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
       case a: Action.GetAirFleet =>
         ogameDriver
           .readAllFleets()
+          .flatTap(fleets => stateAggregator.updateAirFleets(fleets))
           .flatTap(_ => ogameDriver.readPlanets())
           .map(fleets => a.success(fleets))
       case a: Action.ReadPlanets =>
@@ -153,12 +174,12 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
   }
 
   override def readSupplyPage(playerPlanet: PlayerPlanet): Task[SuppliesPageData] = {
-    val action = Action.ReadSupplyPage(playerPlanet.id)
+    val action = Action.ReadSupplyPage(playerPlanet)
     exec(action)
   }
 
   override def readFacilityPage(playerPlanet: PlayerPlanet): Task[FacilityPageData] = {
-    val action = Action.ReadFacilityPage(playerPlanet.id)
+    val action = Action.ReadFacilityPage(playerPlanet)
     exec(action)
   }
 
@@ -167,7 +188,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
       level: Int Refined Positive,
       planet: PlayerPlanet
   ): Task[ZonedDateTime] = {
-    val action = Action.BuildSupply(suppliesBuilding, level, planet.id)
+    val action = Action.BuildSupply(suppliesBuilding, level, planet)
     exec(action)
   }
 
@@ -176,12 +197,12 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
       level: Refined[Int, Positive],
       planet: PlayerPlanet
   ): Task[ZonedDateTime] = {
-    val action = Action.BuildFacility(facilityBuilding, level, planet.id)
+    val action = Action.BuildFacility(facilityBuilding, level, planet)
     exec(action)
   }
 
-  override def buildShip(shipType: ShipType, amount: Int, head: PlayerPlanet): Task[SuppliesPageData] = {
-    val action = Action.BuildShip(amount, shipType, head.id)
+  override def buildShip(shipType: ShipType, amount: Int, planet: PlayerPlanet): Task[SuppliesPageData] = {
+    val action = Action.BuildShip(amount, shipType, planet)
     exec(action)
   }
 

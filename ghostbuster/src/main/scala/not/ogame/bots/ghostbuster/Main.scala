@@ -1,19 +1,25 @@
 package not.ogame.bots.ghostbuster
 
-import java.time.{Clock, ZoneOffset}
-
+import cats.effect.concurrent.Ref
+import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.pureconfig._
 import monix.eval.Task
+import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
-import not.ogame.bots.{Credentials, LocalClock, RealLocalClock}
-import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
+import not.ogame.bots.ghostbuster.executor.{State, StateAggregator, TaskExecutorImpl}
 import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, BuilderProcessor, ExpeditionProcessor, FlyAndBuildProcessor}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
+import not.ogame.bots.{Credentials, LocalClock, RealLocalClock}
+import org.http4s.server.Router
+import org.http4s.server.blaze.BlazeServerBuilder
+import org.http4s.syntax.kleisli._
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import pureconfig.module.enumeratum._
 import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
+import sttp.tapir.server.ServerEndpoint
+import sttp.tapir.server.http4s._
 
 object Main extends StrictLogging {
   private implicit val clock: LocalClock = new RealLocalClock()
@@ -27,10 +33,33 @@ object Main extends StrictLogging {
     val credentials = ConfigSource.file(s"${System.getenv("HOME")}/.not-ogame-bots/credentials.conf").loadOrThrow[Credentials]
     logger.info(pprint.apply(botConfig).render)
 
+    Ref
+      .of[Task, State](State.Empty)
+      .flatMap { state =>
+        val httpStateExposer = new StatusEndpoint(state)
+        Task.parMap2(selenium(botConfig, credentials, state), httpServer(httpStateExposer.getStatus))((_, _) => ())
+      }
+      .runSyncUnsafe()
+  }
+
+  private def httpServer(endpoint: ServerEndpoint[Unit, Unit, State, Nothing, Task]) = {
+    BlazeServerBuilder[Task](Scheduler.io())
+      .bindHttp(8080, "0.0.0.0")
+      .withHttpApp(
+        Router("/" -> endpoint.toRoutes).orNotFound
+      )
+      .resource
+      .void
+      .use { _ =>
+        Task.never[Unit]
+      }
+  }
+
+  private def selenium(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = {
     new SeleniumOgameDriverCreator[Task]()
       .create(credentials)
       .use { ogame =>
-        val taskExecutor = new TaskExecutorImpl(ogame, clock)
+        val taskExecutor = new TaskExecutorImpl(ogame, clock, new StateAggregator[Task](state))
         val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig, clock)
         val ep = new ExpeditionProcessor(botConfig, taskExecutor)
         val activityFaker = new ActivityFakerProcessor(taskExecutor)
@@ -41,7 +70,6 @@ object Main extends StrictLogging {
         logger.error(e.getMessage, e)
         true
       }
-      .runSyncUnsafe()
   }
 
   implicit val wishReader: ConfigReader[Wish] = ConfigReader.fromCursor { cur =>

@@ -4,6 +4,18 @@ val seleniumVersion = "3.141.59"
 val refinedVersion = "0.9.14"
 val pureConfigVersion = "0.12.3"
 val enumeratumVersion = "1.6.1"
+val http4sVersion = "0.21.4"
+val circeVersion = "0.13.0"
+val tapirVersion = "0.14.4"
+
+val jsonDependencies = Seq(
+  "io.circe" %% "circe-core" % circeVersion,
+  "io.circe" %% "circe-generic" % circeVersion,
+  "io.circe" %% "circe-generic-extras" % circeVersion,
+  "io.circe" %% "circe-parser" % circeVersion,
+  "io.circe" %% "circe-refined" % circeVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion
+)
 
 lazy val commonSettings = commonSmlBuildSettings ++ acyclicSettings ++ splainSettings ++ Seq(
   scalaVersion := "2.13.1",
@@ -57,8 +69,11 @@ lazy val ghostbuster: Project = (project in file("ghostbuster"))
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "io.chrisdavenport" %% "log4cats-slf4j" % "1.0.1",
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
+      "org.http4s" %% "http4s-dsl" % http4sVersion,
+      "org.http4s" %% "http4s-blaze-server" % http4sVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
       "org.scalameta" %% "munit" % "0.7.7" % Test
-    ),
+    ) ++ jsonDependencies,
     testFrameworks += new TestFramework("munit.Framework")
   )
   .dependsOn(selenium, facts)
