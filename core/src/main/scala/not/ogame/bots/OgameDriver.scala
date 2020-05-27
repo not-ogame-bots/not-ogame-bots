@@ -69,6 +69,7 @@ case class FacilityPageData(
     facilityLevels: FacilitiesBuildingLevels,
     currentBuildingProgress: Option[BuildingProgress]
 ) {
+
   def getLevel(facilityBuilding: FacilityBuilding): Int Refined NonNegative = {
     facilityLevels.values(facilityBuilding)
   }
@@ -131,7 +132,7 @@ object SuppliesBuilding extends Enum[SuppliesBuilding] {
   val values: IndexedSeq[SuppliesBuilding] = findValues
 }
 
-sealed trait FacilityBuilding extends EnumEntry
+sealed trait FacilityBuilding extends EnumEntry with Snakecase
 object FacilityBuilding extends Enum[FacilityBuilding] {
   case object RoboticsFactory extends FacilityBuilding
 
