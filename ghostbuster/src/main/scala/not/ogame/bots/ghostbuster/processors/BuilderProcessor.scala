@@ -10,12 +10,13 @@ import scala.concurrent.duration._
 class BuilderProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) extends FLogger {
   private val builder = new Builder(taskExecutor, botConfig)
 
-  def run(): Task[List[Unit]] = {
+  def run(): Task[Unit] = {
     if (botConfig.smartBuilder) {
       taskExecutor
         .readPlanets()
         .flatMap(planets => Task.parSequence(planets.map(loopBuilder)))
-        .restartUntil(_ => false)
+        .void
+        .onErrorRestartIf(_ => true)
     } else {
       Task.never
     }

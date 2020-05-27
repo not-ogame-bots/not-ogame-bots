@@ -27,7 +27,7 @@ object Main extends StrictLogging {
     val credentials = ConfigSource.file(s"${System.getenv("HOME")}/.not-ogame-bots/credentials.conf").loadOrThrow[Credentials]
     logger.info(pprint.apply(botConfig).render)
 
-    val bot = new SeleniumOgameDriverCreator[Task]()
+    new SeleniumOgameDriverCreator[Task]()
       .create(credentials)
       .use { ogame =>
         val taskExecutor = new TaskExecutorImpl(ogame, clock)
@@ -37,8 +37,10 @@ object Main extends StrictLogging {
         val bp = new BuilderProcessor(botConfig, taskExecutor)
         Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run(), ep.run(), bp.run()))
       }
-    bot
-      .restartUntil(_ => false)
+      .onErrorRestartIf { e =>
+        logger.error(e.getMessage, e)
+        true
+      }
       .runSyncUnsafe()
   }
 

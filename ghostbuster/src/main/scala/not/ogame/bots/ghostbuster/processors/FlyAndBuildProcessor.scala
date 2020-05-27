@@ -19,7 +19,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
       taskExecutor
         .readPlanets()
         .flatMap(lookAtInTheAir)
-        .restartUntil(_ => false)
+        .onErrorRestartIf(_ => true)
     } else {
       Task.never
     }

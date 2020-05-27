@@ -45,9 +45,11 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
           _ <- Logger[Task].error(e)(e.getMessage)
           isStillLogged <- ogameDriver.checkIsLoggedIn()
           _ <- if (isStillLogged) {
-            Task.fromFuture(subject.onNext(action.failure()))
+            Logger[Task].warn("still logged, failing action...") >>
+              Task.fromFuture(subject.onNext(action.failure())) >> processNextAction()
           } else {
-            safeLogin >> safeHandleAction(action)
+            Logger[Task].warn("not logged") >>
+              safeLogin >> safeHandleAction(action)
           }
         } yield ()
       }
@@ -179,19 +181,25 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
     exec(action)
   }
 
+  override def buildShip(shipType: ShipType, amount: Int, head: PlayerPlanet): Task[SuppliesPageData] = {
+    val action = Action.BuildShip(amount, shipType, clock.now(), head.id)
+    exec(action)
+  }
+
   private def exec[T](action: Action[T]) = {
-    Task.parMap2(
-      queue.offer(action),
-      subject
-        .filter(r => r.uuid == action.uuid)
-        .mapEval {
-          case Response.Success(anyValue, _) =>
-            val value = action.defer(anyValue)
-            Logger[Task].debug(s"action response: ${pprint.apply(value)}").map(_ => value)
-          case Response.Failure(_) =>
-            Task.raiseError[T](new RuntimeException("Couldn't execute operation"))
-        }
-        .consumeWith(Consumer.head)
-    )((_, result) => result)
+    Task
+      .parMap2(
+        queue.offer(action),
+        subject
+          .filter(r => r.uuid == action.uuid)
+          .consumeWith(Consumer.head)
+      )((_, result) => result)
+      .flatMap {
+        case Response.Success(anyValue, _) =>
+          val value = action.defer(anyValue)
+          Logger[Task].debug(s"action response: ${pprint.apply(value)}").map(_ => value)
+        case Response.Failure(_) =>
+          Task.raiseError[T](new RuntimeException("Couldn't execute operation"))
+      }
   }
 }

@@ -14,7 +14,7 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) exte
       taskExecutor
         .readPlanets()
         .flatMap(lookForFleet)
-        .restartUntil(_ => false)
+        .onErrorRestartIf(_ => true)
     } else {
       Task.never
     }
