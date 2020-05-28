@@ -27,7 +27,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
           case w: Wish.BuildSupply if suppliesPageData.getLevel(w.suppliesBuilding).value < w.level.value && w.planetId == planet.id =>
             buildSupplyBuildingOrNothing(w.suppliesBuilding, suppliesPageData, planet)
           case w: Wish.BuildFacility if facilityPageData.getLevel(w.facilityBuilding).value < w.level.value && w.planetId == planet.id =>
-            buildFacilityBuildingOrNothing(w.facilityBuilding, facilityPageData, planet)
+            buildFacilityBuildingOrNothing(w.facilityBuilding, facilityPageData, suppliesPageData, planet)
           case w: Wish.SmartSupplyBuilder if isSmartBuilderApplicable(planet, suppliesPageData, w) =>
             smartBuilder(planet, suppliesPageData, w)
         }
@@ -52,15 +52,23 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
   private def buildFacilityBuildingOrNothing(
       facilityBuilding: FacilityBuilding,
       facilityPageData: FacilityPageData,
+      suppliesPageData: SuppliesPageData,
       planet: PlayerPlanet
   ) = {
     val level = nextLevel(facilityPageData, facilityBuilding)
-    val requiredResources =
-      FacilityBuildingCosts.buildingCost(facilityBuilding, level)
-    if (facilityPageData.currentResources.gtEqTo(requiredResources)) {
-      taskExecutor.buildFacilityBuilding(facilityBuilding, level, planet).map(Some(_))
+    val requiredResources = FacilityBuildingCosts.buildingCost(facilityBuilding, level)
+    if (suppliesPageData.shipInProgress) {
+      if (facilityPageData.currentResources.gtEqTo(requiredResources)) {
+        taskExecutor.buildFacilityBuilding(facilityBuilding, level, planet).map(Some(_))
+      } else {
+        Logger[Task]
+          .info(s"Wanted to build $facilityBuilding but there were not enough resources on ${planet.coordinates}")
+          .map(_ => None)
+      }
     } else {
-      Logger[Task].info(s"Wanted to build $facilityBuilding but there were not enough resources on ${planet.coordinates}").map(_ => None)
+      Logger[Task]
+        .info(s"Wanted to build $facilityBuilding but there were some ships building") >>
+        suppliesPageData.currentShipyardProgress.map(_.finishTimestamp).pure[Task]
     }
   }
 
