@@ -6,6 +6,7 @@ import not.ogame.bots._
 
 case class State(
     lastTimestamp: Option[ZonedDateTime],
+    lastError: Option[(ZonedDateTime, String)],
     enemyFleets: List[Fleet],
     planets: Map[Coordinates, PlanetState],
     airFleets: List[Fleet]
@@ -26,5 +27,5 @@ object PlanetState {
 }
 
 object State {
-  val Empty: State = State(None, List.empty, Map.empty, List.empty)
+  val Empty: State = State(None, None, List.empty, Map.empty, List.empty)
 }

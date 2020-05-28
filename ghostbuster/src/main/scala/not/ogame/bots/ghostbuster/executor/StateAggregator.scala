@@ -72,4 +72,7 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) { 
         .setTo(fleets.filter(f => f.fleetAttitude == FleetAttitude.Hostile))
     )
   }
+  def updateError(ex: Throwable): F[Unit] = {
+    state.update(_.copy(lastError = Some(clock.now() -> ex.getMessage)))
+  }
 }

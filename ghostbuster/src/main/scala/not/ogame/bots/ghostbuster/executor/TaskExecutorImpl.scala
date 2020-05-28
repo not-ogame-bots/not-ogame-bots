@@ -44,6 +44,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateA
       .flatMap(response => responses.put(response))
       .handleErrorWith { e =>
         for {
+          _ <- stateAggregator.updateError(e)
           _ <- Logger[Task].error(e)(e.getMessage)
           isStillLogged <- ogameDriver.checkIsLoggedIn()
           _ <- if (isStillLogged) {
