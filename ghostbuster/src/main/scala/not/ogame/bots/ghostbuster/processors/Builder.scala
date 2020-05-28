@@ -57,7 +57,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
   ) = {
     val level = nextLevel(facilityPageData, facilityBuilding)
     val requiredResources = FacilityBuildingCosts.buildingCost(facilityBuilding, level)
-    if (suppliesPageData.shipInProgress) {
+    if (!suppliesPageData.shipInProgress) {
       if (facilityPageData.currentResources.gtEqTo(requiredResources)) {
         taskExecutor.buildFacilityBuilding(facilityBuilding, level, planet).map(Some(_))
       } else {
