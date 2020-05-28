@@ -50,9 +50,7 @@ object Main extends StrictLogging {
       )
       .resource
       .void
-      .use { _ =>
-        Task.never[Unit]
-      }
+      .use(_ => Task.never[Unit])
   }
 
   private def selenium(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = {

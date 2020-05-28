@@ -109,7 +109,8 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
               FleetResources.Max
             } else {
               FleetResources.Given(Resources.Zero)
-            }
+            },
+            FleetSpeed.Percent50 //TODO add to config
           )
         )
       _ <- taskExecutor.waitTo(arrivalTime)

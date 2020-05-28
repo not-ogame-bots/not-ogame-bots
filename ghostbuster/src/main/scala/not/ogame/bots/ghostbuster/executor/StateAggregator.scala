@@ -4,7 +4,7 @@ import cats.effect.concurrent.Ref
 import com.softwaremill.quicklens._
 import not.ogame.bots._
 
-class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) {
+class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) { //TODO nonNUllPrinter
   def updateSupplies(planet: PlayerPlanet, suppliesPageData: SuppliesPageData): F[Unit] = {
     state.update { s =>
       val currentPlanetState = s.planets.getOrElse(planet.coordinates, PlanetState.Empty)
@@ -19,6 +19,8 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) {
         .setTo(Some(suppliesPageData.currentProduction))
         .modify(_.currentCapacity)
         .setTo(Some(suppliesPageData.currentCapacity))
+        .modify(_.suppliesLevels)
+        .setTo(Some(suppliesPageData.suppliesLevels))
       s.modify(_.planets)
         .using(_ ++ Map(planet.coordinates -> newPlanetState))
         .modify(_.lastTimestamp)
@@ -38,6 +40,8 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) {
         .setTo(Some(facilityPageData.currentProduction))
         .modify(_.currentCapacity)
         .setTo(Some(facilityPageData.currentCapacity))
+        .modify(_.facilitiesBuildingLevels)
+        .setTo(Some(facilityPageData.facilityLevels))
       s.modify(_.planets)
         .using(_ ++ Map(planet.coordinates -> newPlanetState))
         .modify(_.lastTimestamp)
