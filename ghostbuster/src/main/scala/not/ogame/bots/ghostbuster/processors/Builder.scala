@@ -48,7 +48,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
     } else {
       Logger[Task]
         .info(
-          s"Wanted to build $suppliesBuilding but there were not enough resources on ${planet.coordinates} " +
+          s"Wanted to build $suppliesBuilding $level but there were not enough resources on ${planet.coordinates} " +
             s"- ${suppliesPageData.currentResources}/$requiredResources"
         )
         .map(_ => None)
@@ -68,7 +68,10 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
         taskExecutor.buildFacilityBuilding(facilityBuilding, level, planet).map(Some(_))
       } else {
         Logger[Task]
-          .info(s"Wanted to build $facilityBuilding but there were not enough resources on ${planet.coordinates}")
+          .info(
+            s"Wanted to build $facilityBuilding $level but there were not enough resources on ${planet.coordinates}" +
+              s"- ${suppliesPageData.currentResources}/$requiredResources"
+          )
           .map(_ => None)
       }
     } else {
