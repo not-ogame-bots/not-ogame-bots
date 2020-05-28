@@ -16,7 +16,8 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
     for {
       sp <- taskExecutor.readSupplyPage(planet)
       fp <- taskExecutor.readFacilityPage(planet)
-      time <- buildNextThingFromWishList(planet, sp, fp)
+      modifiedSp = sp.copy(currentResources = fp.currentResources)
+      time <- buildNextThingFromWishList(planet, modifiedSp, fp)
     } yield time
   }
 
@@ -45,7 +46,12 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
     if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
       taskExecutor.buildSupplyBuilding(suppliesBuilding, level, planet).map(Some(_))
     } else {
-      Logger[Task].info(s"Wanted to build $suppliesBuilding but there were not enough resources on ${planet.coordinates}").map(_ => None)
+      Logger[Task]
+        .info(
+          s"Wanted to build $suppliesBuilding but there were not enough resources on ${planet.coordinates} " +
+            s"- ${suppliesPageData.currentResources}/$requiredResources"
+        )
+        .map(_ => None)
     }
   }
 
