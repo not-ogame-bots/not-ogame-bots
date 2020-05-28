@@ -29,7 +29,7 @@ case class BotConfig(
     smartBuilder: Boolean
 )
 
-case class FsConfig(ships: List[FleetShip], isOn: Boolean, takeResources: Boolean, gatherShips: Boolean)
+case class FsConfig(ships: List[FleetShip], isOn: Boolean, takeResources: Boolean, gatherShips: Boolean, fleetSpeed: FleetSpeed)
 case class ExpeditionConfig(ships: List[FleetShip], isOn: Boolean, maxNumberOfExpeditions: Int)
 case class FleetShip(shipType: ShipType, amount: Int)
 

@@ -69,7 +69,6 @@ case class FacilityPageData(
     facilityLevels: FacilitiesBuildingLevels,
     currentBuildingProgress: Option[BuildingProgress]
 ) {
-
   def getLevel(facilityBuilding: FacilityBuilding): Int Refined NonNegative = {
     facilityLevels.values(facilityBuilding)
   }
@@ -256,7 +255,7 @@ object SendFleetRequestShips {
   case class Ships(ships: Map[ShipType, Int]) extends SendFleetRequestShips
 }
 
-sealed trait FleetSpeed extends EnumEntry
+sealed trait FleetSpeed extends EnumEntry with Snakecase
 
 object FleetSpeed extends Enum[FleetSpeed] {
   case object Percent10 extends FleetSpeed
