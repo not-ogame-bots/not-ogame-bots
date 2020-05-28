@@ -50,7 +50,7 @@ class StatusEndpoint(state: Ref[Task, State]) extends Tapir {
   implicit val suppliesBuildingKeyDecoder: KeyDecoder[SuppliesBuilding] = (key: String) =>
     SuppliesBuilding.values.collectFirst { case v if v.entryName == key => v }
 
-  implicit val coordsEncoderKeyEncoder: KeyEncoder[Coordinates] = (key: Coordinates) => s"${key.galaxy}:${key.position}:${key.system}"
+  implicit val coordsEncoderKeyEncoder: KeyEncoder[Coordinates] = (key: Coordinates) => s"${key.galaxy}:${key.system}:${key.position}"
   implicit val coordsDecoderKeyDecoder: KeyDecoder[Coordinates] = (key: String) => {
     key.split(":").toList match {
       case a :: b :: c :: Nil => Some(Coordinates(a.toInt, b.toInt, c.toInt))
