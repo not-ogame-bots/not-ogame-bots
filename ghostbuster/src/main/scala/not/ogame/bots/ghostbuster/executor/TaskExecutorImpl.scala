@@ -146,7 +146,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateA
   override def waitTo(now: ZonedDateTime): Task[Unit] = {
     val sleepTime = calculateSleepTime(now)
     Logger[Task].debug(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til $now") >>
-      Task.sleep(sleepTime.plus(1 seconds)) // additional 1 seconds to make things go smooth
+      Task.sleep(sleepTime.plus(2 seconds)) // additional 1 seconds to make things go smooth
   }
 
   private def calculateSleepTime(futureTime: ZonedDateTime) = {
