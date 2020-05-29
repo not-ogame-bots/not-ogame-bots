@@ -31,12 +31,12 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
 
   private def isHostileToGivenPlanet(planet: PlayerPlanet, f: Fleet) = {
     f.fleetAttitude == FleetAttitude.Hostile && f.arrivalTime
-      .isAfter(clock.now().plusSeconds(botConfig.escapeConfig.interval.toSeconds)) &&
+      .isAfter(clock.now().plusSeconds(botConfig.escapeConfig.interval.toSeconds)) && //TODO check time is bigger than safe time
     f.to == planet.coordinates
   }
 
   private def escapeSingleFleet(planet: PlayerPlanet, hf: Fleet) = {
-    taskExecutor.waitTo(hf.arrivalTime.minusSeconds(5)) >> taskExecutor.sendFleet( //TODO check there is any fleet on planet
+    taskExecutor.waitTo(hf.arrivalTime.minusSeconds(20)) >> taskExecutor.sendFleet( //TODO check there is any fleet on planet
       SendFleetRequest(
         planet,
         SendFleetRequestShips.AllShips,
@@ -44,7 +44,8 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
         FleetMissionType.Transport,
         FleetResources.Max
       )
-    ) >> taskExecutor.waitTo(hf.arrivalTime.plusSeconds(5)) >> taskExecutor.cancelFleet(planet.coordinates)
+    ) >> taskExecutor.waitTo(hf.arrivalTime.plusSeconds(5)) >> taskExecutor.cancelFleet(planet.coordinates) //TODO safe time plus
+    //TODO check if attack ended
   }
   private def waitAndCheck(planet: PlayerPlanet) = {
     taskExecutor.waitTo(clock.now().plusSeconds(botConfig.escapeConfig.interval.toSeconds)) >> check(planet)

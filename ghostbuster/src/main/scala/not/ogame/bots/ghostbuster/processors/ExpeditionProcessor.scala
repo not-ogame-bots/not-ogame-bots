@@ -8,6 +8,8 @@ import not.ogame.bots.ghostbuster.{BotConfig, FLogger, PlanetFleet}
 
 import scala.concurrent.duration._
 
+//TODO check deuter
+//TODO optimize check fleet on planet - by lazy
 class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) extends FLogger {
   def run(): Task[Unit] = {
     if (botConfig.expeditionConfig.isOn) {

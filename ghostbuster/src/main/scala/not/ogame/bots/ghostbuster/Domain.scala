@@ -32,8 +32,15 @@ case class BotConfig(
     escapeConfig: EscapeConfig
 )
 
-case class FsConfig(ships: List[FleetShip], isOn: Boolean, takeResources: Boolean, gatherShips: Boolean, fleetSpeed: FleetSpeed)
-case class ExpeditionConfig(ships: List[FleetShip], isOn: Boolean, maxNumberOfExpeditions: Int)
+case class FsConfig(
+    ships: List[FleetShip],
+    isOn: Boolean,
+    takeResources: Boolean,
+    gatherShips: Boolean,
+    fleetSpeed: FleetSpeed,
+    deuterThreshold: Int
+)
+case class ExpeditionConfig(ships: List[FleetShip], isOn: Boolean, maxNumberOfExpeditions: Int, deuterThreshold: Int)
 case class FleetShip(shipType: ShipType, amount: Int)
 
 case class PlanetFleet(playerPlanet: PlayerPlanet, fleet: Map[ShipType, Int])

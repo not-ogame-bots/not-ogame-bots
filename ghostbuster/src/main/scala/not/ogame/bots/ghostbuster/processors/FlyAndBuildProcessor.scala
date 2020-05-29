@@ -11,6 +11,7 @@ import not.ogame.bots.ghostbuster.{BotConfig, FLogger, PlanetFleet}
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.jdk.DurationConverters._
 
+//TODO zostawiac deuter
 class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: LocalClock) extends FLogger {
   private val builder = new Builder(taskExecutor, botConfig)
 
@@ -71,7 +72,8 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
     val targetPlanet = nextPlanet(currentPlanet, planets)
     for {
       _ <- buildAndContinue(currentPlanet, clock.now())
-      _ <- sendFleet(from = currentPlanet, to = targetPlanet)
+      arrivalTime <- sendFleet(from = currentPlanet, to = targetPlanet)
+      _ <- taskExecutor.waitTo(arrivalTime)
       _ <- buildAndSend(currentPlanet = targetPlanet, planets)
     } yield ()
   }
@@ -81,30 +83,41 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
     planets(idx)
   }
 
-  private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[Unit] = { //TODO if couldn't take all resources then build mt
+  private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[ZonedDateTime] = {
     for {
       _ <- Logger[Task].info("Sending fleet...")
-      arrivalTime <- taskExecutor
-        .sendFleet(
-          SendFleetRequest(
-            from,
-            if (botConfig.fsConfig.gatherShips) {
-              SendFleetRequestShips.AllShips
-            } else {
-              SendFleetRequestShips.Ships(botConfig.fsConfig.ships.map(s => s.shipType -> s.amount).toMap)
-            },
-            to.coordinates,
-            FleetMissionType.Deployment,
-            if (botConfig.fsConfig.takeResources) {
-              FleetResources.Max
-            } else {
-              FleetResources.Given(Resources.Zero)
-            },
-            botConfig.fsConfig.fleetSpeed
-          )
+      suppliesPageData <- taskExecutor.readSupplyPage(from)
+      arrivalTime <- if (suppliesPageData.currentResources.deuterium >= botConfig.fsConfig.deuterThreshold) {
+        sendFleetImpl(from, to)
+      } else {
+        val missingDeuter = botConfig.fsConfig.deuterThreshold - suppliesPageData.currentResources.deuterium
+        val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium
+        val timeInSeconds = (timeToProduceInHours * 60 * 60).toInt
+        Task.sleep(timeInSeconds seconds) >> sendFleet(from, to)
+      }
+    } yield arrivalTime
+  }
+
+  private def sendFleetImpl(from: PlayerPlanet, to: PlayerPlanet) = {
+    taskExecutor
+      .sendFleet(
+        SendFleetRequest(
+          from,
+          if (botConfig.fsConfig.gatherShips) {
+            SendFleetRequestShips.AllShips
+          } else {
+            SendFleetRequestShips.Ships(botConfig.fsConfig.ships.map(s => s.shipType -> s.amount).toMap)
+          },
+          to.coordinates,
+          FleetMissionType.Deployment,
+          if (botConfig.fsConfig.takeResources) {
+            FleetResources.Max
+          } else {
+            FleetResources.Given(Resources.Zero)
+          },
+          botConfig.fsConfig.fleetSpeed
         )
-      _ <- taskExecutor.waitTo(arrivalTime)
-    } yield ()
+      )
   }
 
   private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: ZonedDateTime): Task[Unit] = { //TODO it should be inside smart builder not outside
