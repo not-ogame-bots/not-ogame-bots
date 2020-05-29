@@ -3,6 +3,7 @@ package not.ogame.bots.ghostbuster.executor
 import cats.effect.concurrent.Ref
 import com.softwaremill.quicklens._
 import not.ogame.bots._
+import cats.implicits._
 
 class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) {
   def updateSupplies(planet: PlayerPlanet, suppliesPageData: SuppliesPageData): F[Unit] = {
@@ -71,7 +72,7 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) {
 
       updatedState
         .modify(_.summaryFleetOnPlanets)
-        .setTo(updatedState.planets.values.flatMap(_.fleet).foldLeft(Map.empty[ShipType, Int])(_ ++ _))
+        .setTo(updatedState.planets.values.flatMap(_.fleet).foldLeft(Map.empty[ShipType, Int])(_ |+| _))
     }
   }
 
