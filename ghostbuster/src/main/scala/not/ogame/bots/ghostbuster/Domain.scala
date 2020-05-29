@@ -4,6 +4,8 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import not.ogame.bots._
 
+import scala.concurrent.duration.FiniteDuration
+
 sealed trait Wish
 object Wish {
   case class BuildSupply(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, planetId: String) extends Wish
@@ -26,7 +28,8 @@ case class BotConfig(
     wishlist: List[Wish],
     fsConfig: FsConfig,
     expeditionConfig: ExpeditionConfig,
-    smartBuilder: Boolean
+    smartBuilder: Boolean,
+    escapeConfig: EscapeConfig
 )
 
 case class FsConfig(ships: List[FleetShip], isOn: Boolean, takeResources: Boolean, gatherShips: Boolean, fleetSpeed: FleetSpeed)
@@ -34,3 +37,4 @@ case class ExpeditionConfig(ships: List[FleetShip], isOn: Boolean, maxNumberOfEx
 case class FleetShip(shipType: ShipType, amount: Int)
 
 case class PlanetFleet(playerPlanet: PlayerPlanet, fleet: Map[ShipType, Int])
+case class EscapeConfig(target: Coordinates, interval: FiniteDuration)

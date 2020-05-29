@@ -9,6 +9,8 @@ import not.ogame.bots._
 import not.ogame.bots.ghostbuster.PlanetFleet
 
 trait TaskExecutor {
+  def cancelFleet(coordinates: Coordinates): Task[Unit] = ???
+
   def buildShip(shipType: ShipType, amount: Int, head: PlayerPlanet): Task[SuppliesPageData]
 
   def waitTo(instant: ZonedDateTime): Task[Unit]
