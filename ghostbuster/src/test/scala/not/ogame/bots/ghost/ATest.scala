@@ -1,6 +1,8 @@
 package not.ogame.bots.ghost
 
-import java.time.{Clock, Instant, ZonedDateTime, ZoneOffset}
+import java.time.{Clock, Instant, ZoneOffset, ZonedDateTime}
+
+import io.circe.Printer
 
 class ATest extends munit.FunSuite {
   val clock1 = Clock.system(ZoneOffset.ofHours(3))
