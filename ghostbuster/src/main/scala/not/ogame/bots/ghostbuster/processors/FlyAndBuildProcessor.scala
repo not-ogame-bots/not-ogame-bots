@@ -18,7 +18,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
     if (botConfig.fsConfig.isOn) {
       taskExecutor
         .readPlanets()
-        .flatMap(lookAtInTheAir)
+        .flatMap(lookOnPlanets)
         .onErrorRestartIf(_ => true)
     } else {
       Task.never
@@ -30,22 +30,12 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
       fleets <- taskExecutor.readAllFleets()
       possibleFsFleets = fleets.filter(f => isFsFleet(planets, f))
       _ <- possibleFsFleets match {
-        case fleet :: Nil =>
-          Logger[Task].info(s"Found our fleet in the air: ${pprint.apply(fleet)}").flatMap { _ =>
-            taskExecutor.waitTo(fleet.arrivalTime).flatMap { _ =>
-              if (fleet.isReturning) {
-                val fromPlanet = planets.find(p => fleet.from == p.coordinates).get
-                buildAndSend(fromPlanet, planets)
-              } else {
-                val toPlanet = planets.find(p => fleet.to == p.coordinates).get
-                buildAndSend(toPlanet, planets)
-              }
-            }
-          }
         case l @ _ :: _ =>
           Logger[Task].info("Too many fleets in the air. Waiting for the first one to reach its target.") >>
             taskExecutor.waitTo(l.map(_.arrivalTime).min) >> lookAtInTheAir(planets)
-        case Nil => lookOnPlanets(planets)
+        case Nil =>
+          println("Couldn't find fs fleet either on planets or in the air. Waiting 10 minutes...")
+          Task.sleep(10 minutes) >> lookOnPlanets(planets)
       }
     } yield ()
   }
@@ -68,8 +58,8 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
         println(s"Planet with fs fleet ${pprint.apply(planet)}")
         buildAndSend(planet.playerPlanet, planets)
       case None =>
-        println("Couldn't find fs fleet on any planet, retrying in 10 minutes")
-        Task.sleep(10 minutes) >> lookOnPlanets(planets)
+        println("Couldn't find fs fleet on any planet, looking in the air...")
+        lookAtInTheAir(planets)
     }
   }
 
