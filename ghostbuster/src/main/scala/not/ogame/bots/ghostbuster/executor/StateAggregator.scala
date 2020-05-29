@@ -4,7 +4,7 @@ import cats.effect.concurrent.Ref
 import com.softwaremill.quicklens._
 import not.ogame.bots._
 
-class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) { //TODO nonNUllPrinter
+class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) {
   def updateSupplies(planet: PlayerPlanet, suppliesPageData: SuppliesPageData): F[Unit] = {
     state.update { s =>
       val currentPlanetState = s.planets.getOrElse(planet.coordinates, PlanetState.Empty)
@@ -21,10 +21,14 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) { 
         .setTo(Some(suppliesPageData.currentCapacity))
         .modify(_.suppliesLevels)
         .setTo(Some(suppliesPageData.suppliesLevels))
-      s.modify(_.planets)
+      val updatedState = s
+        .modify(_.planets)
         .using(_ ++ Map(planet.coordinates -> newPlanetState))
         .modify(_.lastTimestamp)
         .setTo(Some(clock.now()))
+      updatedState
+        .modify(_.summaryResourcesOnPlanets)
+        .setTo(Some(updatedState.planets.values.flatMap(_.currentResources).reduce(_ add _)))
     }
   }
 
@@ -42,10 +46,14 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) { 
         .setTo(Some(facilityPageData.currentCapacity))
         .modify(_.facilitiesBuildingLevels)
         .setTo(Some(facilityPageData.facilityLevels))
-      s.modify(_.planets)
+      val updatedState = s
+        .modify(_.planets)
         .using(_ ++ Map(planet.coordinates -> newPlanetState))
         .modify(_.lastTimestamp)
         .setTo(Some(clock.now()))
+      updatedState
+        .modify(_.summaryResourcesOnPlanets)
+        .setTo(Some(updatedState.planets.values.flatMap(_.currentResources).reduce(_ add _)))
     }
   }
 
@@ -55,10 +63,15 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) { 
       val newPlanetState = currentPlanetState
         .modify(_.fleet)
         .setTo(Some(fleet))
-      s.modify(_.planets)
+      val updatedState = s
+        .modify(_.planets)
         .using(_ ++ Map(planet.coordinates -> newPlanetState))
         .modify(_.lastTimestamp)
         .setTo(Some(clock.now()))
+
+      updatedState
+        .modify(_.summaryFleetOnPlanets)
+        .setTo(updatedState.planets.values.flatMap(_.fleet).foldLeft(Map.empty[ShipType, Int])(_ ++ _))
     }
   }
 

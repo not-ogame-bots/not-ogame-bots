@@ -90,6 +90,10 @@ case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) 
     )
   }
 
+  def add(other: Resources): Resources = {
+    Resources(metal + other.metal, crystal + other.crystal, deuterium + other.deuterium)
+  }
+
   private def divideIfGreaterThanZero(first: Double, second: Double) = {
     if (second > 0) {
       first.toDouble / second

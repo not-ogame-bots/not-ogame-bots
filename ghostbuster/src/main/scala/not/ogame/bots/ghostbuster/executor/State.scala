@@ -8,8 +8,10 @@ case class State(
     lastTimestamp: Option[ZonedDateTime],
     lastError: Option[(ZonedDateTime, String)],
     enemyFleets: List[Fleet],
-    planets: Map[Coordinates, PlanetState],
-    airFleets: List[Fleet]
+    summaryFleetOnPlanets: Map[ShipType, Int],
+    summaryResourcesOnPlanets: Option[Resources],
+    airFleets: List[Fleet],
+    planets: Map[Coordinates, PlanetState]
 )
 
 case class PlanetState(
@@ -27,5 +29,5 @@ object PlanetState {
 }
 
 object State {
-  val Empty: State = State(None, None, List.empty, Map.empty, List.empty)
+  val Empty: State = State(None, None, List.empty, Map.empty, None, List.empty, Map.empty)
 }
