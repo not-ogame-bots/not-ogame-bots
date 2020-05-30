@@ -32,6 +32,8 @@ trait OgameDriver[F[_]] {
 
   def readAllFleets(): F[List[Fleet]]
 
+  def readMyFleets(): F[List[MyFleet]]
+
   def sendFleet(sendFleetRequest: SendFleetRequest): F[Unit]
 
   def readPlanets(): F[List[PlayerPlanet]]
@@ -199,6 +201,15 @@ object ShipType extends Enum[ShipType] {
 
   override def values: IndexedSeq[ShipType] = findValues
 }
+
+case class MyFleet(
+    fleetId: String,
+    arrivalTime: ZonedDateTime,
+    fleetMissionType: FleetMissionType,
+    from: Coordinates,
+    to: Coordinates,
+    isReturning: Boolean
+)
 
 case class Fleet(
     arrivalTime: ZonedDateTime,
