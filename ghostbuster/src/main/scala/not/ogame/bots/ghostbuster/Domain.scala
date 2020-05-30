@@ -40,7 +40,13 @@ case class FsConfig(
     fleetSpeed: FleetSpeed,
     deuterThreshold: Int
 )
-case class ExpeditionConfig(ships: List[FleetShip], isOn: Boolean, maxNumberOfExpeditions: Int, deuterThreshold: Int)
+case class ExpeditionConfig(
+    ships: List[FleetShip],
+    isOn: Boolean,
+    maxNumberOfExpeditions: Int,
+    deuterThreshold: Int,
+    eligiblePlanets: List[PlanetId]
+)
 case class FleetShip(shipType: ShipType, amount: Int)
 
 case class PlanetFleet(playerPlanet: PlayerPlanet, fleet: Map[ShipType, Int])

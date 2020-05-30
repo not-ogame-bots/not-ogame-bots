@@ -10,7 +10,7 @@ import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots.ghostbuster.executor.{State, StateAggregator, TaskExecutorImpl}
 import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, Builder, BuilderProcessor, ExpeditionProcessor, FlyAndBuildProcessor}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
-import not.ogame.bots.{Credentials, LocalClock, RealLocalClock}
+import not.ogame.bots.{Credentials, LocalClock, PlanetId, RealLocalClock}
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.syntax.kleisli._
@@ -78,6 +78,10 @@ object Main extends StrictLogging {
       typeStr <- typeCur.asString
       ident <- extractByType(typeStr, objCur)
     } yield ident
+  }
+
+  implicit def taggedStringReader(implicit cr: ConfigReader[String]): ConfigReader[PlanetId] = {
+    cr.map(PlanetId.apply)
   }
 
   def extractByType(typ: String, objCur: ConfigObjectCursor): ConfigReader.Result[Wish] = typ match {

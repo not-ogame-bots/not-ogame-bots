@@ -14,6 +14,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
     if (expeditionConfig.isOn) {
       taskExecutor
         .readPlanets()
+        .map(planets => planets.filter(p => expeditionConfig.eligiblePlanets.contains(p.id)))
         .flatMap(lookForFleet)
         .onErrorRestartIf(_ => true)
     } else {
