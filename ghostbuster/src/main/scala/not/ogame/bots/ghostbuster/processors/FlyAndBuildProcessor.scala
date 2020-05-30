@@ -16,6 +16,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
     if (fsConfig.isOn) {
       taskExecutor
         .readPlanets()
+        .map(_.filter(p => fsConfig.eligiblePlanets.contains(p.id)))
         .flatMap(lookOnPlanets)
         .onErrorRestartIf(_ => true)
     } else {

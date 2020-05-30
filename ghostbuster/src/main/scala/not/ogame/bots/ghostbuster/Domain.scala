@@ -38,7 +38,8 @@ case class FsConfig(
     takeResources: Boolean,
     gatherShips: Boolean,
     fleetSpeed: FleetSpeed,
-    deuterThreshold: Int
+    deuterThreshold: Int,
+    eligiblePlanets: List[PlanetId]
 )
 case class ExpeditionConfig(
     ships: List[FleetShip],
