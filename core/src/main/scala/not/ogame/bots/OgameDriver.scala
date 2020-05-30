@@ -148,7 +148,7 @@ object FacilityBuilding extends Enum[FacilityBuilding] {
   val values: IndexedSeq[FacilityBuilding] = findValues
 }
 
-case class PlayerPlanet(id: String, coordinates: Coordinates)
+case class PlayerPlanet(id: PlanetId, coordinates: Coordinates)
 
 case class Coordinates(galaxy: Int, system: Int, position: Int, coordinatesType: CoordinatesType = CoordinatesType.Planet)
 

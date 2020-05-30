@@ -62,7 +62,7 @@ object Main extends StrictLogging {
         val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.fsConfig, builder)
         val ep = new ExpeditionProcessor(botConfig.expeditionConfig, taskExecutor)
         val activityFaker = new ActivityFakerProcessor(taskExecutor)
-        val bp = new BuilderProcessor(botConfig, taskExecutor)
+        val bp = new BuilderProcessor(builder, botConfig.smartBuilder, taskExecutor)
         Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run(), ep.run(), bp.run()))
       }
       .onErrorRestartIf { e =>

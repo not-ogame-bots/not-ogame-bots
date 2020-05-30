@@ -9,8 +9,8 @@ import scala.collection.mutable.ListBuffer
 
 class KeepActiveOgameActionTest extends munit.FunSuite {
   private implicit val clock: LocalClock = new RealLocalClock()
-  private val planet1: PlayerPlanet = PlayerPlanet("planetId1", Coordinates(1, 1, 1))
-  private val planet2: PlayerPlanet = PlayerPlanet("planetId2", Coordinates(2, 2, 2))
+  private val planet1: PlayerPlanet = PlayerPlanet(PlanetId("planetId1"), Coordinates(1, 1, 1))
+  private val planet2: PlayerPlanet = PlayerPlanet(PlanetId("planetId2"), Coordinates(2, 2, 2))
 
   test("Should make one planet active") {
     val ogameDriver = new FakeOgameDriver()

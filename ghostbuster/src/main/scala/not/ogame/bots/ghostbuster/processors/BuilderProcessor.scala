@@ -3,15 +3,13 @@ package not.ogame.bots.ghostbuster.processors
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots.PlayerPlanet
-import not.ogame.bots.ghostbuster.{BotConfig, FLogger}
+import not.ogame.bots.ghostbuster.FLogger
 
 import scala.concurrent.duration._
 
-class BuilderProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) extends FLogger {
-  private val builder = new Builder(taskExecutor, botConfig)
-
+class BuilderProcessor(builder: Builder, smartBuilder: Boolean, taskExecutor: TaskExecutor) extends FLogger {
   def run(): Task[Unit] = {
-    if (botConfig.smartBuilder) {
+    if (smartBuilder) {
       taskExecutor
         .readPlanets()
         .flatMap(planets => Task.parSequence(planets.map(loopBuilder)))

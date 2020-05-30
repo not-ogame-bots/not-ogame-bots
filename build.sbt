@@ -30,7 +30,8 @@ lazy val core: Project = (project in file("core"))
       "org.typelevel" %% "cats-effect" % "2.1.3",
       "com.beachape" %% "enumeratum" % enumeratumVersion,
       "eu.timepit" %% "refined" % refinedVersion,
-      "eu.timepit" %% "refined-cats" % refinedVersion
+      "eu.timepit" %% "refined-cats" % refinedVersion,
+      "com.softwaremill.common" %% "tagging" % "2.2.1"
     )
   )
 
