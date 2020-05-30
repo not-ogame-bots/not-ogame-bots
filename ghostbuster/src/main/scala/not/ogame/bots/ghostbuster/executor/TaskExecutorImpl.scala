@@ -2,7 +2,7 @@ package not.ogame.bots.ghostbuster.executor
 
 import java.time.ZonedDateTime
 
-import cats.effect.concurrent.{MVar, Ref}
+import cats.effect.concurrent.MVar
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import eu.timepit.refined.api.Refined
@@ -17,7 +17,7 @@ import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet}
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 
-class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateAggregator: StateAggregator[Task])
+class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateChangeListener: StateChangeListener[Task])
     extends TaskExecutor
     with FLogger
     with StrictLogging {
@@ -44,7 +44,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateA
       .flatMap(response => responses.put(response))
       .handleErrorWith { e =>
         for {
-          _ <- stateAggregator.updateError(e)
+          _ <- stateChangeListener.onNewError(e)
           _ <- Logger[Task].error(e)(e.getMessage)
           isStillLogged <- ogameDriver.checkIsLoggedIn()
           _ <- if (isStillLogged) {
@@ -76,7 +76,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateA
             _ =>
               ogameDriver
                 .readSuppliesPage(planet.id)
-                .flatTap(supplies => stateAggregator.updateSupplies(planet, supplies))
+                .flatTap(supplies => stateChangeListener.onNewSuppliesPage(planet, supplies))
                 .map(_.currentBuildingProgress.get)
           )
           .map(buildingProgress => a.success(buildingProgress.finishTimestamp))
@@ -87,36 +87,36 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateA
             _ =>
               ogameDriver
                 .readFacilityPage(planet.id)
-                .flatTap(facilities => stateAggregator.updateFacilities(planet, facilities))
+                .flatTap(facilities => stateChangeListener.onNewFacilitiesPage(planet, facilities))
                 .map(_.currentBuildingProgress.get)
           )
           .map(buildingProgress => a.success(buildingProgress.finishTimestamp))
       case a @ Action.ReadSupplyPage(planet) =>
         ogameDriver
           .readSuppliesPage(planet.id)
-          .flatTap(supplies => stateAggregator.updateSupplies(planet, supplies))
+          .flatTap(supplies => stateChangeListener.onNewSuppliesPage(planet, supplies))
           .map(sp => a.success(sp))
       case a @ Action.ReadFacilityPage(planet) =>
         ogameDriver
           .readFacilityPage(planet.id)
-          .flatTap(facilities => stateAggregator.updateFacilities(planet, facilities))
+          .flatTap(facilities => stateChangeListener.onNewFacilitiesPage(planet, facilities))
           .map(fp => a.success(fp))
       case a @ Action.RefreshFleetOnPlanetStatus(planet) =>
         ogameDriver
           .checkFleetOnPlanet(planet.id)
-          .flatTap(fleet => stateAggregator.updatePlanetFleet(planet, fleet))
+          .flatTap(fleet => stateChangeListener.onNewPlanetFleet(planet, fleet))
           .map(f => a.success(PlanetFleet(planet, f)))
       case a @ Action.BuildShip(amount, shipType, planet) =>
         ogameDriver
           .buildShips(planet.id, shipType, amount)
           .flatMap(_ => ogameDriver.readSuppliesPage(planet.id))
-          .flatTap(supplies => stateAggregator.updateSupplies(planet, supplies))
+          .flatTap(supplies => stateChangeListener.onNewSuppliesPage(planet, supplies))
           .map(sp => a.success(sp))
       case a @ Action.SendFleet(sendFleetRequest) =>
         ogameDriver.sendFleet(sendFleetRequest).flatMap { _ =>
           ogameDriver
             .readAllFleets()
-            .flatTap(fleets => stateAggregator.updateAirFleets(fleets))
+            .flatTap(fleets => stateChangeListener.onNewAirFleets(fleets))
             .map { fleets =>
               fleets
                 .collect { case f if isSameFleet(sendFleetRequest, f) => f }
@@ -128,7 +128,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateA
       case a: Action.GetAirFleet =>
         ogameDriver
           .readAllFleets()
-          .flatTap(fleets => stateAggregator.updateAirFleets(fleets))
+          .flatTap(fleets => stateChangeListener.onNewAirFleets(fleets))
           .flatTap(_ => ogameDriver.readPlanets())
           .map(fleets => a.success(fleets))
       case a: Action.ReadPlanets =>

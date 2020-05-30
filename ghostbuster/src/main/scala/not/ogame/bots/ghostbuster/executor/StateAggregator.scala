@@ -5,8 +5,8 @@ import com.softwaremill.quicklens._
 import not.ogame.bots._
 import cats.implicits._
 
-class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) {
-  def updateSupplies(planet: PlayerPlanet, suppliesPageData: SuppliesPageData): F[Unit] = {
+class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) extends StateChangeListener[F] {
+  def onNewSuppliesPage(planet: PlayerPlanet, suppliesPageData: SuppliesPageData): F[Unit] = {
     state.update { s =>
       val currentPlanetState = s.planets.getOrElse(planet.coordinates, PlanetState.Empty)
       val newPlanetState = currentPlanetState
@@ -33,7 +33,7 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) {
     }
   }
 
-  def updateFacilities(planet: PlayerPlanet, facilityPageData: FacilityPageData): F[Unit] = {
+  def onNewFacilitiesPage(planet: PlayerPlanet, facilityPageData: FacilityPageData): F[Unit] = {
     state.update { s =>
       val currentPlanetState = s.planets.getOrElse(planet.coordinates, PlanetState.Empty)
       val newPlanetState = currentPlanetState
@@ -58,7 +58,7 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) {
     }
   }
 
-  def updatePlanetFleet(planet: PlayerPlanet, fleet: Map[ShipType, Int]): F[Unit] = {
+  def onNewPlanetFleet(planet: PlayerPlanet, fleet: Map[ShipType, Int]): F[Unit] = {
     state.update { s =>
       val currentPlanetState = s.planets.getOrElse(planet.coordinates, PlanetState.Empty)
       val newPlanetState = currentPlanetState
@@ -76,7 +76,7 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) {
     }
   }
 
-  def updateAirFleets(fleets: List[Fleet]): F[Unit] = {
+  def onNewAirFleets(fleets: List[Fleet]): F[Unit] = {
     state.update(
       _.modify(_.airFleets)
         .setTo(fleets)
@@ -86,7 +86,7 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) {
         .setTo(fleets.filter(f => f.fleetAttitude == FleetAttitude.Hostile))
     )
   }
-  def updateError(ex: Throwable): F[Unit] = {
+  def onNewError(ex: Throwable): F[Unit] = {
     state.update(_.copy(lastError = Some(clock.now() -> ex.getMessage)))
   }
 }
