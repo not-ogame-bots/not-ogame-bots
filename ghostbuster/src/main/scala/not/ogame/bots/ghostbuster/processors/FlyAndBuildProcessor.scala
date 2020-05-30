@@ -11,7 +11,6 @@ import not.ogame.bots.ghostbuster.{BotConfig, FLogger, PlanetFleet}
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.jdk.DurationConverters._
 
-//TODO zostawiac deuter
 class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: LocalClock) extends FLogger {
   private val builder = new Builder(taskExecutor, botConfig)
 
@@ -46,6 +45,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
       .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
   }
 
+  //TODO sequential scan
   private def lookOnPlanets(planets: List[PlayerPlanet]): Task[Unit] = {
     val planetWithFsFleet = planets
       .map { planet =>
@@ -99,25 +99,28 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
   }
 
   private def sendFleetImpl(from: PlayerPlanet, to: PlayerPlanet) = {
-    taskExecutor
-      .sendFleet(
-        SendFleetRequest(
-          from,
-          if (botConfig.fsConfig.gatherShips) {
-            SendFleetRequestShips.AllShips
-          } else {
-            SendFleetRequestShips.Ships(botConfig.fsConfig.ships.map(s => s.shipType -> s.amount).toMap)
-          },
-          to.coordinates,
-          FleetMissionType.Deployment,
-          if (botConfig.fsConfig.takeResources) {
-            FleetResources.Max
-          } else {
-            FleetResources.Given(Resources.Zero)
-          },
-          botConfig.fsConfig.fleetSpeed
+    for {
+      resources <- if (botConfig.fsConfig.takeResources) {
+        new ResourceSelector[Task](deuteriumSelector = Selector.decreaseBy(200_000)).selectResources(taskExecutor, from)
+      } else {
+        Resources.Zero.pure[Task]
+      }
+      arrivalTime <- taskExecutor
+        .sendFleet(
+          SendFleetRequest(
+            from,
+            if (botConfig.fsConfig.gatherShips) {
+              SendFleetRequestShips.AllShips
+            } else {
+              SendFleetRequestShips.Ships(botConfig.fsConfig.ships.map(s => s.shipType -> s.amount).toMap)
+            },
+            to.coordinates,
+            FleetMissionType.Deployment,
+            FleetResources.Given(resources),
+            botConfig.fsConfig.fleetSpeed
+          )
         )
-      )
+    } yield arrivalTime
   }
 
   private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: ZonedDateTime): Task[Unit] = { //TODO it should be inside smart builder not outside
