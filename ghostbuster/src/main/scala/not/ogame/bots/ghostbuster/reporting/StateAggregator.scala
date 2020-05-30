@@ -1,9 +1,10 @@
-package not.ogame.bots.ghostbuster.executor
+package not.ogame.bots.ghostbuster.reporting
 
 import cats.effect.concurrent.Ref
+import cats.implicits._
 import com.softwaremill.quicklens._
 import not.ogame.bots._
-import cats.implicits._
+import not.ogame.bots.ghostbuster.executor.StateChangeListener
 
 class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) extends StateChangeListener[F] {
   def onNewSuppliesPage(planet: PlayerPlanet, suppliesPageData: SuppliesPageData): F[Unit] = {

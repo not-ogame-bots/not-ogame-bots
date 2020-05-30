@@ -1,26 +1,28 @@
-package not.ogame.bots.ghostbuster
+package not.ogame.bots.ghostbuster.infrastructure
 
-import com.google.firebase.messaging.{AndroidConfig, AndroidNotification, ApnsConfig, Aps, FirebaseMessaging, Message, Notification}
-import java.util.concurrent.{ExecutionException, TimeUnit}
+import java.util.concurrent.TimeUnit
 
+import cats.effect.Sync
+import com.google.firebase.messaging._
 import com.typesafe.scalalogging.StrictLogging
-import scala.jdk.CollectionConverters._
-import scala.concurrent.duration.Duration
 
-class FCMService extends StrictLogging {
-  def sendMessage(data: Map[String, String], request: PushNotificationRequest): Unit = {
+import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters._
+
+class FCMService[F[_]: Sync] extends StrictLogging {
+  def sendMessage(data: Map[String, String], request: PushNotificationRequest): F[Unit] = Sync[F].delay {
     val message = getPreconfiguredMessageWithData(data, request)
     val response = sendAndGetResponse(message)
     logger.info("Sent message with data. Topic: " + request.topic + ", " + response)
   }
 
-  def sendMessageWithoutData(request: PushNotificationRequest): Unit = {
+  def sendMessageWithoutData(request: PushNotificationRequest): F[Unit] = Sync[F].delay {
     val message = getPreconfiguredMessageWithoutData(request)
     val response = sendAndGetResponse(message)
     logger.info("Sent message without data. Topic: " + request.topic + ", " + response)
   }
 
-  def sendMessageToToken(request: PushNotificationRequest): Unit = {
+  def sendMessageToToken(request: PushNotificationRequest): F[Unit] = Sync[F].delay {
     val message = getPreconfiguredMessageToToken(request)
     val response = sendAndGetResponse(message)
     logger.info("Sent message to token. Device token: " + request.token + ", " + response)

@@ -7,10 +7,12 @@ import eu.timepit.refined.pureconfig._
 import monix.eval.Task
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
-import not.ogame.bots.ghostbuster.executor.{State, StateAggregator, TaskExecutorImpl}
+import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
+import not.ogame.bots.ghostbuster.infrastructure.FCMService
 import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, Builder, BuilderProcessor, ExpeditionProcessor, FlyAndBuildProcessor}
+import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator, StateListenerDispatcher}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
-import not.ogame.bots.{Credentials, LocalClock, PlanetId, RealLocalClock}
+import not.ogame.bots.{Credentials, Fleet, LocalClock, PlanetId, RealLocalClock}
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.syntax.kleisli._
@@ -23,6 +25,7 @@ import sttp.tapir.server.http4s._
 
 object Main extends StrictLogging {
   private implicit val clock: LocalClock = new RealLocalClock()
+  private val SettingsDirectory = s"${System.getenv("HOME")}/.not-ogame-bots/"
 
   def main(args: Array[String]): Unit = {
     Thread.setDefaultUncaughtExceptionHandler { (t, e) =>
@@ -30,7 +33,7 @@ object Main extends StrictLogging {
     }
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
     val botConfig = ConfigSource.default.loadOrThrow[BotConfig]
-    val credentials = ConfigSource.file(s"${System.getenv("HOME")}/.not-ogame-bots/credentials.conf").loadOrThrow[Credentials]
+    val credentials = ConfigSource.file(s"${SettingsDirectory}credentials.conf").loadOrThrow[Credentials]
     logger.info(pprint.apply(botConfig).render)
 
     Ref
@@ -40,8 +43,7 @@ object Main extends StrictLogging {
         Task.parMap2(selenium(botConfig, credentials, state), httpServer(httpStateExposer.getStatus))((_, _) => ())
       }
       .runSyncUnsafe()
-//    initializeFirebase()
-//    new PushNotificationService(new FCMService).sendPushNotification(PushNotificationRequest("kasper", "jest super", "weather", null))
+    initializeFirebase()
   }
 
   private def httpServer(endpoint: ServerEndpoint[Unit, Unit, State, Nothing, Task]) = {
@@ -59,7 +61,10 @@ object Main extends StrictLogging {
     new SeleniumOgameDriverCreator[Task]()
       .create(credentials)
       .use { ogame =>
-        val taskExecutor = new TaskExecutorImpl(ogame, clock, new StateAggregator[Task](state))
+        val stateAgg = new StateAggregator[Task](state)
+        val seenFleetsState = Ref[Task].of(Set.empty[Fleet]).runSyncUnsafe()
+        val hostileFleetReporter = new HostileFleetReporter[Task](new FCMService[Task], seenFleetsState)
+        val taskExecutor = new TaskExecutorImpl(ogame, clock, new StateListenerDispatcher[Task](List(stateAgg, hostileFleetReporter)))
         val builder = new Builder(taskExecutor, botConfig.wishlist)
         val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.fsConfig, builder)
         val ep = new ExpeditionProcessor(botConfig.expeditionConfig, taskExecutor)
@@ -78,7 +83,7 @@ object Main extends StrictLogging {
     import com.google.firebase.FirebaseApp
     import com.google.firebase.FirebaseOptions
     import java.io.FileInputStream
-    val serviceAccount = new FileInputStream("/home/kghost/Downloads/notogamebots-firebase-adminsdk-sjbas-730cc8387b.json")
+    val serviceAccount = new FileInputStream(s"${SettingsDirectory}/notogamebots-firebase-adminsdk-sjbas-730cc8387b.json")
 
     val options = new FirebaseOptions.Builder()
       .setCredentials(GoogleCredentials.fromStream(serviceAccount))

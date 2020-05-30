@@ -6,8 +6,8 @@ import io.circe.generic.auto._
 import io.circe.refined._
 import io.circe._
 import monix.eval.Task
-import not.ogame.bots.ghostbuster.executor.State
 import not.ogame.bots._
+import not.ogame.bots.ghostbuster.reporting.State
 import sttp.tapir.Tapir
 import sttp.tapir.json.circe.TapirJsonCirce
 import sttp.tapir.server.ServerEndpoint
