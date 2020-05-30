@@ -1,0 +1,1 @@
+ul.og-paginatable{position:relative;list-style:none;display:flex;flex-direction:row;justify-content:center}ul.og-paginatable li{position:relative;box-sizing:border-box;padding:4px 6px;margin:0 2px;background-color:#57769866;cursor:pointer;transition:all .2s ease-in-out}ul.og-paginatable li:hover,ul.og-paginatable li.active{background-color:#97b6c876;font-weight:bold}
