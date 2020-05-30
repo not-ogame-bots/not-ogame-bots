@@ -40,6 +40,8 @@ object Main extends StrictLogging {
         Task.parMap2(selenium(botConfig, credentials, state), httpServer(httpStateExposer.getStatus))((_, _) => ())
       }
       .runSyncUnsafe()
+//    initializeFirebase()
+//    new PushNotificationService(new FCMService).sendPushNotification(PushNotificationRequest("kasper", "jest super", "weather", null))
   }
 
   private def httpServer(endpoint: ServerEndpoint[Unit, Unit, State, Nothing, Task]) = {
@@ -69,6 +71,21 @@ object Main extends StrictLogging {
         logger.error(e.getMessage, e)
         true
       }
+  }
+
+  private def initializeFirebase() = {
+    import com.google.auth.oauth2.GoogleCredentials
+    import com.google.firebase.FirebaseApp
+    import com.google.firebase.FirebaseOptions
+    import java.io.FileInputStream
+    val serviceAccount = new FileInputStream("/home/kghost/Downloads/notogamebots-firebase-adminsdk-sjbas-730cc8387b.json")
+
+    val options = new FirebaseOptions.Builder()
+      .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+      .setDatabaseUrl("https://notogamebots.firebaseio.com")
+      .build
+
+    FirebaseApp.initializeApp(options)
   }
 
   implicit val wishReader: ConfigReader[Wish] = ConfigReader.fromCursor { cur =>
