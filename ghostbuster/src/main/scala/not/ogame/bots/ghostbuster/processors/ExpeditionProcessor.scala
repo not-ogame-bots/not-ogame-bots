@@ -8,7 +8,6 @@ import not.ogame.bots.ghostbuster.{BotConfig, FLogger, PlanetFleet}
 
 import scala.concurrent.duration._
 
-//TODO check deuter
 //TODO optimize check fleet on planet - by lazy
 class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) extends FLogger {
   def run(): Task[Unit] = {
@@ -46,6 +45,24 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) exte
   }
 
   private def sendExpedition(fromPlanet: PlayerPlanet): Task[Unit] = {
+    taskExecutor
+      .readSupplyPage(fromPlanet)
+      .flatMap { suppliesPageData =>
+        if (suppliesPageData.currentResources.deuterium >= botConfig.expeditionConfig.deuterThreshold) {
+          sendFleetImpl(fromPlanet)
+        } else {
+          val missingDeuter = botConfig.fsConfig.deuterThreshold - suppliesPageData.currentResources.deuterium
+          val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium
+          val timeInSeconds = (timeToProduceInHours * 60 * 60).toInt
+          Logger[Task].info(s"There was not enough deuter, expedition sending delayed by $timeInSeconds seconds") >> Task.sleep(
+            timeInSeconds seconds
+          ) >> sendFleetImpl(fromPlanet)
+        }
+      }
+    sendFleetImpl(fromPlanet)
+  }
+
+  private def sendFleetImpl(fromPlanet: PlayerPlanet) = {
     Logger[Task].info("Sending fleet...") >>
       taskExecutor
         .sendFleet(
@@ -59,7 +76,6 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) exte
         )
         .void
   }
-
   private def lookForFleetOnPlanets(planets: List[PlayerPlanet]) = {
     planets
       .map(taskExecutor.getFleetOnPlanet)
