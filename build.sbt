@@ -73,6 +73,7 @@ lazy val ghostbuster: Project = (project in file("ghostbuster"))
       "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-blaze-server" % http4sVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
+      "co.fs2" %% "fs2-core" % "2.2.1",
       "org.scalameta" %% "munit" % "0.7.7" % Test
     ) ++ jsonDependencies,
     testFrameworks += new TestFramework("munit.Framework")

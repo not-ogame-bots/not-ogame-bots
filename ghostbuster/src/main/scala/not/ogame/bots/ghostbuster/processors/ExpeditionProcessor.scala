@@ -1,14 +1,16 @@
 package not.ogame.bots.ghostbuster.processors
 
+import java.time.ZonedDateTime
+
 import cats.implicits._
+import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.{BotConfig, ExpeditionConfig, FLogger, PlanetFleet}
+import not.ogame.bots.ghostbuster.{ExpeditionConfig, FLogger, PlanetFleet}
 
 import scala.concurrent.duration._
 
-//TODO optimize check fleet on planet - by lazy
 class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: TaskExecutor) extends FLogger {
   def run(): Task[Unit] = {
     if (expeditionConfig.isOn) {
@@ -45,7 +47,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
     planets.exists(p => p.coordinates == fleet.from)
   }
 
-  private def sendExpedition(fromPlanet: PlayerPlanet): Task[Unit] = {
+  private def sendExpedition(fromPlanet: PlayerPlanet): Task[ZonedDateTime] = {
     taskExecutor
       .readSupplyPage(fromPlanet)
       .flatMap { suppliesPageData =>
@@ -75,19 +77,18 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
             FleetResources.Given(Resources.Zero)
           )
         )
-        .void
   }
   private def lookForFleetOnPlanets(planets: List[PlayerPlanet]) = {
-    planets
-      .map(taskExecutor.getFleetOnPlanet)
-      .sequence
-      .flatMap { planetFleets =>
-        planetFleets
-          .collectFirst { case PlanetFleet(planet, fleet) if isExpeditionFleet(fleet) => planet }
-          .map(sendExpedition)
-          .getOrElse {
-            Logger[Task].info("Could find expedition fleet on any planet. Waiting 10 minutes....") >> Task.sleep(10 minutes)
-          }
+    Stream
+      .emits(planets)
+      .evalMap(taskExecutor.getFleetOnPlanet)
+      .collectFirst { case PlanetFleet(planet, fleet) if isExpeditionFleet(fleet) => planet }
+      .evalMap(sendExpedition)
+      .compile
+      .last
+      .flatMap {
+        case Some(_) => ().pure[Task]
+        case None    => Logger[Task].info("Could find expedition fleet on any planet. Waiting 10 minutes....") >> Task.sleep(10 minutes)
       }
   }
   private def isExpeditionFleet(fleet: Map[ShipType, Int]): Boolean = {
