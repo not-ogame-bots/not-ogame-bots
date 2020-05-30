@@ -36,6 +36,8 @@ trait OgameDriver[F[_]] {
 
   def sendFleet(sendFleetRequest: SendFleetRequest): F[Unit]
 
+  def returnFleet(fleetId: String): F[Unit]
+
   def readPlanets(): F[List[PlayerPlanet]]
 
   def checkIsLoggedIn(): F[Boolean]
