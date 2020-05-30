@@ -11,7 +11,7 @@ import not.ogame.bots.ghostbuster.{ExpeditionConfig, FLogger, PlanetFleet}
 
 import scala.concurrent.duration._
 
-class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: TaskExecutor) extends FLogger {
+class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: TaskExecutor)(implicit clock: LocalClock) extends FLogger {
   def run(): Task[Unit] = {
     if (expeditionConfig.isOn) {
       taskExecutor
@@ -33,7 +33,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
         Logger[Task].info(
           s"Only ${returningExpeditions.size}/${expeditionConfig.maxNumberOfExpeditions} expeditions are in the air"
         ) >>
-          lookForFleetOnPlanets(planets) >> lookForFleet(planets)
+          lookForFleetOnPlanets(planets, fleets) >> lookForFleet(planets)
       } else {
         val min = expeditions.map(_.arrivalTime).min
         Logger[Task].info(s"All expeditions are in the air, waiting for first to reach its target - $min") >>
@@ -78,7 +78,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
           )
         )
   }
-  private def lookForFleetOnPlanets(planets: List[PlayerPlanet]) = {
+  private def lookForFleetOnPlanets(planets: List[PlayerPlanet], allFleets: List[Fleet]) = {
     Stream
       .emits(planets)
       .evalMap(taskExecutor.getFleetOnPlanet)
@@ -88,9 +88,28 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
       .last
       .flatMap {
         case Some(_) => ().pure[Task]
-        case None    => Logger[Task].info("Could find expedition fleet on any planet. Waiting 10 minutes....") >> Task.sleep(10 minutes)
+        case None    => waitToEarliestFleet(allFleets)
       }
   }
+
+  private def waitToEarliestFleet(allFleets: List[Fleet]) = {
+    val tenMinutesFromNow = clock.now().plusMinutes(10)
+    val minAnyFleetArrivalTime = minOr(allFleets.map(_.arrivalTime))(tenMinutesFromNow)
+    val waitTo = if (tenMinutesFromNow.isAfter(minAnyFleetArrivalTime)) {
+      minAnyFleetArrivalTime
+    } else {
+      tenMinutesFromNow
+    }
+    Logger[Task].info(s"Could find expedition fleet on any planet. Waiting til $waitTo....") >> taskExecutor.waitTo(waitTo)
+  }
+
+  private def minOr[R: Ordering](l: List[R])(or: => R): R = {
+    l match {
+      case l if l.nonEmpty => l.min
+      case _               => or
+    }
+  }
+
   private def isExpeditionFleet(fleet: Map[ShipType, Int]): Boolean = {
     expeditionConfig.ships.forall(ship => ship.amount <= fleet(ship.shipType))
   }
