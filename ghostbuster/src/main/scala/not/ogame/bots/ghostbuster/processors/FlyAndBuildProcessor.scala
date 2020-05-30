@@ -93,7 +93,9 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
         val missingDeuter = botConfig.fsConfig.deuterThreshold - suppliesPageData.currentResources.deuterium
         val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium
         val timeInSeconds = (timeToProduceInHours * 60 * 60).toInt
-        Task.sleep(timeInSeconds seconds) >> sendFleet(from, to)
+        Logger[Task].info(s"There was not enough deuter, fleet sending delayed by $timeInSeconds seconds") >> Task.sleep(
+          timeInSeconds seconds
+        ) >> sendFleet(from, to)
       }
     } yield arrivalTime
   }
