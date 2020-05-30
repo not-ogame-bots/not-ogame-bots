@@ -8,7 +8,7 @@ import monix.eval.Task
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots.ghostbuster.executor.{State, StateAggregator, TaskExecutorImpl}
-import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, BuilderProcessor, ExpeditionProcessor, FlyAndBuildProcessor}
+import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, Builder, BuilderProcessor, ExpeditionProcessor, FlyAndBuildProcessor}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
 import not.ogame.bots.{Credentials, LocalClock, RealLocalClock}
 import org.http4s.server.Router
@@ -58,8 +58,9 @@ object Main extends StrictLogging {
       .create(credentials)
       .use { ogame =>
         val taskExecutor = new TaskExecutorImpl(ogame, clock, new StateAggregator[Task](state))
-        val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig, clock)
-        val ep = new ExpeditionProcessor(botConfig, taskExecutor)
+        val builder = new Builder(taskExecutor, botConfig.wishlist)
+        val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.fsConfig, builder)
+        val ep = new ExpeditionProcessor(botConfig.expeditionConfig, taskExecutor)
         val activityFaker = new ActivityFakerProcessor(taskExecutor)
         val bp = new BuilderProcessor(botConfig, taskExecutor)
         Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run(), ep.run(), bp.run()))

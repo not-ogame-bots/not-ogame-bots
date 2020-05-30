@@ -4,14 +4,14 @@ import cats.implicits._
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.{BotConfig, FLogger, PlanetFleet}
+import not.ogame.bots.ghostbuster.{BotConfig, ExpeditionConfig, FLogger, PlanetFleet}
 
 import scala.concurrent.duration._
 
 //TODO optimize check fleet on planet - by lazy
-class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) extends FLogger {
+class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: TaskExecutor) extends FLogger {
   def run(): Task[Unit] = {
-    if (botConfig.expeditionConfig.isOn) {
+    if (expeditionConfig.isOn) {
       taskExecutor
         .readPlanets()
         .flatMap(lookForFleet)
@@ -26,9 +26,9 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) exte
       fleets <- taskExecutor.readAllFleets()
       expeditions = fleets.filter(fleet => isExpedition(planets, fleet))
       returningExpeditions = expeditions.filter(_.isReturning)
-      _ <- if (returningExpeditions.size < botConfig.expeditionConfig.maxNumberOfExpeditions) {
+      _ <- if (returningExpeditions.size < expeditionConfig.maxNumberOfExpeditions) {
         Logger[Task].info(
-          s"Only ${returningExpeditions.size}/${botConfig.expeditionConfig.maxNumberOfExpeditions} expeditions are in the air"
+          s"Only ${returningExpeditions.size}/${expeditionConfig.maxNumberOfExpeditions} expeditions are in the air"
         ) >>
           lookForFleetOnPlanets(planets) >> lookForFleet(planets)
       } else {
@@ -48,10 +48,10 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) exte
     taskExecutor
       .readSupplyPage(fromPlanet)
       .flatMap { suppliesPageData =>
-        if (suppliesPageData.currentResources.deuterium >= botConfig.expeditionConfig.deuterThreshold) {
+        if (suppliesPageData.currentResources.deuterium >= expeditionConfig.deuterThreshold) {
           sendFleetImpl(fromPlanet)
         } else {
-          val missingDeuter = botConfig.fsConfig.deuterThreshold - suppliesPageData.currentResources.deuterium
+          val missingDeuter = expeditionConfig.deuterThreshold - suppliesPageData.currentResources.deuterium
           val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium
           val timeInSeconds = (timeToProduceInHours * 60 * 60).toInt
           Logger[Task].info(s"There was not enough deuter, expedition sending delayed by $timeInSeconds seconds") >> Task.sleep(
@@ -68,7 +68,7 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) exte
         .sendFleet(
           SendFleetRequest(
             fromPlanet,
-            SendFleetRequestShips.Ships(botConfig.expeditionConfig.ships.map(s => s.shipType -> s.amount).toMap),
+            SendFleetRequestShips.Ships(expeditionConfig.ships.map(s => s.shipType -> s.amount).toMap),
             fromPlanet.coordinates.copy(position = 16),
             FleetMissionType.Expedition,
             FleetResources.Given(Resources.Zero)
@@ -90,6 +90,6 @@ class ExpeditionProcessor(botConfig: BotConfig, taskExecutor: TaskExecutor) exte
       }
   }
   private def isExpeditionFleet(fleet: Map[ShipType, Int]): Boolean = {
-    botConfig.expeditionConfig.ships.forall(ship => ship.amount <= fleet(ship.shipType))
+    expeditionConfig.ships.forall(ship => ship.amount <= fleet(ship.shipType))
   }
 }

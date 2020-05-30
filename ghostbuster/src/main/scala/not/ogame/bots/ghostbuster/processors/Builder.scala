@@ -7,11 +7,11 @@ import eu.timepit.refined.numeric.Positive
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots.facts.{FacilityBuildingCosts, SuppliesBuildingCosts}
-import not.ogame.bots.ghostbuster.{BotConfig, FLogger, Wish}
+import not.ogame.bots.ghostbuster.{FLogger, Wish}
 import not.ogame.bots.selenium.refineVUnsafe
-import not.ogame.bots.{FacilityBuilding, FacilityPageData, PlayerPlanet, Resources, SuppliesBuilding, SuppliesPageData}
+import not.ogame.bots._
 
-class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger {
+class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish]) extends FLogger {
   def buildNextThingFromWishList(planet: PlayerPlanet): Task[Option[ZonedDateTime]] = {
     for {
       sp <- taskExecutor.readSupplyPage(planet)
@@ -23,7 +23,7 @@ class Builder(taskExecutor: TaskExecutor, botConfig: BotConfig) extends FLogger 
 
   private def buildNextThingFromWishList(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, facilityPageData: FacilityPageData) = {
     if (!suppliesPageData.buildingInProgress) {
-      botConfig.wishlist
+      wishlist
         .collectFirst {
           case w: Wish.BuildSupply if suppliesPageData.getLevel(w.suppliesBuilding).value < w.level.value && w.planetId == planet.id =>
             buildSupplyBuildingOrNothing(w.suppliesBuilding, suppliesPageData, planet)

@@ -6,16 +6,14 @@ import cats.implicits._
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.{BotConfig, FLogger, PlanetFleet}
+import not.ogame.bots.ghostbuster.{FLogger, FsConfig, PlanetFleet}
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.jdk.DurationConverters._
 
-class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: LocalClock) extends FLogger {
-  private val builder = new Builder(taskExecutor, botConfig)
-
+class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, builder: Builder)(implicit clock: LocalClock) extends FLogger {
   def run(): Task[Unit] = {
-    if (botConfig.fsConfig.isOn) {
+    if (fsConfig.isOn) {
       taskExecutor
         .readPlanets()
         .flatMap(lookOnPlanets)
@@ -65,7 +63,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
   }
 
   private def isFsFleet(planetFleet: PlanetFleet): Boolean = {
-    botConfig.fsConfig.ships.forall(fsShip => fsShip.amount <= planetFleet.fleet(fsShip.shipType))
+    fsConfig.ships.forall(fsShip => fsShip.amount <= planetFleet.fleet(fsShip.shipType))
   }
 
   private def buildAndSend(currentPlanet: PlayerPlanet, planets: List[PlayerPlanet]): Task[Unit] = {
@@ -87,10 +85,10 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
     for {
       _ <- Logger[Task].info("Sending fleet...")
       suppliesPageData <- taskExecutor.readSupplyPage(from)
-      arrivalTime <- if (suppliesPageData.currentResources.deuterium >= botConfig.fsConfig.deuterThreshold) {
+      arrivalTime <- if (suppliesPageData.currentResources.deuterium >= fsConfig.deuterThreshold) {
         sendFleetImpl(from, to)
       } else {
-        val missingDeuter = botConfig.fsConfig.deuterThreshold - suppliesPageData.currentResources.deuterium
+        val missingDeuter = fsConfig.deuterThreshold - suppliesPageData.currentResources.deuterium
         val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium
         val timeInSeconds = (timeToProduceInHours * 60 * 60).toInt
         Logger[Task].info(s"There was not enough deuter, fleet sending delayed by $timeInSeconds seconds") >> Task.sleep(
@@ -102,7 +100,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
 
   private def sendFleetImpl(from: PlayerPlanet, to: PlayerPlanet) = {
     for {
-      resources <- if (botConfig.fsConfig.takeResources) {
+      resources <- if (fsConfig.takeResources) {
         new ResourceSelector[Task](deuteriumSelector = Selector.decreaseBy(200_000)).selectResources(taskExecutor, from)
       } else {
         Resources.Zero.pure[Task]
@@ -111,15 +109,15 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
         .sendFleet(
           SendFleetRequest(
             from,
-            if (botConfig.fsConfig.gatherShips) {
+            if (fsConfig.gatherShips) {
               SendFleetRequestShips.AllShips
             } else {
-              SendFleetRequestShips.Ships(botConfig.fsConfig.ships.map(s => s.shipType -> s.amount).toMap)
+              SendFleetRequestShips.Ships(fsConfig.ships.map(s => s.shipType -> s.amount).toMap)
             },
             to.coordinates,
             FleetMissionType.Deployment,
             FleetResources.Given(resources),
-            botConfig.fsConfig.fleetSpeed
+            fsConfig.fleetSpeed
           )
         )
     } yield arrivalTime
