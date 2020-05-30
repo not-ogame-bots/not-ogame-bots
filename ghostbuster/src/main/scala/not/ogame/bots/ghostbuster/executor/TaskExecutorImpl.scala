@@ -49,7 +49,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
           isStillLogged <- ogameDriver.checkIsLoggedIn()
           _ <- if (isStillLogged) {
             Logger[Task].warn("still logged, failing action...") >>
-              responses.put(action.failure(e)) >> processNextAction()
+              responses.put(action.failure(e))
           } else {
             Logger[Task].warn("not logged") >>
               safeLogin >> safeHandleAction(action)
