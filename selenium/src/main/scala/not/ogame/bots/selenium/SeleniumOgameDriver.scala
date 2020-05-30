@@ -324,6 +324,13 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
     Sync[F].delay(new SendFleetAction(webDriver, credentials).sendFleet(sendFleetRequest))
   }
 
+  override def returnFleet(fleetId: String): F[Unit] = {
+    Sync[F].delay {
+      webDriver.get(s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=movement")
+      webDriver.findElement(By.id(fleetId)).findElement(By.className("reversal")).click()
+    }
+  }
+
   override def readPlanets(): F[List[PlayerPlanet]] = {
     Sync[F].delay {
       webDriver.get(s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=overview")

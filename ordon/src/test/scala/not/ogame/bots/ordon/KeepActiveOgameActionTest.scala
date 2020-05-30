@@ -60,6 +60,8 @@ class FakeOgameDriver extends OgameDriver[Id]() {
 
   override def sendFleet(sendFleetRequest: SendFleetRequest): Id[Unit] = ???
 
+  override def returnFleet(fleetId: String): Id[Unit] = ???
+
   override def readPlanets(): Id[List[PlayerPlanet]] = ???
 
   override def checkIsLoggedIn(): Id[Boolean] = ???
