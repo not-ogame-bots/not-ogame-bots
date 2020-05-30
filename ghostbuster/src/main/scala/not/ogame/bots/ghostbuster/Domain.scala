@@ -28,18 +28,28 @@ case class BotConfig(
     wishlist: List[Wish],
     fsConfig: FsConfig,
     expeditionConfig: ExpeditionConfig,
-    smartBuilder: Boolean,
+    smartBuilder: SmartBuilderConfig,
     escapeConfig: EscapeConfig
+)
+
+case class SmartBuilderConfig(
+    interval: FiniteDuration,
+    isOn: Boolean
 )
 
 case class FsConfig(
     ships: List[FleetShip],
     isOn: Boolean,
+    searchInterval: FiniteDuration,
+    remainDeuterAmount: Int,
     takeResources: Boolean,
     gatherShips: Boolean,
     fleetSpeed: FleetSpeed,
     deuterThreshold: Int,
-    eligiblePlanets: List[PlanetId]
+    eligiblePlanets: List[PlanetId],
+    builder: Boolean,
+    maxWaitTime: FiniteDuration,
+    maxBuildingTime: FiniteDuration
 )
 case class ExpeditionConfig(
     ships: List[FleetShip],

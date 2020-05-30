@@ -33,8 +33,8 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
           Logger[Task].info("Too many fleets in the air. Waiting for the first one to reach its target.") >>
             taskExecutor.waitTo(l.map(_.arrivalTime).min) >> lookAtInTheAir(planets)
         case Nil =>
-          println("Couldn't find fs fleet either on planets or in the air. Waiting 10 minutes...")
-          Task.sleep(10 minutes) >> lookOnPlanets(planets)
+          println(s"Couldn't find fs fleet either on planets or in the air. Waiting ${fsConfig.searchInterval}...")
+          Task.sleep(fsConfig.searchInterval) >> lookOnPlanets(planets)
       }
     } yield ()
   }
@@ -100,7 +100,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
   private def sendFleetImpl(from: PlayerPlanet, to: PlayerPlanet) = {
     for {
       resources <- if (fsConfig.takeResources) {
-        new ResourceSelector[Task](deuteriumSelector = Selector.decreaseBy(200_000)).selectResources(taskExecutor, from)
+        new ResourceSelector[Task](deuteriumSelector = Selector.decreaseBy(fsConfig.remainDeuterAmount)).selectResources(taskExecutor, from)
       } else {
         Resources.Zero.pure[Task]
       }
@@ -123,11 +123,15 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
   }
 
   private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: ZonedDateTime): Task[Unit] = {
-    builder.buildNextThingFromWishList(planet).flatMap {
-      case Some(finishTime)
-          if timeDiff(clock.now(), finishTime) < (10 minutes) && timeDiff(startedBuildingAt, clock.now()) < (20 minutes) =>
-        taskExecutor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
-      case _ => Task.unit
+    if (fsConfig.builder) {
+      builder.buildNextThingFromWishList(planet).flatMap {
+        case Some(finishTime)
+            if timeDiff(clock.now(), finishTime) < fsConfig.maxBuildingTime && timeDiff(startedBuildingAt, clock.now()) < fsConfig.maxWaitTime =>
+          taskExecutor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
+        case _ => Task.unit
+      }
+    } else {
+      Task.unit
     }
   }
 
