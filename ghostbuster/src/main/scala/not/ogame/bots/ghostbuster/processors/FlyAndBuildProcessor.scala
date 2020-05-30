@@ -7,7 +7,7 @@ import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.{FLogger, FsConfig, PlanetFleet}
-
+import fs2.Stream
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.jdk.DurationConverters._
 
@@ -44,23 +44,21 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
       .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
   }
 
-  //TODO sequential scan
   private def lookOnPlanets(planets: List[PlayerPlanet]): Task[Unit] = {
-    val planetWithFsFleet = planets
-      .map { planet =>
-        taskExecutor.getFleetOnPlanet(planet)
+    Stream
+      .emits(planets)
+      .evalMap(taskExecutor.getFleetOnPlanet)
+      .collectFirst { case p if isFsFleet(p) => p }
+      .compile
+      .last
+      .flatMap {
+        case Some(planet) =>
+          println(s"Planet with fs fleet ${pprint.apply(planet)}")
+          buildAndSend(planet.playerPlanet, planets)
+        case None =>
+          println("Couldn't find fs fleet on any planet, looking in the air...")
+          lookAtInTheAir(planets)
       }
-      .sequence
-      .map(planetFleets => planetFleets.find(isFsFleet))
-
-    planetWithFsFleet.flatMap {
-      case Some(planet) =>
-        println(s"Planet with fs fleet ${pprint.apply(planet)}")
-        buildAndSend(planet.playerPlanet, planets)
-      case None =>
-        println("Couldn't find fs fleet on any planet, looking in the air...")
-        lookAtInTheAir(planets)
-    }
   }
 
   private def isFsFleet(planetFleet: PlanetFleet): Boolean = {
@@ -124,7 +122,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
     } yield arrivalTime
   }
 
-  private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: ZonedDateTime): Task[Unit] = { //TODO it should be inside smart builder not outside
+  private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: ZonedDateTime): Task[Unit] = {
     builder.buildNextThingFromWishList(planet).flatMap {
       case Some(finishTime)
           if timeDiff(clock.now(), finishTime) < (10 minutes) && timeDiff(startedBuildingAt, clock.now()) < (20 minutes) =>
