@@ -25,7 +25,7 @@ object OrdonConfig {
     new ExpeditionOgameAction[IO](
       maxNumberOfExpeditions = 6,
       startPlanet = moon5,
-      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 300, Explorer -> 300, EspionageProbe -> 1),
+      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 410, EspionageProbe -> 1),
       targetCoordinates = Coordinates(3, 133, 16)
     )
   }
@@ -36,21 +36,23 @@ object OrdonConfig {
 
   private def createFlyAroundActionCargo(implicit clock: LocalClock): FlyAroundOgameAction[IO] = {
     new FlyAroundOgameAction[IO](
+      speed = FleetSpeed.Percent30,
       targets = List(moon4, moon5),
       fleetSelector = new FleetSelector[IO](
         filters = Map(
-          Destroyer -> Selector.skip,
-          EspionageProbe -> Selector.skip,
+          Destroyer -> Selector.decreaseBy(6),
+          EspionageProbe -> Selector.decreaseBy(50),
           Explorer -> Selector.skip,
-          LargeCargoShip -> Selector.decreaseBy(300)
+          LargeCargoShip -> Selector.decreaseBy(410)
         )
       ),
-      resourceSelector = new ResourceSelector[IO](deuteriumSelector = Selector.decreaseBy(200_000))
+      resourceSelector = new ResourceSelector[IO](deuteriumSelector = Selector.decreaseBy(300_000))
     )
   }
 
   private def createFlyAroundActionBattle(implicit clock: LocalClock): FlyAroundOgameAction[IO] = {
     new FlyAroundOgameAction[IO](
+      speed = FleetSpeed.Percent10,
       targets = List(moon6, moon7),
       fleetSelector = new FleetSelector[IO](),
       resourceSelector = new ResourceSelector[IO]()

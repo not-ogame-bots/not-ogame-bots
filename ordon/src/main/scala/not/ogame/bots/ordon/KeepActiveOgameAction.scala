@@ -15,6 +15,6 @@ class KeepActiveOgameAction[T[_]: Monad](planets: List[PlayerPlanet])(implicit c
     val joinedActions: T[Unit] = actions.fold(unitT) { (a: T[Unit], b: T[Unit]) =>
       a.flatMap(c => b)
     }
-    joinedActions.map(a => clock.now().plusMinutes(6).plusSeconds(40))
+    joinedActions.map(a => clock.now().plusMinutes(13).plusSeconds(40))
   }
 }

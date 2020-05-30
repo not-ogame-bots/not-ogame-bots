@@ -5,13 +5,13 @@ import java.time.ZonedDateTime
 import cats.Monad
 import cats.implicits._
 import not.ogame.bots.FleetMissionType.Deployment
-import not.ogame.bots.FleetSpeed.Percent30
 import not.ogame.bots.SendFleetRequestShips.Ships
 import not.ogame.bots._
 
 import scala.util.Random
 
 class FlyAroundOgameAction[T[_]: Monad](
+    speed: FleetSpeed,
     targets: List[PlayerPlanet],
     fleetSelector: FleetSelector[T],
     resourceSelector: ResourceSelector[T]
@@ -53,7 +53,7 @@ class FlyAroundOgameAction[T[_]: Monad](
           targetCoordinates = targetPlanet.coordinates,
           fleetMissionType = Deployment,
           resources = FleetResources.Given(resources),
-          speed = Percent30
+          speed = speed
         )
       )
       now = clock.now()
