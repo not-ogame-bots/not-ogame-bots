@@ -36,7 +36,7 @@ trait OgameDriver[F[_]] {
 
   def sendFleet(sendFleetRequest: SendFleetRequest): F[Unit]
 
-  def returnFleet(fleetId: String): F[Unit]
+  def returnFleet(fleetId: FleetId): F[Unit]
 
   def readPlanets(): F[List[PlayerPlanet]]
 
@@ -205,7 +205,7 @@ object ShipType extends Enum[ShipType] {
 }
 
 case class MyFleet(
-    fleetId: String,
+    fleetId: FleetId,
     arrivalTime: ZonedDateTime,
     fleetMissionType: FleetMissionType,
     from: Coordinates,

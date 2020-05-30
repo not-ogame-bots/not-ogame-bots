@@ -23,8 +23,8 @@ class MyFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) 
     )
   }
 
-  private def getFleetId(fleetElement: WebElement): String = {
-    fleetElement.getAttribute("id")
+  private def getFleetId(fleetElement: WebElement): FleetId = {
+    FleetId.apply(fleetElement.getAttribute("id"))
   }
 
   private def getArrivalTime(fleetElement: WebElement): ZonedDateTime = {
