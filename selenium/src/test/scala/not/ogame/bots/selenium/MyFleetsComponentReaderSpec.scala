@@ -2,7 +2,7 @@ package not.ogame.bots.selenium
 
 import not.ogame.bots.CoordinatesType.{Moon, Planet}
 import not.ogame.bots.FleetMissionType.{Deployment, Unknown}
-import not.ogame.bots.{Coordinates, LocalClock, MyFleet, RealLocalClock}
+import not.ogame.bots._
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.firefox.FirefoxDriver
 
@@ -23,7 +23,7 @@ class MyFleetsComponentReaderSpec extends munit.FunSuite {
     val allFleets = testReadAllFleets(driver)
     assertEquals(allFleets.size, 7)
     val firstFleet = allFleets.head
-    assertEquals(firstFleet.fleetId, "fleet2075500")
+    assertEquals(firstFleet.fleetId, FleetId.apply("fleet2075500"))
     assertEquals(firstFleet.arrivalTime.getHour, 15)
     assertEquals(firstFleet.arrivalTime.getMinute, 33)
     assertEquals(firstFleet.arrivalTime.getSecond, 56)
@@ -32,7 +32,7 @@ class MyFleetsComponentReaderSpec extends munit.FunSuite {
     assertEquals(firstFleet.isReturning, true)
     assertEquals(firstFleet.to, Coordinates(3, 133, 16, Planet))
     val lastFleet = allFleets(6)
-    assertEquals(lastFleet.fleetId, "fleet2081270")
+    assertEquals(lastFleet.fleetId, FleetId.apply("fleet2081270"))
     assertEquals(lastFleet.fleetMissionType, Deployment)
     assertEquals(lastFleet.from, Coordinates(3, 133, 6, Planet))
     assertEquals(lastFleet.to, Coordinates(3, 133, 6, Moon))
