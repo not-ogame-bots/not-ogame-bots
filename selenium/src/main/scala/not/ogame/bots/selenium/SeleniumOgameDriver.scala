@@ -311,6 +311,15 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
     })
   }
 
+  override def readMyFleets(): F[List[MyFleet]] = {
+    Sync[F].delay({
+      webDriver.safeUrl(
+        s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=movement"
+      )
+      new MyFleetsComponentReader(webDriver).readMyFleets()
+    })
+  }
+
   override def sendFleet(sendFleetRequest: SendFleetRequest): F[Unit] = {
     Sync[F].delay(new SendFleetAction(webDriver, credentials).sendFleet(sendFleetRequest))
   }
