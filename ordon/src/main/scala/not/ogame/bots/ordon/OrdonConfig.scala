@@ -17,7 +17,12 @@ object OrdonConfig {
   }
 
   def getInitialActions(implicit clock: LocalClock): IO[List[ScheduledAction[IO]]] = {
-    val listOfActions = List(createExpeditionAction, createKeepActiveAction, createFlyAroundActionCargo, createFlyAroundActionBattle)
+    val listOfActions = List(
+      createKeepActiveAction,
+      createFlyAroundActionCargo,
+      createFlyAroundActionBattle,
+      createExpeditionAction
+    )
     IO.pure(listOfActions.map(ScheduledAction(clock.now(), _)))
   }
 

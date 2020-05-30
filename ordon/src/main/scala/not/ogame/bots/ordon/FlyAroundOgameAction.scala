@@ -32,12 +32,8 @@ class FlyAroundOgameAction[T[_]: Monad](
   }
 
   private def getResumeOnForFleet(fleet: Fleet): T[ZonedDateTime] = {
-    // There is an issue in ogame that fleet just after arrival is still on fleet list as returning. In such case we need to just try again.
-    if (fleet.isReturning) {
-      clock.now().plusSeconds(2).pure[T]
-    } else {
-      fleet.arrivalTime.pure[T]
-    }
+    // There is an issue in ogame that fleet just after arrival is still on fleet list as returning. To avoid that 3 second delay was added.
+    fleet.arrivalTime.plusSeconds(3).pure[T]
   }
 
   private def sendFleet(ogame: OgameDriver[T]): T[ZonedDateTime] =
