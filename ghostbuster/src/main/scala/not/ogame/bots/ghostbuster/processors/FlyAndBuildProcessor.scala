@@ -32,7 +32,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
       _ <- possibleFsFleets match {
         case l @ _ :: _ =>
           Logger[Task].info("Too many fleets in the air. Waiting for the first one to reach its target.") >>
-            taskExecutor.waitTo(l.map(_.arrivalTime).min) >> lookAtInTheAir(planets)
+            taskExecutor.waitTo(l.map(_.arrivalTime).min) >> lookOnPlanets(planets)
         case Nil =>
           Logger[Task].warn(s"Couldn't find fs fleet either on planets or in the air. Waiting ${fsConfig.searchInterval}...") >>
             Task.sleep(fsConfig.searchInterval) >> lookOnPlanets(planets)

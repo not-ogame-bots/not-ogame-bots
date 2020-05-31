@@ -63,7 +63,6 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
           ) >> sendFleetImpl(fromPlanet)
         }
       }
-    sendFleetImpl(fromPlanet)
   }
 
   private def sendFleetImpl(fromPlanet: PlayerPlanet) = {
@@ -89,7 +88,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
       .last
       .flatMap {
         case Some(_) => ().pure[Task]
-        case None    => waitToEarliestFleet(allFleets)
+        case None    => waitToEarliestFleet(allFleets) // flatMap checkFleetOnGivenPlanet >> repairIfNeeded
       }
   }
 
