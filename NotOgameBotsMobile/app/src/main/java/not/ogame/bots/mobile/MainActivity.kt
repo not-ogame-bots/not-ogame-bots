@@ -43,9 +43,9 @@ class MainActivity : AppCompatActivity() {
         }
         // [END handle_data_extras]
 
-        Log.d(TAG, "Subscribing to weather topic")
+        Log.d(TAG, "Subscribing to $TOPIC topic")
         // [START subscribe_topics]
-        FirebaseMessaging.getInstance().subscribeToTopic("attacks")
+        FirebaseMessaging.getInstance().subscribeToTopic(TOPIC)
             .addOnCompleteListener { task ->
                 var msg = "subscribed"
                 if (!task.isSuccessful) {
@@ -77,7 +77,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-
+        private const val TOPIC = "attacks"
         private const val TAG = "MainActivity"
     }
 }
