@@ -106,8 +106,25 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=facilities&cp=$planetId"
   }
 
-  private def getShipyardUrl(credentials: Credentials, planetId: PlanetId): String = {
+  private def getShipyardUrl(planetId: PlanetId): String = {
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=shipyard&cp=$planetId"
+  }
+
+  override def readTechnologyPage(planetId: PlanetId): F[TechnologyPageData] =
+    for {
+      _ <- webDriver.safeUrlF(getTechnologyUrl(planetId))
+      currentResources <- readCurrentResources
+      currentProduction <- readCurrentProduction
+      currentCapacity <- readCurrentCapacity
+      technologyLevels <- Technology.values.toList
+        .map(technology => technology -> getTechnologyLevel(technology))
+        .traverse { case (building, fetchLevel) => fetchLevel.map(level => building -> refineVUnsafe[NonNegative, Int](level)) }
+        .map(list => TechnologyLevels(list.toMap))
+      currentReserchProgress <- readCurrentResearchProgress
+    } yield TechnologyPageData(clock.now(), currentResources, currentProduction, currentCapacity, technologyLevels, currentReserchProgress)
+
+  private def getTechnologyUrl(planetId: String): String = {
+    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=research&cp=$planetId"
   }
 
   private def readCurrentResources: F[Resources] =
@@ -160,6 +177,14 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       buildingProgress = seconds.map(s => BuildingProgress(clock.now().plusSeconds(s)))
     } yield buildingProgress
 
+  private def readCurrentResearchProgress: F[Option[BuildingProgress]] =
+    for {
+      _ <- webDriver.waitForElementF(By.className("construction"))
+      shipyardCountdown <- webDriver.findMany(By.id("researchCountdown")).map(_.headOption)
+      seconds = shipyardCountdown.map(_.getText).map(timeTextToSeconds)
+      buildingProgress = seconds.map(s => BuildingProgress(clock.now().plusSeconds(s)))
+    } yield buildingProgress
+
   private def timeTextToSeconds(timeText: String): Int =
     timeText.split(" ").map(parseTimeSection).sum
 
@@ -195,12 +220,15 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
   }
 
   private def getFacilityBuildingLevel(facilityBuilding: FacilityBuilding): F[Int] =
-    getBuildingLevel(getComponentName(facilityBuilding))
+    getLevel(getComponentName(facilityBuilding))
 
   private def getSuppliesBuildingLevel(suppliesBuilding: SuppliesBuilding): F[Int] =
-    getBuildingLevel(getComponentName(suppliesBuilding))
+    getLevel(getComponentName(suppliesBuilding))
 
-  private def getBuildingLevel(componentName: String) = {
+  private def getTechnologyLevel(technology: Technology): F[Int] =
+    getLevel(getComponentName(technology))
+
+  private def getLevel(componentName: String) = {
     for {
       technologies <- webDriver.waitForElementF(By.id("technologies"))
       buildingComponent <- technologies.find(By.className(componentName))
@@ -229,17 +257,38 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
     }
   }
 
+  private def getComponentName(technology: Technology): String = {
+    (technology match {
+      case Technology.Energy          => "energy"
+      case Technology.Laser           => "laser"
+      case Technology.Ion             => "ion"
+      case Technology.Hyperspace      => "hyperspace"
+      case Technology.Plasma          => "plasma"
+      case Technology.CombustionDrive => "combustionDrive"
+      case Technology.ImpulseDrive    => "impulseDrive"
+      case Technology.HyperspaceDrive => "hyperspaceDrive"
+      case Technology.Espionage       => "espionage"
+      case Technology.Computer        => "computer"
+      case Technology.Astrophysics    => "astrophysics"
+      case Technology.ResearchNetwork => "researchNetwork"
+      case Technology.Graviton        => "graviton"
+      case Technology.Weapons         => "weapons"
+      case Technology.Shielding       => "shielding"
+      case Technology.Armor           => "armor"
+    }) + "Technology"
+  }
+
   override def buildSuppliesBuilding(planetId: PlanetId, suppliesBuilding: SuppliesBuilding): F[Unit] = {
     webDriver.goto(suppliesPageUrl(planetId)) >>
-      buildBuilding(planetId, getComponentName(suppliesBuilding))
+      buildBuilding(getComponentName(suppliesBuilding))
   }
 
   override def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): F[Unit] = {
     webDriver.goto(facilitiesPageUrl(planetId)) >>
-      buildBuilding(planetId, getComponentName(facilityBuilding))
+      buildBuilding(getComponentName(facilityBuilding))
   }
 
-  private def buildBuilding(planetId: PlanetId, componentName: String) = {
+  private def buildBuilding(componentName: String) = {
     for {
       technologies <- webDriver.waitForElementF(By.id("technologies"))
       buildingComponent <- technologies.find(By.className(componentName))
@@ -249,7 +298,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
   }
   override def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit] = {
     for {
-      _ <- webDriver.safeUrlF(getShipyardUrl(credentials, planetId))
+      _ <- webDriver.safeUrlF(getShipyardUrl(planetId))
       _ <- webDriver.find(By.id("technologies")).flatMap(_.find(By.className(shipTypeToClassName(shipType)))).flatMap(_.clickF())
       _ <- webDriver.waitForElementF(By.id("build_amount"))
       _ <- webDriver.find(By.id("build_amount")).flatMap(_.sendKeysF(count.toString))
