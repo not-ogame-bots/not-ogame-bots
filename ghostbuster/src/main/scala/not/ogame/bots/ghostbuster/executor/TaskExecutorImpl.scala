@@ -120,7 +120,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], stateChangeListener: Stat
             .map { fleets =>
               fleets
                 .collect { case f if isSameFleet(sendFleetRequest, f) => f }
-                .maxBy(_.arrivalTime.toZdt)
+                .maxBy(_.arrivalTime)
             } //TODO or min?
             .flatTap(_ => ogameDriver.readPlanets())
             .map(f => a.success(f.arrivalTime.toZdt))

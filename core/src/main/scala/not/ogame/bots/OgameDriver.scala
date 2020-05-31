@@ -237,6 +237,10 @@ case class SimplifiedDataTime(hour: Int, minutes: Int, seconds: Int, day: Int, m
       .withMonth(month)
       .withYear(year)
   }
+
+  override def toString: String = {
+    s"$year:$month:$day $hour$minutes$seconds"
+  }
 }
 object SimplifiedDataTime {
   def from(zdt: ZonedDateTime): SimplifiedDataTime = {

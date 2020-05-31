@@ -20,7 +20,7 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig)(imp
       .flatMap { fleets =>
         val hostileFleets = fleets
           .filter(f => isHostileToGivenPlanet(planet, f))
-          .sortBy(_.arrivalTime.toZdt) //hope it does ascending
+          .sortBy(_.arrivalTime) //hope it does ascending
         if (hostileFleets.nonEmpty) {
           hostileFleets.traverse(hf => escapeSingleFleet(planet, hf)) >>
             waitAndCheck(planet)
