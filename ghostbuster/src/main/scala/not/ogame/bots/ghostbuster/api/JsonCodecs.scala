@@ -1,27 +1,9 @@
-package not.ogame.bots.ghostbuster
+package not.ogame.bots.ghostbuster.api
 
-import cats.effect.concurrent.Ref
-import cats.implicits._
-import io.circe.generic.auto._
-import io.circe.refined._
-import io.circe._
-import monix.eval.Task
-import not.ogame.bots._
-import not.ogame.bots.ghostbuster.reporting.State
-import sttp.tapir.Tapir
-import sttp.tapir.json.circe.TapirJsonCirce
-import sttp.tapir.server.ServerEndpoint
+import io.circe.{Decoder, Encoder, HCursor, Json, KeyDecoder, KeyEncoder}
+import not.ogame.bots.{Coordinates, CoordinatesType, FacilityBuilding, FleetAttitude, FleetMissionType, ShipType, SuppliesBuilding}
 
-class StatusEndpoint(state: Ref[Task, State]) extends Tapir with TapirJsonCirce {
-  override def jsonPrinter: Printer = Printer.noSpaces.copy(dropNullValues = true)
-
-  val getStatus: ServerEndpoint[Unit, Unit, State, Nothing, Task] = endpoint.get
-    .in("status")
-    .out(jsonBody[State])
-    .serverLogic { _ =>
-      state.get.map(_.asRight[Unit])
-    }
-
+trait JsonCodecs {
   implicit val coordinatesTypeEncoder: Encoder[CoordinatesType] = (a: CoordinatesType) => Json.fromString(a.entryName)
   implicit val coordinatesTypeDecoder: Decoder[CoordinatesType] = (c: HCursor) =>
     c.as[String].map { text =>

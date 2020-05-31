@@ -7,6 +7,7 @@ import eu.timepit.refined.pureconfig._
 import monix.eval.Task
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
+import not.ogame.bots.ghostbuster.api.StatusEndpoint
 import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
 import not.ogame.bots.ghostbuster.infrastructure.FCMService
 import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, Builder, BuilderProcessor, ExpeditionProcessor, FlyAndBuildProcessor}
