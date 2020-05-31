@@ -20,7 +20,10 @@ object OrdonConfig {
     val listOfActions = List(
       createKeepActiveAction,
       createFlyAroundActionCargo,
+      new DeployAndReturnOgameAction[IO](planet4, moon4),
+      new DeployAndReturnOgameAction[IO](planet5, moon5),
       new DeployAndReturnOgameAction[IO](planet6, moon6),
+      //      new DeployAndReturnOgameAction[IO](planet8, moon8),
       createExpeditionAction
     )
     IO.pure(listOfActions.map(ScheduledAction(clock.now(), _)))
@@ -29,7 +32,7 @@ object OrdonConfig {
   private def createExpeditionAction(implicit clock: LocalClock): ExpeditionOgameAction[IO] = {
     new ExpeditionOgameAction[IO](
       maxNumberOfExpeditions = 6,
-      startPlanet = moon5,
+      startPlanet = expeditionStartPlanet,
       expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 410, EspionageProbe -> 1),
       targetCoordinates = Coordinates(3, 133, 16)
     )
@@ -42,25 +45,41 @@ object OrdonConfig {
   private def createFlyAroundActionCargo(implicit clock: LocalClock): FlyAroundOgameAction[IO] = {
     new FlyAroundOgameAction[IO](
       speed = FleetSpeed.Percent30,
-      targets = List(moon4, moon5),
-      fleetSelector = new FleetSelector[IO](
+      targets = List(moon7, expeditionStartPlanet),
+      fleetSelector = cargoFleetSelector,
+      resourceSelector = cargoResourceSelector
+    )
+  }
+
+  private def cargoFleetSelector: PlayerPlanet => FleetSelector[IO] = { playerPlanet =>
+    if (playerPlanet == expeditionStartPlanet) {
+      new FleetSelector[IO](
         filters = Map(
           Destroyer -> Selector.decreaseBy(6),
           EspionageProbe -> Selector.decreaseBy(50),
           Explorer -> Selector.skip,
           LargeCargoShip -> Selector.decreaseBy(410)
         )
-      ),
-      resourceSelector = new ResourceSelector[IO](deuteriumSelector = Selector.decreaseBy(300_000))
-    )
+      )
+    } else {
+      new FleetSelector[IO]()
+    }
+  }
+
+  private def cargoResourceSelector: PlayerPlanet => ResourceSelector[IO] = { playerPlanet =>
+    if (playerPlanet == expeditionStartPlanet) {
+      new ResourceSelector[IO](deuteriumSelector = Selector.decreaseBy(300_000))
+    } else {
+      new ResourceSelector[IO]()
+    }
   }
 
   private def createFlyAroundActionBattle(implicit clock: LocalClock): FlyAroundOgameAction[IO] = {
     new FlyAroundOgameAction[IO](
       speed = FleetSpeed.Percent10,
       targets = List(moon6, moon7),
-      fleetSelector = new FleetSelector[IO](),
-      resourceSelector = new ResourceSelector[IO]()
+      fleetSelector = _ => new FleetSelector[IO](),
+      resourceSelector = _ => new ResourceSelector[IO]()
     )
   }
 
@@ -77,4 +96,5 @@ object OrdonConfig {
   private val planets: List[PlayerPlanet] = List(planet4, planet5, planet6, planet7, planet8)
   private val moons: List[PlayerPlanet] = List(moon4, moon5, moon6, moon7, moon8)
   private val planetsAndMoons: List[PlayerPlanet] = planets ++ moons
+  private val expeditionStartPlanet = moon5
 }

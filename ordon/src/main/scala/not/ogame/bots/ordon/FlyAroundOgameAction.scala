@@ -13,8 +13,8 @@ import scala.util.Random
 class FlyAroundOgameAction[T[_]: Monad](
     speed: FleetSpeed,
     targets: List[PlayerPlanet],
-    fleetSelector: FleetSelector[T],
-    resourceSelector: ResourceSelector[T]
+    fleetSelector: PlayerPlanet => FleetSelector[T],
+    resourceSelector: PlayerPlanet => ResourceSelector[T]
 )(implicit clock: LocalClock)
     extends SimpleOgameAction[T] {
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = {
@@ -38,10 +38,10 @@ class FlyAroundOgameAction[T[_]: Monad](
 
   private def sendFleet(ogame: OgameDriver[T]): T[ZonedDateTime] =
     for {
-      planetToShips <- targets.map(it => fleetSelector.selectShips(ogame, it).map(it -> _)).sequence
+      planetToShips <- targets.map(it => fleetSelector(it).selectShips(ogame, it).map(it -> _)).sequence
       (startPlanet, ships) = planetToShips.maxBy(it => it._2.values.sum)
       targetPlanet = Random.shuffle(targets.filter(_ != startPlanet)).head
-      resources <- resourceSelector.selectResources(ogame, startPlanet)
+      resources <- resourceSelector(startPlanet).selectResources(ogame, startPlanet)
       _ <- ogame.sendFleet(
         SendFleetRequest(
           startPlanet,
