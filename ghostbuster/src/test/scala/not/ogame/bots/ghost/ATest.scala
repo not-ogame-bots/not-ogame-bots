@@ -3,6 +3,7 @@ package not.ogame.bots.ghost
 import java.time.{Clock, Instant, ZoneOffset, ZonedDateTime}
 
 import io.circe.Printer
+import not.ogame.bots.RealLocalClock
 
 class ATest extends munit.FunSuite {
   val clock1 = Clock.system(ZoneOffset.ofHours(3))
@@ -20,5 +21,12 @@ class ATest extends munit.FunSuite {
     val zdt = ZonedDateTime.now(clock1)
     println(s"bare ldt ${ZonedDateTime.now()}")
     println(s"clock ldt $zdt")
+  }
+
+  test("two dates should be the same according to seconds") {
+    val realDateTime = new RealLocalClock()
+    val time1 = realDateTime.now()
+    val time2 = realDateTime.now()
+    assertEquals(time1, time2)
   }
 }

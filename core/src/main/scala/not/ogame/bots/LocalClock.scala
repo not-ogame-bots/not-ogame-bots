@@ -10,6 +10,6 @@ class RealLocalClock(zoneOffset: ZoneOffset = ZoneOffset.ofHours(2)) extends Loc
   private val clock = Clock.system(zoneOffset)
 
   override def now(): ZonedDateTime = {
-    ZonedDateTime.now(clock)
+    ZonedDateTime.now(clock).withNano(0)
   }
 }
