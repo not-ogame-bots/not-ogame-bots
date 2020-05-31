@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit
 import cats.effect.Sync
 import com.google.firebase.messaging._
 import com.typesafe.scalalogging.StrictLogging
-import not.ogame.bots.ghostbuster.Main.{SettingsDirectory, logger}
 
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters._
