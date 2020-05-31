@@ -6,7 +6,7 @@ import cats.implicits._
 import eu.timepit.refined.numeric.Positive
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
-import not.ogame.bots.facts.{FacilityBuildingCosts, SuppliesBuildingCosts}
+import not.ogame.bots.facts.{FacilityBuildingCosts, ShipCosts, SuppliesBuildingCosts}
 import not.ogame.bots.ghostbuster.{FLogger, Wish}
 import not.ogame.bots.selenium.refineVUnsafe
 import not.ogame.bots._
@@ -31,11 +31,22 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish]) extends FLogger 
             buildFacilityBuildingOrNothing(w.facilityBuilding, facilityPageData, suppliesPageData, planet)
           case w: Wish.SmartSupplyBuilder if isSmartBuilderApplicable(planet, suppliesPageData, w) =>
             smartBuilder(planet, suppliesPageData, w)
+          case w: Wish.BuildShip if suppliesPageData.currentShipyardProgress.isEmpty && w.planetId == planet.id =>
+            buildShips(planet, w, suppliesPageData)
         }
         .sequence
         .map(_.flatten)
     } else {
       suppliesPageData.currentBuildingProgress.map(_.finishTimestamp).pure[Task]
+    }
+  }
+
+  private def buildShips(planet: PlayerPlanet, w: Wish.BuildShip, suppliesPageData: SuppliesPageData): Task[Option[ZonedDateTime]] = {
+    val requiredResources = ShipCosts.shipCost(w.shipType).multiply(w.amount.value)
+    if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
+      taskExecutor.buildShip(w.shipType, w.amount.value, planet).map(_.currentShipyardProgress.map(_.finishTimestamp))
+    } else {
+      Option.empty[ZonedDateTime].pure[Task]
     }
   }
 

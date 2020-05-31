@@ -6,7 +6,7 @@ import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.NonNegative
+import eu.timepit.refined.numeric.{NonNegative, Positive}
 import not.ogame.bots.FleetSpeed.Percent100
 
 trait OgameDriverCreator[F[_]] {
@@ -79,6 +79,10 @@ case class FacilityPageData(
 }
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
+  def multiply(amount: Int): Resources = {
+    Resources(metal * amount, crystal * amount, deuterium * amount, energy)
+  }
+
   def gtEqTo(requiredResources: Resources): Boolean =
     metal >= requiredResources.metal && crystal >= requiredResources.crystal && deuterium >= requiredResources.deuterium
 
