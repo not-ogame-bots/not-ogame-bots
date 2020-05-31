@@ -43,7 +43,6 @@ object Main extends StrictLogging {
         Task.parMap2(selenium(botConfig, credentials, state), httpServer(httpStateExposer.getStatus))((_, _) => ())
       }
       .runSyncUnsafe()
-    initializeFirebase()
   }
 
   private def httpServer(endpoint: ServerEndpoint[Unit, Unit, State, Nothing, Task]) = {
@@ -63,7 +62,9 @@ object Main extends StrictLogging {
       .use { ogame =>
         val stateAgg = new StateAggregator[Task](state)
         val seenFleetsState = Ref[Task].of(Set.empty[Fleet]).runSyncUnsafe()
-        val hostileFleetReporter = new HostileFleetReporter[Task](new FCMService[Task], seenFleetsState)
+        val fcmService = new FCMService[Task](SettingsDirectory)
+        fcmService.initializeFirebase()
+        val hostileFleetReporter = new HostileFleetReporter[Task](fcmService, seenFleetsState)
         val taskExecutor = new TaskExecutorImpl(ogame, clock, new StateListenerDispatcher[Task](List(stateAgg, hostileFleetReporter)))
         val builder = new Builder(taskExecutor, botConfig.wishlist)
         val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.fsConfig, builder)
@@ -76,21 +77,6 @@ object Main extends StrictLogging {
         logger.error(e.getMessage, e)
         true
       }
-  }
-
-  private def initializeFirebase() = {
-    import com.google.auth.oauth2.GoogleCredentials
-    import com.google.firebase.FirebaseApp
-    import com.google.firebase.FirebaseOptions
-    import java.io.FileInputStream
-    val serviceAccount = new FileInputStream(s"${SettingsDirectory}/notogamebots-firebase-adminsdk-sjbas-730cc8387b.json")
-
-    val options = new FirebaseOptions.Builder()
-      .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-      .setDatabaseUrl("https://notogamebots.firebaseio.com")
-      .build
-
-    FirebaseApp.initializeApp(options)
   }
 
   implicit val wishReader: ConfigReader[Wish] = ConfigReader.fromCursor { cur =>
