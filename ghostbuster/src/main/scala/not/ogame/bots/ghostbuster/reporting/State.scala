@@ -1,4 +1,4 @@
-package not.ogame.bots.ghostbuster.executor
+package not.ogame.bots.ghostbuster.reporting
 
 import java.time.ZonedDateTime
 

@@ -33,8 +33,8 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
           Logger[Task].info("Too many fleets in the air. Waiting for the first one to reach its target.") >>
             taskExecutor.waitTo(l.map(_.arrivalTime).min) >> lookAtInTheAir(planets)
         case Nil =>
-          println(s"Couldn't find fs fleet either on planets or in the air. Waiting ${fsConfig.searchInterval}...")
-          Task.sleep(fsConfig.searchInterval) >> lookOnPlanets(planets)
+          Logger[Task].warn(s"Couldn't find fs fleet either on planets or in the air. Waiting ${fsConfig.searchInterval}...") >>
+            Task.sleep(fsConfig.searchInterval) >> lookOnPlanets(planets)
       }
     } yield ()
   }
@@ -53,11 +53,11 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
       .last
       .flatMap {
         case Some(planet) =>
-          println(s"Planet with fs fleet ${pprint.apply(planet)}")
-          buildAndSend(planet.playerPlanet, planets)
+          Logger[Task].info(s"Planet with fs fleet ${pprint.apply(planet)}") >>
+            buildAndSend(planet.playerPlanet, planets)
         case None =>
-          println("Couldn't find fs fleet on any planet, looking in the air...")
-          lookAtInTheAir(planets)
+          Logger[Task].warn("Couldn't find fs fleet on any planet, looking in the air...") >>
+            lookAtInTheAir(planets)
       }
   }
 
