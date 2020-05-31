@@ -64,7 +64,7 @@ object Main extends StrictLogging {
         val stateAgg = new StateAggregator[Task](state)
         val seenFleetsState = Ref[Task].of(Set.empty[Fleet]).runSyncUnsafe()
         val hostileFleetReporter = new HostileFleetReporter[Task](new FCMService[Task], seenFleetsState)
-        val taskExecutor = new TaskExecutorImpl(ogame, clock, new StateListenerDispatcher[Task](List(stateAgg, hostileFleetReporter)))
+        val taskExecutor = new TaskExecutorImpl(ogame, new StateListenerDispatcher[Task](List(stateAgg, hostileFleetReporter)))
         val builder = new Builder(taskExecutor, botConfig.wishlist)
         val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.fsConfig, builder)
         val ep = new ExpeditionProcessor(botConfig.expeditionConfig, taskExecutor)

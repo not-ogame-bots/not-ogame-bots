@@ -14,7 +14,7 @@ class AllFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock)
 
   private def readFleet(fleetElement: WebElement): Fleet = {
     Fleet(
-      getArrivalTime(fleetElement),
+      SimplifiedDataTime.from(getArrivalTime(fleetElement)),
       getFleetAttitude(fleetElement),
       getFleetMissionType(fleetElement),
       getFrom(fleetElement),

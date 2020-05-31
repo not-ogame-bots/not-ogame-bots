@@ -6,7 +6,7 @@ import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.{NonNegative, Positive}
+import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots.FleetSpeed.Percent100
 
 trait OgameDriverCreator[F[_]] {
@@ -218,13 +218,50 @@ case class MyFleet(
 )
 
 case class Fleet(
-    arrivalTime: ZonedDateTime,
+    arrivalTime: SimplifiedDataTime,
     fleetAttitude: FleetAttitude,
     fleetMissionType: FleetMissionType,
     from: Coordinates,
     to: Coordinates,
     isReturning: Boolean
 )
+
+case class SimplifiedDataTime(hour: Int, minutes: Int, seconds: Int, day: Int, month: Int, year: Int) {
+  def toZdt(implicit clock: LocalClock): ZonedDateTime = {
+    clock
+      .now()
+      .withHour(hour)
+      .withMinute(minutes)
+      .withSecond(seconds)
+      .withDayOfMonth(day)
+      .withMonth(month)
+      .withYear(year)
+  }
+}
+object SimplifiedDataTime {
+  def from(zdt: ZonedDateTime): SimplifiedDataTime = {
+    SimplifiedDataTime(zdt.getHour, zdt.getMinute, zdt.getSecond, zdt.getDayOfMonth, zdt.getMonthValue, zdt.getYear)
+  }
+
+  implicit def toZdt(sdt: SimplifiedDataTime)(implicit clock: LocalClock): ZonedDateTime = {
+    import sdt._
+    clock
+      .now()
+      .withHour(hour)
+      .withMinute(minutes)
+      .withSecond(seconds)
+      .withDayOfMonth(day)
+      .withMonth(month)
+      .withYear(year)
+  }
+
+  implicit def ordering(implicit zdtOrdering: Ordering[ZonedDateTime], clock: LocalClock): Ordering[SimplifiedDataTime] = {
+    (x: SimplifiedDataTime, y: SimplifiedDataTime) =>
+      {
+        zdtOrdering.compare(x.toZdt, y.toZdt)
+      }
+  }
+}
 
 sealed trait FleetAttitude extends EnumEntry
 

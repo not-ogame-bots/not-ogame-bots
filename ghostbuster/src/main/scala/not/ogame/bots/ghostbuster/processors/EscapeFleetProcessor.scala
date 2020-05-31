@@ -4,8 +4,9 @@ import cats.implicits._
 import monix.eval.Task
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.BotConfig
+import SimplifiedDataTime._
 
-class EscapeFleetProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: LocalClock) {
+class EscapeFleetProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig)(implicit clock: LocalClock) {
   def run(): Task[Unit] = {
     taskExecutor
       .readPlanets()
@@ -19,7 +20,7 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
       .flatMap { fleets =>
         val hostileFleets = fleets
           .filter(f => isHostileToGivenPlanet(planet, f))
-          .sortBy(_.arrivalTime) //hope it does ascending
+          .sortBy(_.arrivalTime.toZdt) //hope it does ascending
         if (hostileFleets.nonEmpty) {
           hostileFleets.traverse(hf => escapeSingleFleet(planet, hf)) >>
             waitAndCheck(planet)

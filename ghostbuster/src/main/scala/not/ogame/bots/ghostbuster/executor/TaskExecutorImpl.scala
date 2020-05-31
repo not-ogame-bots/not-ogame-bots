@@ -17,7 +17,7 @@ import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet}
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 
-class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateChangeListener: StateChangeListener[Task])
+class TaskExecutorImpl(ogameDriver: OgameDriver[Task], stateChangeListener: StateChangeListener[Task])(implicit clock: LocalClock)
     extends TaskExecutor
     with FLogger
     with StrictLogging {
@@ -120,10 +120,10 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
             .map { fleets =>
               fleets
                 .collect { case f if isSameFleet(sendFleetRequest, f) => f }
-                .maxBy(_.arrivalTime)
+                .maxBy(_.arrivalTime.toZdt)
             } //TODO or min?
             .flatTap(_ => ogameDriver.readPlanets())
-            .map(f => a.success(f.arrivalTime))
+            .map(f => a.success(f.arrivalTime.toZdt))
         }
       case a: Action.GetAirFleet =>
         ogameDriver
