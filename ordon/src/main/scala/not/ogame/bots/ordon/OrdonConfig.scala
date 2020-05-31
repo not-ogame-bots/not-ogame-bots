@@ -20,7 +20,7 @@ object OrdonConfig {
     val listOfActions = List(
       createKeepActiveAction,
       createFlyAroundActionCargo,
-      createFlyAroundActionBattle,
+      new DeployAndReturnOgameAction[IO](planet6, moon6),
       createExpeditionAction
     )
     IO.pure(listOfActions.map(ScheduledAction(clock.now(), _)))
