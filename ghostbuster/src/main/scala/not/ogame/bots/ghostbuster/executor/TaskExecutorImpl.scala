@@ -69,7 +69,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
 
   private def handleAction(action: Action[_]) = {
     action match {
-      case a @ Action.BuildSupply(suppliesBuilding, _, planet) =>
+      case a @ Action.BuildSupply(suppliesBuilding, _, planet, _) =>
         ogameDriver
           .buildSuppliesBuilding(planet.id, suppliesBuilding)
           .flatMap(
@@ -80,7 +80,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
                 .map(_.currentBuildingProgress.get)
           )
           .map(buildingProgress => a.success(buildingProgress.finishTimestamp))
-      case a @ Action.BuildFacility(facilityBuilding, _, planet) =>
+      case a @ Action.BuildFacility(facilityBuilding, _, planet, _) =>
         ogameDriver
           .buildFacilityBuilding(planet.id, facilityBuilding)
           .flatMap(
@@ -91,28 +91,28 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
                 .map(_.currentBuildingProgress.get)
           )
           .map(buildingProgress => a.success(buildingProgress.finishTimestamp))
-      case a @ Action.ReadSupplyPage(planet) =>
+      case a @ Action.ReadSupplyPage(planet, _) =>
         ogameDriver
           .readSuppliesPage(planet.id)
           .flatTap(supplies => stateChangeListener.onNewSuppliesPage(planet, supplies))
           .map(sp => a.success(sp))
-      case a @ Action.ReadFacilityPage(planet) =>
+      case a @ Action.ReadFacilityPage(planet, _) =>
         ogameDriver
           .readFacilityPage(planet.id)
           .flatTap(facilities => stateChangeListener.onNewFacilitiesPage(planet, facilities))
           .map(fp => a.success(fp))
-      case a @ Action.RefreshFleetOnPlanetStatus(planet) =>
+      case a @ Action.RefreshFleetOnPlanetStatus(planet, _) =>
         ogameDriver
           .checkFleetOnPlanet(planet.id)
           .flatTap(fleet => stateChangeListener.onNewPlanetFleet(planet, fleet))
           .map(f => a.success(PlanetFleet(planet, f)))
-      case a @ Action.BuildShip(amount, shipType, planet) =>
+      case a @ Action.BuildShip(amount, shipType, planet, _) =>
         ogameDriver
           .buildShips(planet.id, shipType, amount)
           .flatMap(_ => ogameDriver.readSuppliesPage(planet.id))
           .flatTap(supplies => stateChangeListener.onNewSuppliesPage(planet, supplies))
           .map(sp => a.success(sp))
-      case a @ Action.SendFleet(sendFleetRequest) =>
+      case a @ Action.SendFleet(sendFleetRequest, _) =>
         ogameDriver.sendFleet(sendFleetRequest).flatMap { _ =>
           ogameDriver
             .readAllFleets()
@@ -211,11 +211,11 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
     requests.put(action) >>
       responses.take
         .flatMap {
-          case Response.Success(anyValue) =>
+          case r @ Response.Success(anyValue, _) =>
             val value = action.defer(anyValue)
-            Logger[Task].debug(s"action response: ${pprint.apply(value)}").map(_ => value)
-          case Response.Failure(_) =>
-            Task.raiseError[T](new RuntimeException("Couldn't execute operation"))
+            Logger[Task].debug(s"action response: ${pprint.apply(r)}").map(_ => value)
+          case Response.Failure(_, uuid) =>
+            Task.raiseError[T](new RuntimeException(s"Couldn't execute operation $uuid"))
         }
   }
 }

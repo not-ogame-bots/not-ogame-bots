@@ -4,6 +4,7 @@ import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots.PlayerPlanet
 import not.ogame.bots.ghostbuster.{FLogger, SmartBuilderConfig}
+import cats.implicits._
 
 class BuilderProcessor(builder: Builder, smartBuilder: SmartBuilderConfig, taskExecutor: TaskExecutor) extends FLogger {
   def run(): Task[Unit] = {
@@ -12,6 +13,7 @@ class BuilderProcessor(builder: Builder, smartBuilder: SmartBuilderConfig, taskE
         .readPlanets()
         .flatMap(planets => Task.parSequence(planets.map(loopBuilder)))
         .void
+        .onError(_ => Logger[Task].error("restarting building processor"))
         .onErrorRestartIf(_ => true)
     } else {
       Task.never
