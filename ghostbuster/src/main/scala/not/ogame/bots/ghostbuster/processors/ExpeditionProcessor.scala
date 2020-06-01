@@ -95,11 +95,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
   private def waitToEarliestFleet(allFleets: List[Fleet]) = {
     val tenMinutesFromNow = clock.now().plusMinutes(10)
     val minAnyFleetArrivalTime = minOr(allFleets.map(_.arrivalTime))(tenMinutesFromNow)
-    val waitTo = if (tenMinutesFromNow.isAfter(minAnyFleetArrivalTime)) {
-      minAnyFleetArrivalTime
-    } else {
-      tenMinutesFromNow
-    }
+    val waitTo = List(minAnyFleetArrivalTime, tenMinutesFromNow).min
     Logger[Task].info(s"Could find expedition fleet on any planet. Waiting til $waitTo....") >> taskExecutor.waitTo(waitTo)
   }
 
