@@ -10,13 +10,15 @@ import org.openqa.selenium.{By, WebDriver}
 
 import scala.concurrent.duration._
 
-class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriver: WebDriver, timer: Timer[F], clock: LocalClock)
-    extends OgameDriver[F] {
+class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: UrlProvider)(
+    implicit webDriver: WebDriver,
+    timer: Timer[F],
+    clock: LocalClock
+) extends OgameDriver[F] {
   override def login(): F[Unit] = {
-    val universeListUrl = "https://lobby.ogame.gameforge.com/pl_PL/accounts"
     for {
-      _ <- webDriver.goto(universeListUrl)
-      _ <- loginImpl(universeListUrl)
+      _ <- webDriver.goto(urlProvider.universeListUrl)
+      _ <- loginImpl(urlProvider.universeListUrl)
       _ <- selectUniverse()
       _ <- webDriver.closeF()
       _ <- webDriver.switchToAnyOpenTab()
@@ -63,7 +65,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
 
   override def readSuppliesPage(planetId: PlanetId): F[SuppliesPageData] =
     for {
-      _ <- webDriver.goto(suppliesPageUrl(planetId))
+      _ <- webDriver.goto(urlProvider.suppliesPageUrl(planetId))
       currentResources <- readCurrentResources
       currentProduction <- readCurrentProduction
       currentCapacity <- readCurrentCapacity
@@ -87,7 +89,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
 
   override def readFacilityPage(planetId: PlanetId): F[FacilityPageData] =
     for {
-      _ <- webDriver.safeUrlF(facilitiesPageUrl(planetId))
+      _ <- webDriver.safeUrlF(urlProvider.facilitiesPageUrl(planetId))
       currentResources <- readCurrentResources
       currentProduction <- readCurrentProduction
       currentCapacity <- readCurrentCapacity
@@ -98,21 +100,9 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       currentBuildingProgress <- readCurrentBuildingProgress
     } yield FacilityPageData(clock.now(), currentResources, currentProduction, currentCapacity, facilityLevels, currentBuildingProgress)
 
-  private def suppliesPageUrl(planetId: PlanetId) = {
-    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
-  }
-
-  private def facilitiesPageUrl(planetId: PlanetId) = {
-    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=facilities&cp=$planetId"
-  }
-
-  private def getShipyardUrl(planetId: PlanetId): String = {
-    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=shipyard&cp=$planetId"
-  }
-
   override def readTechnologyPage(planetId: PlanetId): F[TechnologyPageData] =
     for {
-      _ <- webDriver.safeUrlF(getTechnologyUrl(planetId))
+      _ <- webDriver.safeUrlF(urlProvider.getTechnologyUrl(planetId))
       currentResources <- readCurrentResources
       currentProduction <- readCurrentProduction
       currentCapacity <- readCurrentCapacity
@@ -122,10 +112,6 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
         .map(list => TechnologyLevels(list.toMap))
       currentReserchProgress <- readCurrentResearchProgress
     } yield TechnologyPageData(clock.now(), currentResources, currentProduction, currentCapacity, technologyLevels, currentReserchProgress)
-
-  private def getTechnologyUrl(planetId: String): String = {
-    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=research&cp=$planetId"
-  }
 
   private def readCurrentResources: F[Resources] =
     for {
@@ -279,12 +265,12 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
   }
 
   override def buildSuppliesBuilding(planetId: PlanetId, suppliesBuilding: SuppliesBuilding): F[Unit] = {
-    webDriver.goto(suppliesPageUrl(planetId)) >>
+    webDriver.goto(urlProvider.suppliesPageUrl(planetId)) >>
       buildBuilding(getComponentName(suppliesBuilding))
   }
 
   override def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): F[Unit] = {
-    webDriver.goto(facilitiesPageUrl(planetId)) >>
+    webDriver.goto(urlProvider.facilitiesPageUrl(planetId)) >>
       buildBuilding(getComponentName(facilityBuilding))
   }
 
@@ -298,7 +284,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
   }
   override def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit] = {
     for {
-      _ <- webDriver.safeUrlF(getShipyardUrl(planetId))
+      _ <- webDriver.safeUrlF(urlProvider.getShipyardUrl(planetId))
       _ <- webDriver.find(By.id("technologies")).flatMap(_.find(By.className(shipTypeToClassName(shipType)))).flatMap(_.clickF())
       _ <- webDriver.waitForElementF(By.id("build_amount"))
       _ <- webDriver.find(By.id("build_amount")).flatMap(_.sendKeysF(count.toString))
@@ -371,7 +357,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
   def readAllFleets(): F[List[Fleet]] = {
     Sync[F].delay({
       webDriver.safeUrl(
-        s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=componentOnly&component=eventList&ajax=1"
+        urlProvider.readAllFleetsUrl
       )
       new AllFleetsComponentReader(webDriver).readAllFleets()
     })

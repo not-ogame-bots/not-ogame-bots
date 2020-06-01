@@ -1,0 +1,1 @@
+function initAllianceInfo(){initConnectionErrorFunction();initTooltips();initOverlays();initHideElements()};

@@ -10,7 +10,7 @@ import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots.FleetSpeed.Percent100
 
 trait OgameDriverCreator[F[_]] {
-  def create(credentials: Credentials): Resource[F, OgameDriver[F]]
+  def create(credentials: Credentials, urlProvider: UrlProvider): Resource[F, OgameDriver[F]]
 }
 
 case class Credentials(login: String, password: String, universeName: String, universeId: String)

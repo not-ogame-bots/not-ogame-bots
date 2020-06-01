@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
-import not.ogame.bots.selenium.SeleniumOgameDriverCreator
+import not.ogame.bots.selenium.{OgameUrlProvider, SeleniumOgameDriverCreator}
 import not.ogame.bots.{LocalClock, OgameDriver, RealLocalClock}
 
 import scala.concurrent.duration._
@@ -19,7 +19,7 @@ object OrdonMain extends IOApp {
 
   private def runBot(): IO[ExitCode] = {
     new SeleniumOgameDriverCreator[IO]()
-      .create(OrdonConfig.getCredentials)
+      .create(OrdonConfig.getCredentials, new OgameUrlProvider(OrdonConfig.getCredentials))
       .use { ogame =>
         ogame.login() >> process(ogame, OrdonConfig.getInitialActions)
       }
