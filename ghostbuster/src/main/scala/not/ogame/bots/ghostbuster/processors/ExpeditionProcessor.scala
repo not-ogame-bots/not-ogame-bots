@@ -18,7 +18,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
         .readPlanets()
         .map(planets => planets.filter(p => expeditionConfig.eligiblePlanets.contains(p.id)))
         .flatMap(lookForFleet)
-        .onError(_ => Logger[Task].error("restarting expedition processor"))
+        .onError(e => Logger[Task].error(s"restarting expedition processor ${e.getMessage}"))
         .onErrorRestartIf(_ => true)
     } else {
       Task.never

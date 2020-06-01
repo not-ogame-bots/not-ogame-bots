@@ -13,7 +13,7 @@ class BuilderProcessor(builder: Builder, smartBuilder: SmartBuilderConfig, taskE
         .readPlanets()
         .flatMap(planets => Task.parSequence(planets.map(loopBuilder)))
         .void
-        .onError(_ => Logger[Task].error("restarting building processor"))
+        .onError(e => Logger[Task].error(s"restarting building processor ${e.getMessage}"))
         .onErrorRestartIf(_ => true)
     } else {
       Task.never

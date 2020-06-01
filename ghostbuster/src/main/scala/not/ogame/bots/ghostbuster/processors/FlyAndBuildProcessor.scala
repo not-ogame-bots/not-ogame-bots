@@ -18,7 +18,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
         .readPlanets()
         .map(_.filter(p => fsConfig.eligiblePlanets.contains(p.id)))
         .flatMap(lookOnPlanets)
-        .onError(_ => Logger[Task].error("restarting fly processor"))
+        .onError(e => Logger[Task].error(s"restarting fly processor ${e.getMessage}"))
         .onErrorRestartIf(_ => true)
     } else {
       Task.never
@@ -32,7 +32,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
       _ <- possibleFsFleets match {
         case l @ _ :: _ =>
           Logger[Task].info("Too many fleets in the air. Waiting for the first one to reach its target.") >>
-            taskExecutor.waitTo(l.map(_.arrivalTime).min) >> lookOnPlanets(planets)
+            taskExecutor.waitTo(l.map(_.arrivalTime).min) >> lookOnPlanets(planets) //TODO look on single planet
         case Nil =>
           Logger[Task].warn(s"Couldn't find fs fleet either on planets or in the air. Waiting ${fsConfig.searchInterval}...") >>
             Task.sleep(fsConfig.searchInterval) >> lookOnPlanets(planets)
@@ -63,7 +63,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
   }
 
   private def isFsFleet(planetFleet: PlanetFleet): Boolean = {
-    fsConfig.ships.forall(fsShip => fsShip.amount <= planetFleet.fleet(fsShip.shipType))
+    fsConfig.ships.forall(fsShip => fsShip.amount <= planetFleet.fleet(fsShip.shipType)) //TODO display unmatched pairs
   }
 
   private def buildAndSend(currentPlanet: PlayerPlanet, planets: List[PlayerPlanet]): Task[Unit] = {
