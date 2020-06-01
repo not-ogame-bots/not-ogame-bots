@@ -23,7 +23,9 @@ object OrdonConfig {
       new DeployAndReturnOgameAction[IO](planet4, moon4),
       new DeployAndReturnOgameAction[IO](planet5, moon5),
       new DeployAndReturnOgameAction[IO](planet6, moon6),
-      //      new DeployAndReturnOgameAction[IO](planet8, moon8),
+      new DeployAndReturnOgameAction[IO](planet7, moon7),
+      new DeployAndReturnOgameAction[IO](planet8, moon8),
+      new AlertOgameAction[IO](),
       createExpeditionAction
     )
     IO.pure(listOfActions.map(ScheduledAction(clock.now(), _)))
