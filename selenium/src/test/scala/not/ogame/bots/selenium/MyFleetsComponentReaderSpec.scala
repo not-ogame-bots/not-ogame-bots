@@ -27,7 +27,7 @@ class MyFleetsComponentReaderSpec extends munit.FunSuite {
     assertEquals(firstFleet.arrivalTime.getHour, 15)
     assertEquals(firstFleet.arrivalTime.getMinute, 33)
     assertEquals(firstFleet.arrivalTime.getSecond, 56)
-    assertEquals(firstFleet.fleetMissionType, Unknown)
+    assertEquals(firstFleet.fleetMissionType, FleetMissionType.Expedition)
     assertEquals(firstFleet.from, Coordinates(3, 133, 5, Moon))
     assertEquals(firstFleet.isReturning, true)
     assertEquals(firstFleet.to, Coordinates(3, 133, 16, Planet))
