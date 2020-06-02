@@ -9,6 +9,7 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
+import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.processors.TaskExecutor
@@ -229,8 +230,10 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
     exec(action)
   }
 
+  private val singleThreadExecution = Scheduler.singleThread("taskExecutor")
+
   private def exec[T](action: Action[T]) = {
-    requests.put(action) >>
+    (requests.put(action) >>
       responses.take
         .flatMap {
           case r @ Response.Success(anyValue, _) =>
@@ -238,6 +241,6 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
             Logger[Task].debug(s"action response: ${pprint.apply(r)}").map(_ => value)
           case Response.Failure(_, uuid) =>
             Task.raiseError[T](new RuntimeException(s"Couldn't execute operation $uuid"))
-        }
+        }).executeOn(singleThreadExecution)
   }
 }
