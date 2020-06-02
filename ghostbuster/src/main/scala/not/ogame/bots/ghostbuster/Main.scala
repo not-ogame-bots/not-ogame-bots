@@ -9,11 +9,18 @@ import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots.ghostbuster.api.StatusEndpoint
 import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
-import not.ogame.bots.ghostbuster.infrastructure.FCMService
-import not.ogame.bots.ghostbuster.processors.{ActivityFakerProcessor, Builder, BuilderProcessor, ExpeditionProcessor, FlyAndBuildProcessor}
+import not.ogame.bots.ghostbuster.infrastructure.{FCMService, FirebaseResource}
+import not.ogame.bots.ghostbuster.processors.{
+  ActivityFakerProcessor,
+  Builder,
+  BuilderProcessor,
+  ExpeditionProcessor,
+  FlyAndBuildProcessor,
+  FlyAndReturnProcessor
+}
 import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator, StateListenerDispatcher}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
-import not.ogame.bots.{Credentials, Fleet, LocalClock, PlanetId, RealLocalClock}
+import not.ogame.bots._
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.syntax.kleisli._
@@ -39,11 +46,36 @@ object Main extends StrictLogging {
 
     Ref
       .of[Task, State](State.Empty)
-      .flatMap { state =>
-        val httpStateExposer = new StatusEndpoint(state)
-        Task.parMap2(selenium(botConfig, credentials, state), httpServer(httpStateExposer.getStatus))((_, _) => ())
-      }
+      .flatMap(state => app(botConfig, credentials, state))
       .runSyncUnsafe()
+  }
+
+  private def app(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = {
+    val httpStateExposer = new StatusEndpoint(state)
+    (for {
+      selenium <- new SeleniumOgameDriverCreator[Task]().create(credentials)
+      firebase <- FirebaseResource.create(SettingsDirectory)
+      _ <- httpServer(httpStateExposer.getStatus)
+    } yield selenium -> firebase)
+      .use {
+        case (ogame, firebase) =>
+          val stateAgg = new StateAggregator[Task](state)
+          val seenFleetsState = Ref[Task].of(Set.empty[Fleet]).runSyncUnsafe()
+          val fcmService = new FCMService[Task](firebase)
+          val hostileFleetReporter = new HostileFleetReporter[Task](fcmService, seenFleetsState)
+          val taskExecutor = new TaskExecutorImpl(ogame, clock, new StateListenerDispatcher[Task](List(stateAgg, hostileFleetReporter)))
+          val builder = new Builder(taskExecutor, botConfig.wishlist)
+          val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.fsConfig, builder)
+          val ep = new ExpeditionProcessor(botConfig.expeditionConfig, taskExecutor)
+          val activityFaker = new ActivityFakerProcessor(taskExecutor)
+          val bp = new BuilderProcessor(builder, botConfig.smartBuilder, taskExecutor)
+          val far = new FlyAndReturnProcessor(botConfig.flyAndReturn, taskExecutor)
+          Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run(), ep.run(), bp.run(), far.run()))
+      }
+      .onErrorRestartIf { e =>
+        logger.error(e.getMessage, e)
+        true
+      }
   }
 
   private def httpServer(endpoint: ServerEndpoint[Unit, Unit, State, Nothing, Task]) = {
@@ -54,30 +86,6 @@ object Main extends StrictLogging {
       )
       .resource
       .void
-      .use(_ => Task.never[Unit])
-  }
-
-  private def selenium(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = {
-    new SeleniumOgameDriverCreator[Task]()
-      .create(credentials)
-      .use { ogame =>
-        val stateAgg = new StateAggregator[Task](state)
-        val seenFleetsState = Ref[Task].of(Set.empty[Fleet]).runSyncUnsafe()
-        val fcmService = new FCMService[Task](SettingsDirectory)
-        fcmService.initializeFirebase()
-        val hostileFleetReporter = new HostileFleetReporter[Task](fcmService, seenFleetsState)
-        val taskExecutor = new TaskExecutorImpl(ogame, clock, new StateListenerDispatcher[Task](List(stateAgg, hostileFleetReporter)))
-        val builder = new Builder(taskExecutor, botConfig.wishlist)
-        val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.fsConfig, builder)
-        val ep = new ExpeditionProcessor(botConfig.expeditionConfig, taskExecutor)
-        val activityFaker = new ActivityFakerProcessor(taskExecutor)
-        val bp = new BuilderProcessor(builder, botConfig.smartBuilder, taskExecutor)
-        Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run(), ep.run(), bp.run()))
-      }
-      .onErrorRestartIf { e =>
-        logger.error(e.getMessage, e)
-        true
-      }
   }
 
   implicit val wishReader: ConfigReader[Wish] = ConfigReader.fromCursor { cur =>

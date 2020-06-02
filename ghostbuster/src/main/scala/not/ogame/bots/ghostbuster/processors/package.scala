@@ -9,5 +9,9 @@ package object processors {
     def plus(fd: FiniteDuration): ZonedDateTime = {
       zdt.plusSeconds(fd.toSeconds)
     }
+
+    def minus(fd: FiniteDuration): ZonedDateTime = {
+      zdt.minusSeconds(fd.toSeconds)
+    }
   }
 }

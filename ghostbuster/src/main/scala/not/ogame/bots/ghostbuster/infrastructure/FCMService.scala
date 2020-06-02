@@ -3,29 +3,14 @@ package not.ogame.bots.ghostbuster.infrastructure
 import java.util.concurrent.TimeUnit
 
 import cats.effect.Sync
+import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging._
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters._
 
-class FCMService[F[_]: Sync](settingsDirectory: String) extends StrictLogging {
-  def initializeFirebase(): Unit = {
-    import com.google.auth.oauth2.GoogleCredentials
-    import com.google.firebase.FirebaseApp
-    import com.google.firebase.FirebaseOptions
-    import java.io.FileInputStream
-    val serviceAccount = new FileInputStream(s"${settingsDirectory}/notogamebots-firebase-adminsdk-sjbas-730cc8387b.json")
-
-    val options = new FirebaseOptions.Builder()
-      .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-      .setDatabaseUrl("https://notogamebots.firebaseio.com")
-      .build
-
-    FirebaseApp.initializeApp(options)
-    logger.info("Firebase initialized")
-  }
-
+class FCMService[F[_]: Sync](firebaseApp: FirebaseApp) extends StrictLogging {
   def sendMessage(data: Map[String, String], request: PushNotificationRequest): F[Unit] = Sync[F].delay {
     val message = getPreconfiguredMessageWithData(data, request)
     val response = sendAndGetResponse(message)
@@ -44,7 +29,7 @@ class FCMService[F[_]: Sync](settingsDirectory: String) extends StrictLogging {
     logger.info("Sent message to token. Device token: " + request.token + ", " + response)
   }
 
-  private def sendAndGetResponse(message: Message) = FirebaseMessaging.getInstance.sendAsync(message).get
+  private def sendAndGetResponse(message: Message) = FirebaseMessaging.getInstance(firebaseApp).sendAsync(message).get
 
   private def getAndroidConfig(topic: String) =
     AndroidConfig.builder

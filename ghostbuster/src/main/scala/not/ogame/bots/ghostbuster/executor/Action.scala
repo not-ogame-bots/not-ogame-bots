@@ -51,4 +51,8 @@ object Action {
   case class GetAirFleet(uuid: UUID = UUID.randomUUID()) extends Action[List[Fleet]]
 
   case class ReadPlanets(uuid: UUID = UUID.randomUUID()) extends Action[List[PlayerPlanet]]
+
+  case class ReturnFleetAction(fleetId: FleetId, uuid: UUID = UUID.randomUUID()) extends Action[ZonedDateTime]
+
+  case class ReadMyFleetAction(uuid: UUID = UUID.randomUUID()) extends Action[List[MyFleet]]
 }

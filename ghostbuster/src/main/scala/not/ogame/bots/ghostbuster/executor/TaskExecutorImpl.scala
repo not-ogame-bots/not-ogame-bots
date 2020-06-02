@@ -135,6 +135,18 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
         ogameDriver
           .readPlanets()
           .map(planets => a.success(planets))
+      case a @ Action.ReturnFleetAction(id, _) =>
+        ogameDriver.returnFleet(id) >> Task.sleep(1 seconds) >> ogameDriver
+          .readMyFleets()
+          .map(
+            _.find(_.fleetId == id)
+              .map(f => a.success(f.arrivalTime))
+              .get
+          )
+      case a: Action.ReadMyFleetAction =>
+        ogameDriver
+          .readMyFleets()
+          .map(r => a.success(r))
     }
   }
 
@@ -159,7 +171,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
     exec(action)
   }
 
-  override def readPlanets(): Task[List[PlayerPlanet]] = {
+  override def readPlanetsAndMoons(): Task[List[PlayerPlanet]] = {
     val action = Action.ReadPlanets()
     exec(action)
   }
@@ -204,6 +216,16 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
 
   override def buildShip(shipType: ShipType, amount: Int, planet: PlayerPlanet): Task[SuppliesPageData] = {
     val action = Action.BuildShip(amount, shipType, planet)
+    exec(action)
+  }
+
+  override def returnFleet(fleetId: FleetId): Task[ZonedDateTime] = {
+    val action = Action.ReturnFleetAction(fleetId)
+    exec(action)
+  }
+
+  override def readMyFleets(): Task[List[MyFleet]] = {
+    val action = Action.ReadMyFleetAction()
     exec(action)
   }
 

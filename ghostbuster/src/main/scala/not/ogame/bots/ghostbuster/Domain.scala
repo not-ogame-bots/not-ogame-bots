@@ -29,7 +29,8 @@ case class BotConfig(
     fsConfig: FsConfig,
     expeditionConfig: ExpeditionConfig,
     smartBuilder: SmartBuilderConfig,
-    escapeConfig: EscapeConfig
+    escapeConfig: EscapeConfig,
+    flyAndReturn: FlyAndReturnConfig
 )
 
 case class SmartBuilderConfig(
@@ -62,3 +63,11 @@ case class FleetShip(shipType: ShipType, amount: Int)
 
 case class PlanetFleet(playerPlanet: PlayerPlanet, fleet: Map[ShipType, Int])
 case class EscapeConfig(target: Coordinates, interval: FiniteDuration)
+case class FlyAndReturnConfig(
+    from: PlanetId,
+    to: PlanetId,
+    isOn: Boolean,
+    safeBuffer: FiniteDuration,
+    randomUpperLimit: FiniteDuration,
+    remainDeuterAmount: Int
+)

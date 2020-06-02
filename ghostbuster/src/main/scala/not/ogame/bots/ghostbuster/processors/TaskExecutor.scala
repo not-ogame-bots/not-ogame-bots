@@ -9,7 +9,9 @@ import not.ogame.bots._
 import not.ogame.bots.ghostbuster.PlanetFleet
 
 trait TaskExecutor {
-  def cancelFleet(coordinates: Coordinates): Task[Unit] = ???
+  def readMyFleets(): Task[List[MyFleet]]
+
+  def returnFleet(fleetId: FleetId): Task[ZonedDateTime]
 
   def buildShip(shipType: ShipType, amount: Int, head: PlayerPlanet): Task[SuppliesPageData]
 
@@ -17,7 +19,9 @@ trait TaskExecutor {
 
   def readAllFleets(): Task[List[Fleet]]
 
-  def readPlanets(): Task[List[PlayerPlanet]]
+  def readPlanets(): Task[List[PlayerPlanet]] = readPlanetsAndMoons().map(_.filter(_.coordinates.coordinatesType != CoordinatesType.Moon))
+
+  def readPlanetsAndMoons(): Task[List[PlayerPlanet]]
 
   def sendFleet(req: SendFleetRequest): Task[ZonedDateTime]
 

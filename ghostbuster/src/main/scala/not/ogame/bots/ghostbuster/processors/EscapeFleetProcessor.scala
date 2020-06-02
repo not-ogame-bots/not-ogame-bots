@@ -44,7 +44,7 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clo
         FleetMissionType.Transport,
         FleetResources.Max
       )
-    ) >> taskExecutor.waitTo(hf.arrivalTime.plusSeconds(5)) >> taskExecutor.cancelFleet(planet.coordinates) //TODO safe time plus
+    ) >> taskExecutor.waitTo(hf.arrivalTime.plusSeconds(5)) >> taskExecutor.returnFleet(???) //TODO safe time plus
     //TODO check if attack ended
   }
   private def waitAndCheck(planet: PlayerPlanet) = {
