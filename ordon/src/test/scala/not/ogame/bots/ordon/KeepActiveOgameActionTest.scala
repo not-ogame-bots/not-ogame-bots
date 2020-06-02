@@ -31,7 +31,7 @@ class FakeOgameDriver extends OgameDriver[Id]() {
 
   val readSuppliesPagePlanetId: ListBuffer[String] = new ListBuffer[String]()
 
-  override def readSuppliesPage(planetId: String): Id[SuppliesPageData] = {
+  override def readSuppliesPage(planetId: PlanetId): Id[SuppliesPageData] = {
     readSuppliesPagePlanetId.addOne(planetId)
     SuppliesPageData(
       ZonedDateTime.now(),
@@ -44,15 +44,15 @@ class FakeOgameDriver extends OgameDriver[Id]() {
     )
   }
 
-  override def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): Id[Unit] = ???
+  override def buildSuppliesBuilding(planetId: PlanetId, suppliesBuilding: SuppliesBuilding): Id[Unit] = ???
 
-  override def readFacilityPage(planetId: String): Id[FacilityPageData] = ???
+  override def readFacilityPage(planetId: PlanetId): Id[FacilityPageData] = ???
 
-  override def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): Id[Unit] = ???
+  override def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): Id[Unit] = ???
 
-  override def buildShips(planetId: String, shipType: ShipType, count: Int): Id[Unit] = ???
+  override def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): Id[Unit] = ???
 
-  override def checkFleetOnPlanet(planetId: String): Id[Map[ShipType, Int]] = ???
+  override def checkFleetOnPlanet(planetId: PlanetId): Id[Map[ShipType, Int]] = ???
 
   override def readAllFleets(): Id[List[Fleet]] = ???
 

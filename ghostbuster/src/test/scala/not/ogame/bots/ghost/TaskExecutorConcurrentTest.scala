@@ -14,7 +14,7 @@ class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
       val executor = new TaskExecutorImpl(new OgameDriver[Task] {
         override def login(): Task[Unit] = Task.unit
 
-        override def readSuppliesPage(planetId: String): Task[SuppliesPageData] = Task.eval(
+        override def readSuppliesPage(planetId: PlanetId): Task[SuppliesPageData] = Task.eval(
           SuppliesPageData(
             ZonedDateTime.now(),
             Resources.Zero,
@@ -26,20 +26,20 @@ class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
           )
         )
 
-        override def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): Task[Unit] = Task.eval(())
+        override def buildSuppliesBuilding(planetId: PlanetId, suppliesBuilding: SuppliesBuilding): Task[Unit] = Task.eval(())
 
-        override def readFacilityPage(planetId: String): Task[FacilityPageData] = Task.eval(
+        override def readFacilityPage(planetId: PlanetId): Task[FacilityPageData] = Task.eval(
           FacilityPageData(ZonedDateTime.now(), Resources.Zero, Resources.Zero, Resources.Zero, FacilitiesBuildingLevels(Map.empty), None)
         )
 
-        override def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): Task[Unit] =
+        override def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): Task[Unit] =
           Task.eval(())
 
-        override def buildShips(planetId: String, shipType: ShipType, count: Int): Task[Unit] = {
+        override def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): Task[Unit] = {
           Task.eval(())
         }
 
-        override def checkFleetOnPlanet(planetId: String): Task[Map[ShipType, Int]] = Task.eval(Map.empty)
+        override def checkFleetOnPlanet(planetId: PlanetId): Task[Map[ShipType, Int]] = Task.eval(Map.empty)
 
         override def readAllFleets(): Task[List[Fleet]] = Task.eval(List.empty)
 

@@ -18,7 +18,7 @@ class HostileFleetReporter(fcmService: FCMService[Task], taskExecutor: TaskExecu
     taskExecutor.subscribeToNotifications
       .collect { case Notification.GetAirFleet(fleets) => fleets.filter(_.fleetAttitude == FleetAttitude.Hostile) }
       .distinctUntilChanged
-      .flatMapIterable(identity)
+      .concatMapIterable(identity)
       .consumeWith(Consumer.foreachTask { fleet =>
         Logger[Task].warn(s"!!!! HOSTILE FLEET DETECTED ${pprint.apply(fleet)} !!!!") >>
           fcmService.sendMessageWithoutData(
