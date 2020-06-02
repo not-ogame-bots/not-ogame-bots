@@ -17,7 +17,7 @@ class PlanetListComponentReaderSpec extends munit.FunSuite {
   driverFixture.test("Should read planet list") { driver =>
     driver.get(getClass.getResource("/planet_list_component_reader/planets.html").toURI.toString)
     val playerPlanets = testReadPlanet(driver)
-    assertEquals(playerPlanets.size, 7)
+    assertEquals(playerPlanets.size, 10)
     assertEquals(playerPlanets.head, PlayerPlanet(PlanetId("33652802"), Coordinates(3, 130, 11)))
   }
 
