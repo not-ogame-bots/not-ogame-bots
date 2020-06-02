@@ -66,8 +66,13 @@ class MyFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) 
 
   private def getFleetMissionType(fleetElement: WebElement): FleetMissionType = {
     val missionTextLocalized = fleetElement.findElement(By.className("mission")).getText
-    if (missionTextLocalized.contains("Stacjonuj")) FleetMissionType.Deployment
-    else FleetMissionType.Unknown
+    if (missionTextLocalized.contains("Stacjonuj")) {
+      FleetMissionType.Deployment
+    } else if (missionTextLocalized.contains("Ekspedycja")) {
+      FleetMissionType.Expedition
+    } else {
+      FleetMissionType.Unknown
+    }
   }
 
   private def getFleetDataReturnFlight(fleetElement: WebElement): Boolean = {
