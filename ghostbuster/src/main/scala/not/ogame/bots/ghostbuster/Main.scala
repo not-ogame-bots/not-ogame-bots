@@ -1,5 +1,6 @@
 package not.ogame.bots.ghostbuster
 
+import cats.effect.Resource
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
@@ -7,6 +8,7 @@ import eu.timepit.refined.pureconfig._
 import monix.eval.Task
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
+import not.ogame.bots._
 import not.ogame.bots.ghostbuster.api.StatusEndpoint
 import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
 import not.ogame.bots.ghostbuster.infrastructure.{FCMService, FirebaseResource}
@@ -20,7 +22,6 @@ import not.ogame.bots.ghostbuster.processors.{
 }
 import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator, StateListenerDispatcher}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
-import not.ogame.bots._
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.syntax.kleisli._
@@ -55,12 +56,12 @@ object Main extends StrictLogging {
     (for {
       selenium <- new SeleniumOgameDriverCreator[Task]().create(credentials)
       firebase <- FirebaseResource.create(SettingsDirectory)
+      seenFleetsState <- Resource.liftF(Ref[Task].of(Set.empty[Fleet]))
       _ <- httpServer(httpStateExposer.getStatus)
-    } yield selenium -> firebase)
+    } yield (selenium, firebase, seenFleetsState))
       .use {
-        case (ogame, firebase) =>
+        case (ogame, firebase, seenFleetsState) =>
           val stateAgg = new StateAggregator[Task](state)
-          val seenFleetsState = Ref[Task].of(Set.empty[Fleet]).runSyncUnsafe()
           val fcmService = new FCMService[Task](firebase)
           val hostileFleetReporter = new HostileFleetReporter[Task](fcmService, seenFleetsState)
           val taskExecutor = new TaskExecutorImpl(ogame, clock, new StateListenerDispatcher[Task](List(stateAgg, hostileFleetReporter)))
