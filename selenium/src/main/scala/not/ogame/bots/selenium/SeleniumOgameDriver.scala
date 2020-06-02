@@ -60,7 +60,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       _ <- universeBtn.clickF()
     } yield ()
 
-  override def readSuppliesPage(planetId: String): F[SuppliesPageData] =
+  override def readSuppliesPage(planetId: PlanetId): F[SuppliesPageData] =
     for {
       _ <- webDriver.goto(suppliesPageUrl(planetId))
       currentResources <- readCurrentResources
@@ -84,7 +84,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       currentShipyardProgress
     )
 
-  override def readFacilityPage(planetId: String): F[FacilityPageData] =
+  override def readFacilityPage(planetId: PlanetId): F[FacilityPageData] =
     for {
       _ <- webDriver.safeUrlF(facilitiesPageUrl(planetId))
       currentResources <- readCurrentResources
@@ -97,15 +97,15 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       currentBuildingProgress <- readCurrentBuildingProgress
     } yield FacilityPageData(clock.now(), currentResources, currentProduction, currentCapacity, facilityLevels, currentBuildingProgress)
 
-  private def suppliesPageUrl(planetId: String) = {
+  private def suppliesPageUrl(planetId: PlanetId) = {
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=supplies&cp=$planetId"
   }
 
-  private def facilitiesPageUrl(planetId: String) = {
+  private def facilitiesPageUrl(planetId: PlanetId) = {
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=facilities&cp=$planetId"
   }
 
-  private def getShipyardUrl(credentials: Credentials, planetId: String): String = {
+  private def getShipyardUrl(credentials: Credentials, planetId: PlanetId): String = {
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=shipyard&cp=$planetId"
   }
 
@@ -228,17 +228,17 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
     }
   }
 
-  override def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): F[Unit] = {
+  override def buildSuppliesBuilding(planetId: PlanetId, suppliesBuilding: SuppliesBuilding): F[Unit] = {
     webDriver.goto(suppliesPageUrl(planetId)) >>
       buildBuilding(planetId, getComponentName(suppliesBuilding))
   }
 
-  override def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): F[Unit] = {
+  override def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): F[Unit] = {
     webDriver.goto(facilitiesPageUrl(planetId)) >>
       buildBuilding(planetId, getComponentName(facilityBuilding))
   }
 
-  private def buildBuilding(planetId: String, componentName: String) = {
+  private def buildBuilding(planetId: PlanetId, componentName: String) = {
     for {
       technologies <- webDriver.waitForElementF(By.id("technologies"))
       buildingComponent <- technologies.find(By.className(componentName))
@@ -246,7 +246,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       _ <- upgrade.clickF()
     } yield ()
   }
-  override def buildShips(planetId: String, shipType: ShipType, count: Int): F[Unit] = {
+  override def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit] = {
     for {
       _ <- webDriver.safeUrlF(getShipyardUrl(credentials, planetId))
       _ <- webDriver.find(By.id("technologies")).flatMap(_.find(By.className(shipTypeToClassName(shipType)))).flatMap(_.clickF())
@@ -276,11 +276,11 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
     }
   }
 
-  private def getFleetDispatchUrl(credentials: Credentials, planetId: String): String = {
+  private def getFleetDispatchUrl(credentials: Credentials, planetId: PlanetId): String = {
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=fleetdispatch&cp=$planetId"
   }
 
-  def checkFleetOnPlanet(planetId: String): F[Map[ShipType, Int]] = {
+  def checkFleetOnPlanet(planetId: PlanetId): F[Map[ShipType, Int]] = {
     for {
       _ <- webDriver.safeUrlF(getFleetDispatchUrl(credentials, planetId))
       technologies <- webDriver.findMany(By.id("technologies"))

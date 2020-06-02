@@ -56,3 +56,20 @@ object Action {
 
   case class ReadMyFleetAction(uuid: UUID = UUID.randomUUID()) extends Action[List[MyFleet]]
 }
+
+sealed trait Notification
+object Notification {
+  case class Login() extends Notification
+  case class SupplyBuilt(value: ZonedDateTime) extends Notification
+  case class FacilityBuilt(value: ZonedDateTime) extends Notification
+  case class SuppliesPageDateRefreshed(value: SuppliesPageData, playerPlanet: PlayerPlanet) extends Notification
+  case class FacilityPageDataRefreshed(value: FacilityPageData, playerPlanet: PlayerPlanet) extends Notification
+  case class Failure(ex: Throwable) extends Notification
+  case class FleetOnPlanetRefreshed(value: PlanetFleet) extends Notification
+  case class ShipBuilt(shipType: ShipType, amount: Int, playerPlanet: PlayerPlanet, time: Option[ZonedDateTime]) extends Notification
+  case class FleetSent(sendFleetRequest: SendFleetRequest, value: ZonedDateTime) extends Notification
+  case class GetAirFleet(value: List[Fleet]) extends Notification
+  case class ReadPlanets(value: List[PlayerPlanet]) extends Notification
+  case class ReturnFleetAction(fleetId: FleetId, value: ZonedDateTime) extends Notification
+  case class ReadMyFleetAction(value: List[MyFleet]) extends Notification
+}

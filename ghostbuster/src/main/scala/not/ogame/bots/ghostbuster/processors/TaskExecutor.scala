@@ -5,8 +5,10 @@ import java.time.ZonedDateTime
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import monix.eval.Task
+import monix.reactive.Observable
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.PlanetFleet
+import not.ogame.bots.ghostbuster.executor.Notification
 
 trait TaskExecutor {
   def readMyFleets(): Task[List[MyFleet]]
@@ -34,4 +36,6 @@ trait TaskExecutor {
   def buildSupplyBuilding(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, planet: PlayerPlanet): Task[ZonedDateTime]
 
   def buildFacilityBuilding(facilityBuilding: FacilityBuilding, level: Int Refined Positive, planet: PlayerPlanet): Task[ZonedDateTime]
+
+  def subscribeToNotifications: Observable[Notification]
 }

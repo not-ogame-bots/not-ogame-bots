@@ -3,11 +3,25 @@ package not.ogame.bots.ghostbuster.reporting
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import com.softwaremill.quicklens._
+import monix.eval.Task
+import monix.reactive.Consumer
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.executor.StateChangeListener
+import not.ogame.bots.ghostbuster.executor.Notification
+import not.ogame.bots.ghostbuster.processors.TaskExecutor
 
-class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) extends StateChangeListener[F] {
-  def onNewSuppliesPage(planet: PlayerPlanet, suppliesPageData: SuppliesPageData): F[Unit] = {
+class StateAggregator(state: Ref[Task, State], taskExecutor: TaskExecutor)(implicit clock: LocalClock) {
+  def run(): Task[Unit] = {
+    taskExecutor.subscribeToNotifications.consumeWith(Consumer.foreachTask {
+      case Notification.SuppliesPageDateRefreshed(value, playerPlanet) => onNewSuppliesPage(playerPlanet, value)
+      case Notification.FacilityPageDataRefreshed(value, playerPlanet) => onNewFacilitiesPage(playerPlanet, value)
+      case Notification.Failure(ex)                                    => onNewError(ex)
+      case Notification.FleetOnPlanetRefreshed(value)                  => onNewPlanetFleet(value.playerPlanet, value.fleet)
+      case Notification.GetAirFleet(value)                             => onNewAirFleets(value)
+      case _                                                           => Task.unit
+    })
+  }
+
+  def onNewSuppliesPage(planet: PlayerPlanet, suppliesPageData: SuppliesPageData): Task[Unit] = {
     state.update { s =>
       val currentPlanetState = s.planets.getOrElse(planet.coordinates, PlanetState.Empty)
       val newPlanetState = currentPlanetState
@@ -34,7 +48,7 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) ex
     }
   }
 
-  def onNewFacilitiesPage(planet: PlayerPlanet, facilityPageData: FacilityPageData): F[Unit] = {
+  def onNewFacilitiesPage(planet: PlayerPlanet, facilityPageData: FacilityPageData): Task[Unit] = {
     state.update { s =>
       val currentPlanetState = s.planets.getOrElse(planet.coordinates, PlanetState.Empty)
       val newPlanetState = currentPlanetState
@@ -59,7 +73,7 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) ex
     }
   }
 
-  def onNewPlanetFleet(planet: PlayerPlanet, fleet: Map[ShipType, Int]): F[Unit] = {
+  def onNewPlanetFleet(planet: PlayerPlanet, fleet: Map[ShipType, Int]): Task[Unit] = {
     state.update { s =>
       val currentPlanetState = s.planets.getOrElse(planet.coordinates, PlanetState.Empty)
       val newPlanetState = currentPlanetState
@@ -77,7 +91,7 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) ex
     }
   }
 
-  def onNewAirFleets(fleets: List[Fleet]): F[Unit] = {
+  def onNewAirFleets(fleets: List[Fleet]): Task[Unit] = {
     state.update(
       _.modify(_.airFleets)
         .setTo(fleets)
@@ -87,7 +101,7 @@ class StateAggregator[F[_]](state: Ref[F, State])(implicit clock: LocalClock) ex
         .setTo(fleets.filter(f => f.fleetAttitude == FleetAttitude.Hostile))
     )
   }
-  def onNewError(ex: Throwable): F[Unit] = {
+  def onNewError(ex: Throwable): Task[Unit] = {
     state.update(_.copy(lastError = Some(clock.now() -> ex.getMessage)))
   }
 }

@@ -1,6 +1,5 @@
 package not.ogame.bots.ghostbuster
 
-import cats.effect.Resource
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
@@ -20,7 +19,7 @@ import not.ogame.bots.ghostbuster.processors.{
   FlyAndBuildProcessor,
   FlyAndReturnProcessor
 }
-import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator, StateListenerDispatcher}
+import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator}
 import not.ogame.bots.selenium.SeleniumOgameDriverCreator
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
@@ -56,22 +55,32 @@ object Main extends StrictLogging {
     (for {
       selenium <- new SeleniumOgameDriverCreator[Task]().create(credentials)
       firebase <- FirebaseResource.create(SettingsDirectory)
-      seenFleetsState <- Resource.liftF(Ref[Task].of(Set.empty[Fleet]))
       _ <- httpServer(httpStateExposer.getStatus)
-    } yield (selenium, firebase, seenFleetsState))
+    } yield (selenium, firebase))
       .use {
-        case (ogame, firebase, seenFleetsState) =>
-          val stateAgg = new StateAggregator[Task](state)
+        case (ogame, firebase) =>
           val fcmService = new FCMService[Task](firebase)
-          val hostileFleetReporter = new HostileFleetReporter[Task](fcmService, seenFleetsState)
-          val taskExecutor = new TaskExecutorImpl(ogame, clock, new StateListenerDispatcher[Task](List(stateAgg, hostileFleetReporter)))
+          val taskExecutor = new TaskExecutorImpl(ogame, clock)
+          val stateAgg = new StateAggregator(state, taskExecutor)
+          val hostileFleetReporter = new HostileFleetReporter(fcmService, taskExecutor)
           val builder = new Builder(taskExecutor, botConfig.wishlist)
           val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.fsConfig, builder)
           val ep = new ExpeditionProcessor(botConfig.expeditionConfig, taskExecutor)
           val activityFaker = new ActivityFakerProcessor(taskExecutor)
           val bp = new BuilderProcessor(builder, botConfig.smartBuilder, taskExecutor)
           val far = new FlyAndReturnProcessor(botConfig.flyAndReturn, taskExecutor)
-          Task.raceMany(List(taskExecutor.run(), fbp.run(), activityFaker.run(), ep.run(), bp.run(), far.run()))
+          Task.raceMany(
+            List(
+              taskExecutor.run(),
+              fbp.run(),
+              activityFaker.run(),
+              ep.run(),
+              bp.run(),
+              far.run(),
+              stateAgg.run(),
+              hostileFleetReporter.run()
+            )
+          )
       }
       .onErrorRestartIf { e =>
         logger.error(e.getMessage, e)

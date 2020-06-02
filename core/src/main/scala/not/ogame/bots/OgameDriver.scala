@@ -18,17 +18,17 @@ case class Credentials(login: String, password: String, universeName: String, un
 trait OgameDriver[F[_]] {
   def login(): F[Unit]
 
-  def readSuppliesPage(planetId: String): F[SuppliesPageData]
+  def readSuppliesPage(planetId: PlanetId): F[SuppliesPageData]
 
-  def buildSuppliesBuilding(planetId: String, suppliesBuilding: SuppliesBuilding): F[Unit]
+  def buildSuppliesBuilding(planetId: PlanetId, suppliesBuilding: SuppliesBuilding): F[Unit]
 
-  def readFacilityPage(planetId: String): F[FacilityPageData]
+  def readFacilityPage(planetId: PlanetId): F[FacilityPageData]
 
-  def buildFacilityBuilding(planetId: String, facilityBuilding: FacilityBuilding): F[Unit]
+  def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): F[Unit]
 
-  def buildShips(planetId: String, shipType: ShipType, count: Int): F[Unit]
+  def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit]
 
-  def checkFleetOnPlanet(planetId: String): F[Map[ShipType, Int]]
+  def checkFleetOnPlanet(planetId: PlanetId): F[Map[ShipType, Int]]
 
   def readAllFleets(): F[List[Fleet]]
 

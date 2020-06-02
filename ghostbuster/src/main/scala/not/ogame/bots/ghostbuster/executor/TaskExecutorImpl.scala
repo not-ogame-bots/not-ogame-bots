@@ -11,6 +11,8 @@ import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
+import monix.reactive.Observable
+import monix.reactive.subjects.ConcurrentSubject
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.processors.TaskExecutor
 import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet}
@@ -18,14 +20,12 @@ import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet}
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 
-class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateChangeListener: StateChangeListener[Task])
-    extends TaskExecutor
-    with FLogger
-    with StrictLogging {
+class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extends TaskExecutor with FLogger with StrictLogging {
   type Channel[A] = MVar[Task, A]
 
-  private val responses = MVar[Task].empty[Response].runSyncUnsafe()
-  private val requests = MVar[Task].empty[Action[_]].runSyncUnsafe()
+  private val responses: Channel[Response] = MVar[Task].empty[Response].runSyncUnsafe()
+  private val requests: Channel[Action[_]] = MVar[Task].empty[Action[_]].runSyncUnsafe()
+  private val notifications = ConcurrentSubject.publish[Notification]
 
   def run(): Task[Unit] = {
     safeLogin() >> processNextAction()
@@ -45,7 +45,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
       .flatMap(response => responses.put(response))
       .handleErrorWith { e =>
         for {
-          _ <- stateChangeListener.onNewError(e)
+          _ <- Task.fromFuture(notifications.onNext(Notification.Failure(e)))
           _ <- Logger[Task].error(e)(e.getMessage)
           isStillLogged <- ogameDriver.checkIsLoggedIn()
           _ <- if (isStillLogged) {
@@ -62,6 +62,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
   private def safeLogin(): Task[Unit] = {
     ogameDriver
       .login()
+      .flatTap(_ => Task.fromFuture(notifications.onNext(Notification.Login())))
       .handleErrorWith { e =>
         Logger[Task].error(e)("Login failed, retrying in 2 seconds") >> Task.sleep(2 seconds) >> Task.raiseError(e)
       }
@@ -77,8 +78,9 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
             _ =>
               ogameDriver
                 .readSuppliesPage(planet.id)
-                .flatTap(supplies => stateChangeListener.onNewSuppliesPage(planet, supplies))
+                .flatTap(v => Task.fromFuture(notifications.onNext(Notification.SuppliesPageDateRefreshed(v, planet))))
                 .map(_.currentBuildingProgress.get)
+                .flatTap(time => Task.fromFuture(notifications.onNext(Notification.SupplyBuilt(time.finishTimestamp))))
           )
           .map(buildingProgress => a.success(buildingProgress.finishTimestamp))
       case a @ Action.BuildFacility(facilityBuilding, _, planet, _) =>
@@ -88,65 +90,73 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
             _ =>
               ogameDriver
                 .readFacilityPage(planet.id)
-                .flatTap(facilities => stateChangeListener.onNewFacilitiesPage(planet, facilities))
+                .flatTap(facilities => Task.fromFuture(notifications.onNext(Notification.FacilityPageDataRefreshed(facilities, planet))))
                 .map(_.currentBuildingProgress.get)
+                .flatTap(time => Task.fromFuture(notifications.onNext(Notification.FacilityBuilt(time.finishTimestamp))))
           )
           .map(buildingProgress => a.success(buildingProgress.finishTimestamp))
       case a @ Action.ReadSupplyPage(planet, _) =>
         ogameDriver
           .readSuppliesPage(planet.id)
-          .flatTap(supplies => stateChangeListener.onNewSuppliesPage(planet, supplies))
+          .flatTap(supplies => Task.fromFuture(notifications.onNext(Notification.SuppliesPageDateRefreshed(supplies, planet))))
           .map(sp => a.success(sp))
       case a @ Action.ReadFacilityPage(planet, _) =>
         ogameDriver
           .readFacilityPage(planet.id)
-          .flatTap(facilities => stateChangeListener.onNewFacilitiesPage(planet, facilities))
+          .flatTap(facilities => Task.fromFuture(notifications.onNext(Notification.FacilityPageDataRefreshed(facilities, planet))))
           .map(fp => a.success(fp))
       case a @ Action.RefreshFleetOnPlanetStatus(planet, _) =>
         ogameDriver
           .checkFleetOnPlanet(planet.id)
-          .flatTap(fleet => stateChangeListener.onNewPlanetFleet(planet, fleet))
+          .flatTap(fleet => Task.fromFuture(notifications.onNext(Notification.FleetOnPlanetRefreshed(PlanetFleet(planet, fleet)))))
           .map(f => a.success(PlanetFleet(planet, f)))
       case a @ Action.BuildShip(amount, shipType, planet, _) =>
         ogameDriver
           .buildShips(planet.id, shipType, amount)
           .flatMap(_ => ogameDriver.readSuppliesPage(planet.id))
-          .flatTap(supplies => stateChangeListener.onNewSuppliesPage(planet, supplies))
+          .flatTap(
+            sp =>
+              Task.fromFuture(
+                notifications.onNext(Notification.ShipBuilt(shipType, amount, planet, sp.currentShipyardProgress.map(_.finishTimestamp)))
+              )
+          )
+          .flatTap(supplies => Task.fromFuture(notifications.onNext(Notification.SuppliesPageDateRefreshed(supplies, planet))))
           .map(sp => a.success(sp))
       case a @ Action.SendFleet(sendFleetRequest, _) =>
         ogameDriver.sendFleet(sendFleetRequest).flatMap { _ =>
           ogameDriver
             .readAllFleets()
-            .flatTap(fleets => stateChangeListener.onNewAirFleets(fleets))
             .map { fleets =>
               fleets
                 .collect { case f if isSameFleet(sendFleetRequest, f) => f }
                 .maxBy(_.arrivalTime)
-            } //TODO or min?
-            .flatTap(_ => ogameDriver.readPlanets())
+            }
+            .flatTap(fleet => Task.fromFuture(notifications.onNext(Notification.FleetSent(sendFleetRequest, fleet.arrivalTime))))
+            .flatTap(_ => ogameDriver.readPlanets().flatMap(p => Task.fromFuture(notifications.onNext(Notification.ReadPlanets(p)))))
             .map(f => a.success(f.arrivalTime))
         }
       case a: Action.GetAirFleet =>
         ogameDriver
           .readAllFleets()
-          .flatTap(fleets => stateChangeListener.onNewAirFleets(fleets))
-          .flatTap(_ => ogameDriver.readPlanets())
+          .flatTap(fleets => Task.fromFuture(notifications.onNext(Notification.GetAirFleet(fleets))))
+          .flatTap(_ => ogameDriver.readPlanets().flatMap(p => Task.fromFuture(notifications.onNext(Notification.ReadPlanets(p)))))
           .map(fleets => a.success(fleets))
       case a: Action.ReadPlanets =>
         ogameDriver
           .readPlanets()
+          .flatTap(p => Task.fromFuture(notifications.onNext(Notification.ReadPlanets(p))))
           .map(planets => a.success(planets))
       case a @ Action.ReturnFleetAction(id, _) =>
         ogameDriver.returnFleet(id) >> Task.sleep(1 seconds) >> ogameDriver
           .readMyFleets()
-          .map(
-            _.find(_.fleetId == id)
-              .map(f => a.success(f.arrivalTime))
-              .get
-          )
+          .flatTap(myFleets => Task.fromFuture(notifications.onNext(Notification.ReadMyFleetAction(myFleets))))
+          .map(_.find(_.fleetId == id).get.arrivalTime)
+          .flatTap(time => Task.fromFuture(notifications.onNext(Notification.ReturnFleetAction(id, time))))
+          .map(a.success)
       case a: Action.ReadMyFleetAction =>
         ogameDriver
           .readMyFleets()
+          .flatTap(fleets => Task.fromFuture(notifications.onNext(Notification.ReadMyFleetAction(fleets))))
           .map(r => a.success(r))
     }
   }
@@ -243,4 +253,6 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock, stateC
             Task.raiseError[T](new RuntimeException(s"Couldn't execute operation $uuid"))
         }).executeOn(singleThreadExecution)
   }
+
+  override def subscribeToNotifications: Observable[Notification] = notifications
 }

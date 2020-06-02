@@ -2,33 +2,12 @@ package not.ogame.bots.ghost
 
 import java.time.ZonedDateTime
 
-import cats.effect.concurrent.MVar
 import com.typesafe.scalalogging.StrictLogging
-import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
-import monix.execution.Scheduler
-import monix.execution.schedulers.CanBlock
-import not.ogame.bots.{
-  Coordinates,
-  FacilitiesBuildingLevels,
-  FacilityBuilding,
-  FacilityPageData,
-  Fleet,
-  FleetId,
-  MyFleet,
-  OgameDriver,
-  PlanetId,
-  PlayerPlanet,
-  RealLocalClock,
-  Resources,
-  SendFleetRequest,
-  ShipType,
-  SuppliesBuilding,
-  SuppliesBuildingLevels,
-  SuppliesPageData
-}
-import not.ogame.bots.ghostbuster.executor.{Action, EmptyStateChangeListener, Response, TaskExecutorImpl}
 import monix.execution.Scheduler.Implicits.global
+import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
+import not.ogame.bots._
+
 class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
   (0 to 100).foreach { i =>
     test(s"Asdasd $i") {
@@ -73,7 +52,7 @@ class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
         override def readPlanets(): Task[List[PlayerPlanet]] = Task.eval(List.empty)
 
         override def checkIsLoggedIn(): Task[Boolean] = Task.eval(true)
-      }, new RealLocalClock(), new EmptyStateChangeListener[Task])
+      }, new RealLocalClock())
 
       executor.run().runToFuture
       Task
