@@ -313,10 +313,15 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
 
   override def readMyFleets(): F[List[MyFleet]] = {
     Sync[F].delay({
-      webDriver.safeUrl(
-        s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=movement"
-      )
-      new MyFleetsComponentReader(webDriver).readMyFleets()
+      webDriver.get(s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=movement")
+      if (webDriver.getCurrentUrl.contains("movement")) {
+        new MyFleetsComponentReader(webDriver).readMyFleets()
+      } else if (webDriver.getCurrentUrl.contains("fleetdispatch")) {
+        //When there are no fleets movement page redirects to fleetdispatch
+        List()
+      } else {
+        throw new RuntimeException(s"Couldn't proceed to movement page")
+      }
     })
   }
 
