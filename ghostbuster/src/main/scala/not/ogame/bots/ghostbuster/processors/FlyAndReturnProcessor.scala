@@ -2,16 +2,17 @@ package not.ogame.bots.ghostbuster.processors
 
 import java.time.ZonedDateTime
 
+import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.FlyAndReturnConfig
+import not.ogame.bots.ghostbuster.{FLogger, FlyAndReturnConfig}
 
 import scala.util.Random
 import scala.concurrent.duration._
 
-class FlyAndReturnProcessor(config: FlyAndReturnConfig, taskExecutor: TaskExecutor)(implicit clock: LocalClock) {
-  def run(): Task[Unit] = {
+class FlyAndReturnProcessor(config: FlyAndReturnConfig, taskExecutor: TaskExecutor)(implicit clock: LocalClock) extends FLogger {
+  def run(): Task[Unit] = { //TODO add support for other way
     if (config.isOn) {
       for {
         planets <- taskExecutor.readPlanetsAndMoons()
@@ -28,16 +29,22 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, taskExecutor: TaskExecut
     for {
       allMyFleets <- taskExecutor.readMyFleets()
       thisMyFleet = allMyFleets.find(isThisMyFleet(_, from, to))
-      expeditionsCount = allMyFleets.count(_.fleetMissionType == FleetMissionType.Expedition)
-      nextStepTime <- processMyFleet(thisMyFleet, from, to, expeditionsCount)
+      nextStepTime <- processMyFleet(thisMyFleet, from, to, allMyFleets)
+      _ <- Logger[Task].info(s"Waiting to next step til $nextStepTime")
       _ <- taskExecutor.waitTo(nextStepTime)
       _ <- loop(from, to)
     } yield ()
   }
 
-  private def processMyFleet(thisMyFleet: Option[MyFleet], from: PlayerPlanet, to: PlayerPlanet, expeditions: Int): Task[ZonedDateTime] = {
-    if (expeditions < 5) { //TODO configurable
-      Task.pure(clock.now().plus(5 seconds))
+  private def processMyFleet(
+      thisMyFleet: Option[MyFleet],
+      from: PlayerPlanet,
+      to: PlayerPlanet,
+      allMyFleets: List[MyFleet]
+  ): Task[ZonedDateTime] = {
+    val expeditionsCount = allMyFleets.count(_.fleetMissionType == FleetMissionType.Expedition)
+    if (expeditionsCount < 5) { //TODO configurable
+      Task.pure(allMyFleets.map(_.arrivalTime).min) //TODO will fail if there is no fleets
     } else {
       thisMyFleet match {
         case Some(fleet) if !fleet.isReturning => returnOrWait(fleet)
