@@ -35,8 +35,15 @@ class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
         override def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): Task[Unit] =
           Task.eval(())
 
+        var i = 0
+
         override def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): Task[Unit] = {
-          Task.eval(())
+          if (i == 0) {
+            i = i + 1
+            Task.raiseError(new RuntimeException("asd"))
+          } else {
+            Task.eval(())
+          }
         }
 
         override def checkFleetOnPlanet(planetId: PlanetId): Task[Map[ShipType, Int]] = Task.eval(Map.empty)
