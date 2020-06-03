@@ -71,6 +71,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
     for {
       _ <- buildAndContinue(currentPlanet, clock.now())
       arrivalTime <- sendFleet(from = currentPlanet, to = targetPlanet)
+      _ <- Logger[Task].info(s"Waiting for fleet to arrive til $arrivalTime")
       _ <- taskExecutor.waitTo(arrivalTime)
       _ <- buildAndSend(currentPlanet = targetPlanet, planets)
     } yield ()
@@ -128,7 +129,8 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
       builder.buildNextThingFromWishList(planet).flatMap {
         case Some(finishTime)
             if timeDiff(clock.now(), finishTime) < fsConfig.maxBuildingTime && timeDiff(startedBuildingAt, clock.now()) < fsConfig.maxWaitTime =>
-          taskExecutor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
+          Logger[Task].info(s"Decided to wait for building to finish til $finishTime") >>
+            taskExecutor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
         case _ => Task.unit
       }
     } else {

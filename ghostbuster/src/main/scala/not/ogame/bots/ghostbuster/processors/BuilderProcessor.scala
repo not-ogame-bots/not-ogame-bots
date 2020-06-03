@@ -25,7 +25,9 @@ class BuilderProcessor(builder: Builder, smartBuilder: SmartBuilderConfig, taskE
     builder
       .buildNextThingFromWishList(planet)
       .flatMap {
-        case Some(buildingFinished) => taskExecutor.waitTo(buildingFinished)
+        case Some(buildingFinished) =>
+          Logger[Task].info(s"Waiting for building to finish til $buildingFinished") >>
+            taskExecutor.waitTo(buildingFinished)
         case None =>
           taskExecutor
             .readAllFleets()
