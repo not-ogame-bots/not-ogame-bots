@@ -42,15 +42,17 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
 
   private def safeHandleAction(action: Action[_]): Task[Unit] = {
     handleAction(action)
-      .flatMap(response => responses.put(response))
+      .flatMap(response => Logger[Task].debug(s"action response: ${pprint.apply(response)}") >> responses.put(response))
       .handleErrorWith { e =>
         for {
           _ <- Task.fromFuture(notifications.onNext(Notification.Failure(e)))
           _ <- Logger[Task].error(e)(e.getMessage)
           isStillLogged <- ogameDriver.checkIsLoggedIn()
           _ <- if (isStillLogged) {
+            val response = action.failure(e)
             Logger[Task].warn("still logged, failing action...") >>
-              responses.put(action.failure(e))
+              Logger[Task].debug(s"action response: ${pprint.apply(response)}") >>
+              responses.put(response)
           } else {
             Logger[Task].warn("not logged") >>
               safeLogin >> safeHandleAction(action)
@@ -248,7 +250,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
         .flatMap {
           case r @ Response.Success(anyValue, _) =>
             val value = action.defer(anyValue)
-            Logger[Task].debug(s"action response: ${pprint.apply(r)}").map(_ => value)
+            Task.pure(value)
           case Response.Failure(_, uuid) =>
             Task.raiseError[T](new RuntimeException(s"Couldn't execute operation $uuid"))
         }).executeOn(singleThreadExecution)

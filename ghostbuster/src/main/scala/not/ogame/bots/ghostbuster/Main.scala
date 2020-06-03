@@ -50,7 +50,7 @@ object Main extends StrictLogging {
       .runSyncUnsafe()
   }
 
-  private def app(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = {
+  private def app(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = { //TODO restart after 1 hour
     val httpStateExposer = new StatusEndpoint(state)
     (for {
       selenium <- new SeleniumOgameDriverCreator[Task]().create(credentials)
