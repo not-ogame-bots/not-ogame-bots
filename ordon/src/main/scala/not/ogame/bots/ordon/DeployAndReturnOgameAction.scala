@@ -15,7 +15,7 @@ class DeployAndReturnOgameAction[T[_]: Monad](
 )(implicit clock: LocalClock)
     extends SimpleOgameAction[T] {
   private val safeBufferInMinutes = 2
-  private val randomUpperLimitInSeconds = 2
+  private val randomUpperLimitInSeconds = 120
 
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] =
     for {
