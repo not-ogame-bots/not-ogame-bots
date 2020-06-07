@@ -102,4 +102,6 @@ object Selector {
   def all: Int => Int = countOnPlanet => countOnPlanet
 
   def decreaseBy(value: Int): Int => Int = countOnPlanet => Math.max(countOnPlanet - value, 0)
+
+  def atMost(value: Int): Int => Int = countOnPlanet => Math.min(countOnPlanet, value)
 }
