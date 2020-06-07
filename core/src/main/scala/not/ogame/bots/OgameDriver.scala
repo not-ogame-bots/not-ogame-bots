@@ -6,7 +6,7 @@ import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.{NonNegative, Positive}
+import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots.FleetSpeed.Percent100
 
 trait OgameDriverCreator[F[_]] {
@@ -214,7 +214,8 @@ case class MyFleet(
     fleetMissionType: FleetMissionType,
     from: Coordinates,
     to: Coordinates,
-    isReturning: Boolean
+    isReturning: Boolean,
+    ships: Map[ShipType, Int]
 )
 
 case class Fleet(
