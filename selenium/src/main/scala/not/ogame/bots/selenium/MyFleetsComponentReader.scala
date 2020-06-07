@@ -19,7 +19,8 @@ class MyFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) 
       getFleetMissionType(fleetElement),
       getFrom(fleetElement),
       getTo(fleetElement),
-      getFleetDataReturnFlight(fleetElement)
+      getFleetDataReturnFlight(fleetElement),
+      getShips(fleetElement)
     )
   }
 
@@ -78,5 +79,46 @@ class MyFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) 
   private def getFleetDataReturnFlight(fleetElement: WebElement): Boolean = {
     val missionTextLocalized = fleetElement.findElement(By.className("mission")).getText
     missionTextLocalized.contains("(R)")
+  }
+
+  private def getShips(fleetElement: WebElement): Map[ShipType, Int] = {
+    val fleetInfoTooltip = fleetElement.findElement(By.className("fleetinfo"))
+    val rows = fleetInfoTooltip.findElementsS(By.tagName("tr"))
+    val value: List[Option[(ShipType, Int)]] = rows.map(row => {
+      val rowText = row.getAttribute("textContent")
+      getShipType(rowText).map(shipType => {
+        val count = row.findElement(By.className("value")).getAttribute("textContent").filter(_.isDigit).toInt
+        (shipType, count)
+      })
+    })
+    value.filter(option => option.isDefined).map(option => option.get).toMap.withDefaultValue(0)
+  }
+
+  private def getShipType(rowText: String): Option[ShipType] = {
+    nameOfShips().find { case (_, shipName) => rowText.contains(shipName) }.map { case (shipType, _) => shipType }
+  }
+
+  private def nameOfShips(): Map[ShipType, String] = {
+    ShipType.values.map(shipType => (shipType, localizedNameOfAShipType(shipType))).toMap
+  }
+
+  private def localizedNameOfAShipType(shipType: ShipType): String = {
+    shipType match {
+      case ShipType.LightFighter   => "Lekki myśliwiec"
+      case ShipType.HeavyFighter   => "Ciężki myśliwiec"
+      case ShipType.Cruiser        => "Krążownik"
+      case ShipType.Battleship     => "Okręt wojenny"
+      case ShipType.Interceptor    => "Pancernik"
+      case ShipType.Bomber         => "Bombowiec"
+      case ShipType.Destroyer      => "Niszczyciel"
+      case ShipType.DeathStar      => "Gwiazda Śmierci"
+      case ShipType.Reaper         => "Rozpruwacz"
+      case ShipType.Explorer       => "Pionier"
+      case ShipType.SmallCargoShip => "Mały transporter"
+      case ShipType.LargeCargoShip => "Duży transporter"
+      case ShipType.ColonyShip     => "Statek kolonizacyjny"
+      case ShipType.Recycler       => "Recykler"
+      case ShipType.EspionageProbe => "Sonda szpiegowska"
+    }
   }
 }

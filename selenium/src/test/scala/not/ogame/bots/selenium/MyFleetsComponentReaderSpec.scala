@@ -1,7 +1,8 @@
 package not.ogame.bots.selenium
 
 import not.ogame.bots.CoordinatesType.{Moon, Planet}
-import not.ogame.bots.FleetMissionType.{Deployment, Unknown}
+import not.ogame.bots.FleetMissionType.Deployment
+import not.ogame.bots.ShipType.{Destroyer, LargeCargoShip, LightFighter}
 import not.ogame.bots._
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.firefox.FirefoxDriver
@@ -37,6 +38,9 @@ class MyFleetsComponentReaderSpec extends munit.FunSuite {
     assertEquals(lastFleet.from, Coordinates(3, 133, 6, Planet))
     assertEquals(lastFleet.to, Coordinates(3, 133, 6, Moon))
     assertEquals(lastFleet.isReturning, false)
+    assertEquals(lastFleet.ships(LightFighter), 13766)
+    assertEquals(lastFleet.ships(Destroyer), 3172)
+    assertEquals(lastFleet.ships(LargeCargoShip), 0)
   }
 
   private def testReadAllFleets(driver: WebDriver): List[MyFleet] =
