@@ -8,7 +8,7 @@ import not.ogame.bots.OgameDriver
 
 case class ScheduledAction[T[_]](resumeOn: ZonedDateTime, action: OgameAction[T])
 
-trait OgameAction[T[_]] {
+abstract class OgameAction[T[_]: Monad] {
   def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]]
 }
 
