@@ -225,7 +225,8 @@ case class MyFleet(
     fleetMissionType: FleetMissionType,
     from: Coordinates,
     to: Coordinates,
-    isReturning: Boolean
+    isReturning: Boolean,
+    ships: Map[ShipType, Int]
 )
 
 case class Fleet(
