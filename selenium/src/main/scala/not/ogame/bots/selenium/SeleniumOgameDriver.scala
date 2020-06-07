@@ -327,8 +327,9 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
 
   override def returnFleet(fleetId: FleetId): F[Unit] = {
     Sync[F].delay {
-      webDriver.get(s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=movement")
-      webDriver.findElement(By.id(fleetId)).findElement(By.className("reversal")).click()
+      webDriver.get(
+        s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=movement&return=${fleetId.filter(_.isDigit)}"
+      )
     }
   }
 
