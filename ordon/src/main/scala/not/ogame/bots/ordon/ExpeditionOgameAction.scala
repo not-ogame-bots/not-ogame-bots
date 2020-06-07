@@ -14,12 +14,11 @@ class ExpeditionOgameAction[T[_]: Monad](
     expeditionFleet: Map[ShipType, Int],
     targetCoordinates: Coordinates
 )(implicit clock: LocalClock)
-    extends OgameAction[T] {
-  override def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] = {
+    extends SimpleOgameAction[T] {
+  override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = {
     ogame
       .readAllFleets()
       .flatMap(processFleet(ogame, _))
-      .map(resumeOn => List(ScheduledAction(resumeOn, this)))
   }
 
   def processFleet(ogame: OgameDriver[T], fleets: List[Fleet]): T[ZonedDateTime] = {
