@@ -25,6 +25,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
   }
 
   private def loginImpl(universeListUrl: String): F[Unit] = {
+    webDriver.waitForElement(By.className("gameNav"))
     if (webDriver.getCurrentUrl == universeListUrl) {
       Sync[F].unit
     } else {
