@@ -1,12 +1,16 @@
 package not.ogame.bots.selenium
 
-import java.time.{Instant, ZoneOffset, ZonedDateTime}
+import java.time.ZonedDateTime
 
 import not.ogame.bots.{Coordinates, LocalClock}
 
 object ParsingUtils {
   /** @param coordinatesText Coordinates test in "[1:1:1]" format. */
   def parseCoordinates(coordinatesText: String): Coordinates = {
+    if (coordinatesText.length < 5) {
+      //Happens when returning from destroyed moon
+      return Coordinates(0, 0, 0)
+    }
     val coordinates = coordinatesText.split(":").map(_.filter(_.isDigit).toInt)
     Coordinates(coordinates(0), coordinates(1), coordinates(2))
   }
