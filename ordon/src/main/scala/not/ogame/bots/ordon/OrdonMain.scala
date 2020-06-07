@@ -24,7 +24,10 @@ object OrdonMain extends IOApp {
         ogame.login() >> process(ogame, OrdonConfig.getInitialActions)
       }
       .as(ExitCode.Success)
-      .handleErrorWith(_ => runBot())
+      .handleErrorWith(throwable => {
+        println(throwable)
+        runBot()
+      })
   }
 
   @scala.annotation.tailrec
