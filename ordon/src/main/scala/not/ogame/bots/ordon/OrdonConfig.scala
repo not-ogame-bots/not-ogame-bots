@@ -18,15 +18,17 @@ object OrdonConfig {
 
   def getInitialActions(implicit clock: LocalClock): IO[List[ScheduledAction[IO]]] = {
     val listOfActions = List(
-      createKeepActiveAction,
-      createFlyAroundActionCargo,
-      new DeployAndReturnOgameAction[IO](planet4, moon4),
-      new DeployAndReturnOgameAction[IO](planet5, moon5),
+      //      new BuildShipsOgameAction[IO](ShipType.Cruiser, 2000, planet6, planets),
+      createFlyAroundActionCargo(moon4),
+      //      new DeployAndReturnOgameAction[IO](planet4, moon4),
+      //      new DeployAndReturnOgameAction[IO](planet5, moon5),
       new DeployAndReturnOgameAction[IO](planet6, moon6),
-      new DeployAndReturnOgameAction[IO](planet7, moon7),
-      new DeployAndReturnOgameAction[IO](planet8, moon8),
-      new AlertOgameAction[IO](),
-      createExpeditionAction
+      //      new DeployAndReturnOgameAction[IO](planet6, moon6, safeBufferInMinutes = 50, randomUpperLimitInSeconds = 1),
+      //      new DeployAndReturnOgameAction[IO](planet7, moon7),
+      //      new DeployAndReturnOgameAction[IO](planet8, moon8),
+      createExpeditionAction,
+      createKeepActiveAction,
+      new AlertOgameAction[IO]()
     )
     IO.pure(listOfActions.map(ScheduledAction(clock.now(), _)))
   }
@@ -35,7 +37,7 @@ object OrdonConfig {
     new ExpeditionOgameAction[IO](
       maxNumberOfExpeditions = 6,
       startPlanet = expeditionStartPlanet,
-      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 410, EspionageProbe -> 1),
+      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 610, EspionageProbe -> 1),
       targetCoordinates = Coordinates(3, 133, 16)
     )
   }
@@ -44,10 +46,10 @@ object OrdonConfig {
     new KeepActiveOgameAction[IO](planetsAndMoons)
   }
 
-  private def createFlyAroundActionCargo(implicit clock: LocalClock): FlyAroundOgameAction[IO] = {
+  private def createFlyAroundActionCargo(moon: PlayerPlanet)(implicit clock: LocalClock) = {
     new FlyAroundOgameAction[IO](
       speed = FleetSpeed.Percent30,
-      targets = List(moon7, expeditionStartPlanet),
+      targets = List(moon, expeditionStartPlanet),
       fleetSelector = cargoFleetSelector,
       resourceSelector = cargoResourceSelector
     )
