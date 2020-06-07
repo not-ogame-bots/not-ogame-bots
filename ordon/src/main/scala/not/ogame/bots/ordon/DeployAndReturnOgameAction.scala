@@ -11,12 +11,11 @@ import scala.util.Random
 
 class DeployAndReturnOgameAction[T[_]: Monad](
     planet: PlayerPlanet,
-    moon: PlayerPlanet
+    moon: PlayerPlanet,
+    safeBufferInMinutes: Int = 5,
+    randomUpperLimitInSeconds: Int = 120
 )(implicit clock: LocalClock)
     extends SimpleOgameAction[T] {
-  private val safeBufferInMinutes = 2
-  private val randomUpperLimitInSeconds = 120
-
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] =
     for {
       allMyFleets <- ogame.readMyFleets()
@@ -57,7 +56,7 @@ class DeployAndReturnOgameAction[T[_]: Monad](
   }
 
   private def send(ogame: OgameDriver[T]): T[ZonedDateTime] = {
-    val fleetSpeed = Random.shuffle(List(FleetSpeed.Percent10, FleetSpeed.Percent20)).head
+    val fleetSpeed = Random.shuffle(List(FleetSpeed.Percent10)).head
     ogame
       .sendFleet(
         SendFleetRequest(
