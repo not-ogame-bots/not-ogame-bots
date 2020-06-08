@@ -13,8 +13,10 @@ abstract class OgameAction[T[_]: Monad] {
 }
 
 abstract class SimpleOgameAction[T[_]: Monad] extends OgameAction[T] {
+  def nextAction: OgameAction[T] = this
+
   def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime]
 
   final def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] =
-    processSimple(ogame).map(resumeOn => List(ScheduledAction(resumeOn, this)))
+    processSimple(ogame).map(resumeOn => List(ScheduledAction(resumeOn, nextAction)))
 }
