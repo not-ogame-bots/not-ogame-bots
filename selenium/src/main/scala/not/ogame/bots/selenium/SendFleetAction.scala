@@ -105,6 +105,9 @@ class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
       case FleetMissionType.Expedition   => "missionButton15"
       case FleetMissionType.Colonization => "missionButton7"
       case FleetMissionType.Transport    => "missionButton3"
+      case FleetMissionType.Attack       => "missionButton1"
+      case FleetMissionType.Spy          => "missionButton6"
+      case FleetMissionType.Destroy      => "missionButton9"
       case FleetMissionType.Unknown      => ???
     }
   }
