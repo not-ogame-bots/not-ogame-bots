@@ -6,7 +6,7 @@ import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.{NonNegative, Positive}
+import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots.FleetSpeed.Percent100
 
 trait OgameDriverCreator[F[_]] {
@@ -27,6 +27,8 @@ trait OgameDriver[F[_]] {
   def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): F[Unit]
 
   def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit]
+
+  def readFleetPage(planetId: PlanetId): F[FleetPageData]
 
   def checkFleetOnPlanet(planetId: PlanetId): F[Map[ShipType, Int]]
 
@@ -77,6 +79,14 @@ case class FacilityPageData(
     facilityLevels.values(facilityBuilding)
   }
 }
+
+case class FleetPageData(
+    timestamp: ZonedDateTime,
+    currentResources: Resources,
+    currentProduction: Resources,
+    currentCapacity: Resources,
+    ships: Map[ShipType, Int]
+)
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
   def multiply(amount: Int): Resources = {

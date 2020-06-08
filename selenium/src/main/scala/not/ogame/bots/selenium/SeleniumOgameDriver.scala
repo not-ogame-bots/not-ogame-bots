@@ -280,9 +280,30 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
     s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=fleetdispatch&cp=$planetId"
   }
 
+  override def readFleetPage(planetId: PlanetId): F[FleetPageData] =
+    for {
+      _ <- webDriver.goto(getFleetDispatchUrl(credentials, planetId))
+      currentResources <- readCurrentResources
+      currentProduction <- readCurrentProduction
+      currentCapacity <- readCurrentCapacity
+      ships <- readShips()
+    } yield FleetPageData(
+      clock.now(),
+      currentResources,
+      currentProduction,
+      currentCapacity,
+      ships
+    )
+
   def checkFleetOnPlanet(planetId: PlanetId): F[Map[ShipType, Int]] = {
     for {
       _ <- webDriver.safeUrlF(getFleetDispatchUrl(credentials, planetId))
+      result <- readShips()
+    } yield result
+  }
+
+  private def readShips(): F[Map[ShipType, Int]] = {
+    for {
       technologies <- webDriver.findMany(By.id("technologies"))
       result <- if (technologies.isEmpty) {
         Sync[F].pure(ShipType.values.map(_ -> 0).toMap)
