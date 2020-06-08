@@ -7,14 +7,15 @@ import cats.implicits._
 import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots.SendFleetRequestShips.Ships
 import not.ogame.bots._
+import not.ogame.bots.ordon.utils.{SelectResources, SelectShips}
 
 import scala.util.Random
 
 class FlyAroundOgameAction[T[_]: Monad](
     speed: FleetSpeed,
     targets: List[PlayerPlanet],
-    fleetSelector: PlayerPlanet => FleetSelector[T],
-    resourceSelector: PlayerPlanet => ResourceSelector[T]
+    fleetSelector: PlayerPlanet => SelectShips,
+    resourceSelector: PlayerPlanet => SelectResources
 )(implicit clock: LocalClock)
     extends SimpleOgameAction[T] {
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = {
@@ -38,10 +39,12 @@ class FlyAroundOgameAction[T[_]: Monad](
 
   private def sendFleet(ogame: OgameDriver[T]): T[ZonedDateTime] =
     for {
-      planetToShips <- targets.map(it => fleetSelector(it).selectShips(ogame, it).map(it -> _)).sequence
+      planetToShips <- targets
+        .map(planet => ogame.readFleetPage(planet.id).map(page => fleetSelector(planet)(page)).map(planet -> _))
+        .sequence
       (startPlanet, ships) = planetToShips.maxBy(it => it._2.values.sum)
       targetPlanet = Random.shuffle(targets.filter(_ != startPlanet)).head
-      resources <- resourceSelector(startPlanet).selectResources(ogame, startPlanet)
+      resources <- ogame.readFleetPage(startPlanet.id).map(page => resourceSelector(startPlanet)(page))
       _ <- ogame.sendFleet(
         SendFleetRequest(
           startPlanet,
@@ -54,54 +57,4 @@ class FlyAroundOgameAction[T[_]: Monad](
       )
       now = clock.now()
     } yield now
-}
-
-class FleetSelector[T[_]: Monad](filters: Map[ShipType, Int => Int] = Map()) {
-  def selectShips(ogameDriver: OgameDriver[T], playerPlanet: PlayerPlanet): T[Map[ShipType, Int]] = {
-    ogameDriver.checkFleetOnPlanet(playerPlanet.id).map(shipsOnPlanet => computeShipsToSend(shipsOnPlanet))
-  }
-
-  private def computeShipsToSend(shipsOnPlanet: Map[ShipType, Int]): Map[ShipType, Int] = {
-    ShipType.values.map(shipType => shipType -> computeShipToSend(shipType, shipsOnPlanet(shipType))).toMap.filter {
-      case (_, count) => count > 0
-    }
-  }
-
-  private def computeShipToSend(shipType: ShipType, countOnPlanet: Int): Int = {
-    if (filters.contains(shipType)) {
-      filters(shipType)(countOnPlanet)
-    } else {
-      countOnPlanet
-    }
-  }
-}
-
-class ResourceSelector[T[_]: Monad](
-    metalSelector: Int => Int = Selector.all,
-    crystalSelector: Int => Int = Selector.all,
-    deuteriumSelector: Int => Int = Selector.all
-) {
-  def selectResources(ogameDriver: OgameDriver[T], playerPlanet: PlayerPlanet): T[Resources] = {
-    ogameDriver
-      .readSuppliesPage(playerPlanet.id)
-      .map(_.currentResources)
-      .map(
-        it =>
-          Resources(
-            metal = metalSelector(it.metal),
-            crystal = crystalSelector(it.crystal),
-            deuterium = deuteriumSelector(it.deuterium)
-          )
-      )
-  }
-}
-
-object Selector {
-  def skip: Int => Int = _ => 0
-
-  def all: Int => Int = countOnPlanet => countOnPlanet
-
-  def decreaseBy(value: Int): Int => Int = countOnPlanet => Math.max(countOnPlanet - value, 0)
-
-  def atMost(value: Int): Int => Int = countOnPlanet => Math.min(countOnPlanet, value)
 }
