@@ -28,6 +28,8 @@ trait OgameDriver[F[_]] {
 
   def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit]
 
+  def readFleetPage(planetId: PlanetId): F[FleetPageData]
+
   def checkFleetOnPlanet(planetId: PlanetId): F[Map[ShipType, Int]]
 
   def readAllFleets(): F[List[Fleet]]
@@ -77,6 +79,14 @@ case class FacilityPageData(
     facilityLevels.values(facilityBuilding)
   }
 }
+
+case class FleetPageData(
+    timestamp: ZonedDateTime,
+    currentResources: Resources,
+    currentProduction: Resources,
+    currentCapacity: Resources,
+    ships: Map[ShipType, Int]
+)
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
   def multiply(amount: Int): Resources = {
