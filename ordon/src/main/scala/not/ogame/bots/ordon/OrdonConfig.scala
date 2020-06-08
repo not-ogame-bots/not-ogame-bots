@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.implicits._
 import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
 import not.ogame.bots._
+import not.ogame.bots.ordon.utils.{FleetSelector, ResourceSelector, Selector}
 
 object OrdonConfig {
   def getCredentials: Credentials = {
@@ -55,9 +56,9 @@ object OrdonConfig {
     )
   }
 
-  private def cargoFleetSelector: PlayerPlanet => FleetSelector[IO] = { playerPlanet =>
+  private def cargoFleetSelector: PlayerPlanet => FleetSelector = { playerPlanet =>
     if (playerPlanet == expeditionStartPlanet) {
-      new FleetSelector[IO](
+      new FleetSelector(
         filters = Map(
           Destroyer -> Selector.decreaseBy(6),
           EspionageProbe -> Selector.decreaseBy(50),
@@ -66,15 +67,15 @@ object OrdonConfig {
         )
       )
     } else {
-      new FleetSelector[IO]()
+      new FleetSelector()
     }
   }
 
-  private def cargoResourceSelector: PlayerPlanet => ResourceSelector[IO] = { playerPlanet =>
+  private def cargoResourceSelector: PlayerPlanet => ResourceSelector = { playerPlanet =>
     if (playerPlanet == expeditionStartPlanet) {
-      new ResourceSelector[IO](deuteriumSelector = Selector.decreaseBy(300_000))
+      new ResourceSelector(deuteriumSelector = Selector.decreaseBy(300_000))
     } else {
-      new ResourceSelector[IO]()
+      new ResourceSelector()
     }
   }
 
@@ -82,8 +83,8 @@ object OrdonConfig {
     new FlyAroundOgameAction[IO](
       speed = FleetSpeed.Percent10,
       targets = List(moon6, moon7),
-      fleetSelector = _ => new FleetSelector[IO](),
-      resourceSelector = _ => new ResourceSelector[IO]()
+      fleetSelector = _ => new FleetSelector(),
+      resourceSelector = _ => new ResourceSelector()
     )
   }
 
