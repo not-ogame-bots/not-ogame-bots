@@ -6,7 +6,7 @@ import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.{NonNegative, Positive}
+import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots.FleetSpeed.Percent100
 
 trait OgameDriverCreator[F[_]] {
@@ -246,6 +246,12 @@ object FleetMissionType extends Enum[FleetMissionType] {
   case object Colonization extends FleetMissionType
 
   case object Transport extends FleetMissionType
+
+  case object Attack extends FleetMissionType
+
+  case object Spy extends FleetMissionType
+
+  case object Destroy extends FleetMissionType
 
   case object Unknown extends FleetMissionType
 
