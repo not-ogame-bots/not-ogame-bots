@@ -17,16 +17,22 @@ object OrdonConfig {
     Credentials(credentials.head, credentials(1), credentials(2), credentials(3))
   }
 
+  class OgameConfig extends CargoProcessConfig with BattleProcessConfig {
+    override val expeditionMoon: PlayerPlanet = moon5
+    override val otherMoon: PlayerPlanet = moon4
+    override val fsPlanet: PlayerPlanet = planet6
+    override val fsMoon: PlayerPlanet = moon6
+    override val safeBufferInMinutes: Int = 5 //50
+    override val randomUpperLimitInSeconds: Int = 120 // 1
+  }
+
   def getInitialActions(implicit clock: LocalClock): IO[List[ScheduledAction[IO]]] = {
+    val configClass = new OgameConfig()
     val listOfActions = List(
-      //      new BuildShipsOgameAction[IO](ShipType.Cruiser, 2000, planet6, planets),
-      createFlyAroundActionCargo(moon4),
-      //      new DeployAndReturnOgameAction[IO](planet4, moon4),
-      //      new DeployAndReturnOgameAction[IO](planet5, moon5),
-      new DeployAndReturnOgameAction[IO](planet6, moon6),
-      //      new DeployAndReturnOgameAction[IO](planet6, moon6, safeBufferInMinutes = 50, randomUpperLimitInSeconds = 1),
-      //      new DeployAndReturnOgameAction[IO](planet7, moon7),
-      //      new DeployAndReturnOgameAction[IO](planet8, moon8),
+      new FsCargoProcess[IO](configClass).startAction(),
+      new FsBattleProcess[IO](configClass).startAction(),
+      //      createFlyAroundActionCargo(moon4),
+      //      new DeployAndReturnOgameAction[IO](planet6, moon6),
       createExpeditionAction,
       createKeepActiveAction,
       new AlertOgameAction[IO]()
