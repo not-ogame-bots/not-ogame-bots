@@ -15,7 +15,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
   def run(): Task[Unit] = {
     if (expeditionConfig.isOn) {
       taskExecutor
-        .readPlanets()
+        .readPlanetsAndMoons()
         .map(planets => planets.filter(p => expeditionConfig.eligiblePlanets.contains(p.id)))
         .flatMap(lookForFleet)
         .onError(e => Logger[Task].error(s"restarting expedition processor ${e.getMessage}"))
@@ -28,7 +28,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
   private def lookForFleet(planets: List[PlayerPlanet]): Task[Unit] = {
     for {
       fleets <- taskExecutor.readAllFleets()
-      expeditions = fleets.filter(fleet => isExpedition(planets, fleet))
+      expeditions = fleets.filter(fleet => isExpedition(fleet))
       returningExpeditions = expeditions.filter(_.isReturning)
       _ <- if (returningExpeditions.size < expeditionConfig.maxNumberOfExpeditions) {
         Logger[Task].info(
@@ -43,9 +43,8 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
     } yield ()
   }
 
-  private def isExpedition(planets: List[PlayerPlanet], fleet: Fleet) = {
-    fleet.fleetAttitude == FleetAttitude.Friendly && fleet.fleetMissionType == FleetMissionType.Expedition &&
-    planets.exists(p => p.coordinates == fleet.from)
+  private def isExpedition(fleet: Fleet) = {
+    fleet.fleetAttitude == FleetAttitude.Friendly && fleet.fleetMissionType == FleetMissionType.Expedition
   }
 
   private def sendExpedition(fromPlanet: PlayerPlanet): Task[ZonedDateTime] = {
@@ -72,7 +71,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
           SendFleetRequest(
             fromPlanet,
             SendFleetRequestShips.Ships(expeditionConfig.ships.map(s => s.shipType -> s.amount).toMap),
-            fromPlanet.coordinates.copy(position = 16),
+            fromPlanet.coordinates.copy(position = 16, coordinatesType = CoordinatesType.Planet),
             FleetMissionType.Expedition,
             FleetResources.Given(Resources.Zero)
           )

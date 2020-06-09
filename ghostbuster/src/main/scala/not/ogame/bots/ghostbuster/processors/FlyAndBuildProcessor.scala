@@ -15,7 +15,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
   def run(): Task[Unit] = {
     if (fsConfig.isOn) {
       taskExecutor
-        .readPlanets()
+        .readPlanetsAndMoons()
         .map(_.filter(p => fsConfig.eligiblePlanets.contains(p.id)))
         .flatMap(lookOnPlanets)
         .onError(e => Logger[Task].error(s"restarting fly processor ${e.getMessage}"))

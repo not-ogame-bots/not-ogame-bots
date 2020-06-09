@@ -42,21 +42,21 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, taskExecutor: TaskExecut
       to: PlayerPlanet,
       allMyFleets: List[MyFleet]
   ): Task[ZonedDateTime] = {
-    val expeditionsCount = allMyFleets.count(_.fleetMissionType == FleetMissionType.Expedition)
-    if (expeditionsCount < 5) { //TODO configurable
-      Task.pure(allMyFleets.map(_.arrivalTime).min) //TODO will fail if there is no fleets
-    } else {
-      thisMyFleet match {
-        case Some(fleet) if !fleet.isReturning => returnOrWait(fleet)
-        case Some(fleet) if fleet.isReturning  => Task.pure(fleet.arrivalTime.plus(3 seconds))
-        case None =>
-          new ResourceSelector[Task](deuteriumSelector = Selector.decreaseBy(config.remainDeuterAmount))
-            .selectResources(taskExecutor, from)
-            .flatMap { resources =>
-              send(from, to, resources) >> Task.pure(clock.now())
-            }
-      }
+//    val expeditionsCount = allMyFleets.count(_.fleetMissionType == FleetMissionType.Expedition)
+//    if (expeditionsCount < 5) { //TODO configurable
+//      Task.pure(allMyFleets.map(_.arrivalTime).min) //TODO will fail if there is no fleets
+//    } else {
+    thisMyFleet match {
+      case Some(fleet) if !fleet.isReturning => returnOrWait(fleet)
+      case Some(fleet) if fleet.isReturning  => Task.pure(fleet.arrivalTime.plus(3 seconds))
+      case None =>
+        new ResourceSelector[Task](deuteriumSelector = Selector.decreaseBy(config.remainDeuterAmount))
+          .selectResources(taskExecutor, from)
+          .flatMap { resources =>
+            send(from, to, resources) >> Task.pure(clock.now())
+          }
     }
+//    }
   }
 
   private def returnOrWait(fleet: MyFleet): Task[ZonedDateTime] = {
