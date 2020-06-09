@@ -31,7 +31,8 @@ class SendFleet(
       thisFleet = fleets
         .find(fleet => fleet.fleetMissionType == Deployment && fleet.from == from.coordinates && fleet.to == to.coordinates)
         .get
-    } yield thisFleet.arrivalTime
+      // There is an issue in ogame that fleet just after arrival is still on fleet list as returning. To avoid that 3 second delay was added.
+    } yield thisFleet.arrivalTime.plusSeconds(3)
 }
 
 trait SelectResources extends (FleetPageData => Resources)

@@ -20,3 +20,7 @@ abstract class SimpleOgameAction[T[_]: Monad] extends OgameAction[T] {
   final def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] =
     processSimple(ogame).map(resumeOn => List(ScheduledAction(resumeOn, nextAction)))
 }
+
+class EndAction[T[_]: Monad] extends OgameAction[T] {
+  override def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] = List[ScheduledAction[T]]().pure[T]
+}
