@@ -91,7 +91,7 @@ class MyFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) 
         (shipType, count)
       })
     })
-    value.filter(option => option.isDefined).map(option => option.get).toMap.withDefaultValue(0)
+    value.flatten.toMap.withDefaultValue(0)
   }
 
   private def getShipType(rowText: String): Option[ShipType] = {
@@ -99,7 +99,7 @@ class MyFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) 
   }
 
   private def nameOfShips(): Map[ShipType, String] = {
-    ShipType.values.map(shipType => (shipType, localizedNameOfAShipType(shipType))).toMap
+    ShipType.values.map(shipType => shipType -> localizedNameOfAShipType(shipType)).toMap
   }
 
   private def localizedNameOfAShipType(shipType: ShipType): String = {
