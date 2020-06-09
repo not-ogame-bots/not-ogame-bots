@@ -30,6 +30,7 @@ trait OgameDriver[F[_]] {
 
   def readFleetPage(planetId: PlanetId): F[FleetPageData]
 
+  @Deprecated
   def checkFleetOnPlanet(planetId: PlanetId): F[Map[ShipType, Int]]
 
   def readAllFleets(): F[List[Fleet]]
