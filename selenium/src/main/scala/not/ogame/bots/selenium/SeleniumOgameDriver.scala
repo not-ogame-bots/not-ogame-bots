@@ -372,4 +372,11 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       .map(_ => true)
       .handleError(_ => false)
   }
+
+  override def readMyOffers(): F[List[MyOffer]] = {
+    Sync[F].delay {
+      webDriver.get(s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=marketplace&tab=overview")
+      new MyOffersComponentReader(webDriver).readMyOffers()
+    }
+  }
 }

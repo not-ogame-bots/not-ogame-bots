@@ -44,6 +44,8 @@ trait OgameDriver[F[_]] {
   def readPlanets(): F[List[PlayerPlanet]]
 
   def checkIsLoggedIn(): F[Boolean]
+
+  def readMyOffers(): F[List[MyOffer]]
 }
 
 case class SuppliesPageData(
@@ -356,4 +358,23 @@ object Technology extends Enum[Technology] {
   case object Armor extends Technology
 
   val values: IndexedSeq[Technology] = findValues
+}
+
+case class MyOffer(
+    offerItemType: OfferItemType,
+    amount: Int,
+    priceItemType: OfferItemType,
+    price: Int
+)
+
+sealed trait OfferItemType extends EnumEntry
+
+object OfferItemType extends Enum[OfferItemType] {
+  case object Metal extends OfferItemType
+
+  case object Crystal extends OfferItemType
+
+  case object Deuterium extends OfferItemType
+
+  val values: IndexedSeq[OfferItemType] = findValues
 }
