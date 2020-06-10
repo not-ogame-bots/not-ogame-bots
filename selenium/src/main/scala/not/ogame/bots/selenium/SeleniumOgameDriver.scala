@@ -381,4 +381,13 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       new MyOffersComponentReader(webDriver).readMyOffers()
     }
   }
+
+  override def createOffer(planetId: PlanetId, newOffer: MyOffer): F[Unit] = {
+    Sync[F].delay {
+      webDriver.get(
+        s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=marketplace&tab=create_offer&cp=$planetId"
+      )
+      new CreateOfferComponentFiller(webDriver).createOffer(newOffer)
+    }
+  }
 }

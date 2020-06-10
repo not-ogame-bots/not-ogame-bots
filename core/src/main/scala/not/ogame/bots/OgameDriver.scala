@@ -46,6 +46,8 @@ trait OgameDriver[F[_]] {
   def checkIsLoggedIn(): F[Boolean]
 
   def readMyOffers(): F[List[MyOffer]]
+
+  def createOffer(planetId: PlanetId, newOffer: MyOffer): F[Unit]
 }
 
 case class SuppliesPageData(
