@@ -95,7 +95,7 @@ class MyFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) 
   }
 
   private def getShipType(rowText: String): Option[ShipType] = {
-    nameOfShips().find { case (_, shipName) => rowText.contains(shipName) }.map { case (shipType, _) => shipType }
+    nameOfShips().collectFirst { case (shipType, shipName) if rowText.contains(shipName) => shipType }
   }
 
   private def nameOfShips(): Map[ShipType, String] = {
