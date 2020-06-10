@@ -88,6 +88,7 @@ case class FleetPageData(
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
+    slots: FleetSlots,
     ships: Map[ShipType, Int]
 )
 
@@ -378,3 +379,12 @@ object OfferItemType extends Enum[OfferItemType] {
 
   val values: IndexedSeq[OfferItemType] = findValues
 }
+
+case class FleetSlots(
+    currentFleets: Int,
+    maxFleets: Int,
+    currentExpeditions: Int,
+    maxExpeditions: Int,
+    currentTradeFleets: Int,
+    maxTradeFleets: Int
+)

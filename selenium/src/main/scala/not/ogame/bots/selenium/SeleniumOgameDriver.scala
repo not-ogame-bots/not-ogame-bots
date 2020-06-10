@@ -287,12 +287,14 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       currentResources <- readCurrentResources
       currentProduction <- readCurrentProduction
       currentCapacity <- readCurrentCapacity
+      fleetSlots = new FleetDispatchComponentReader(webDriver).readSlots()
       ships <- readShips()
     } yield FleetPageData(
       clock.now(),
       currentResources,
       currentProduction,
       currentCapacity,
+      fleetSlots,
       ships
     )
 
