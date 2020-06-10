@@ -62,8 +62,8 @@ class FsBattleOgameAction[T[_]: Monad](
     for {
       myFleets <- ogame.readMyFleets()
       smallCargoFlying = countSmallCargoFlyingInCargoFleet(myFleets)
-      smallCargoOnExpeditionMoon <- ogame.checkFleetOnPlanet(expeditionMoon.id).map(_(SmallCargoShip))
-      smallCargoOnOtherMoon <- ogame.checkFleetOnPlanet(otherMoon.id).map(_(SmallCargoShip))
+      smallCargoOnExpeditionMoon <- ogame.readFleetPage(expeditionMoon.id).map(_.ships(SmallCargoShip))
+      smallCargoOnOtherMoon <- ogame.readFleetPage(otherMoon.id).map(_.ships(SmallCargoShip))
       totalSmallCargo = smallCargoFlying + smallCargoOnExpeditionMoon + smallCargoOnOtherMoon
       _ <- handleAmountOfSmallCargoInCargoFleet(ogame, totalSmallCargo)
     } yield clock.now()
