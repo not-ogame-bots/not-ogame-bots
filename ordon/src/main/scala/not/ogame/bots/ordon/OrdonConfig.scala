@@ -2,6 +2,7 @@ package not.ogame.bots.ordon
 
 import cats.effect.IO
 import cats.implicits._
+import not.ogame.bots.OfferItemType.{Crystal, Deuterium, Metal}
 import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
 import not.ogame.bots._
 import not.ogame.bots.ordon.utils.{FleetSelector, ResourceSelector, Selector}
@@ -24,6 +25,18 @@ object OrdonConfig {
     override val fsMoon: PlayerPlanet = moon6
     override val safeBufferInMinutes: Int = 5 //50
     override val randomUpperLimitInSeconds: Int = 120 // 1
+    override val expectedOffers: List[MyOffer] = List(
+      MyOffer(Metal, 1_000_000, Deuterium, 280_000),
+      MyOffer(Metal, 1_000_000, Deuterium, 280_000),
+      MyOffer(Metal, 1_000_000, Deuterium, 280_000),
+      MyOffer(Metal, 1_000_000, Deuterium, 280_000),
+      MyOffer(Metal, 1_000_000, Deuterium, 280_000),
+      MyOffer(Metal, 1_000_000, Crystal, 420_000),
+      MyOffer(Metal, 1_000_000, Crystal, 420_000),
+      MyOffer(Metal, 5_000_000, Deuterium, 1_400_000),
+      MyOffer(Metal, 5_000_000, Deuterium, 1_400_000),
+      MyOffer(Metal, 5_000_000, Deuterium, 1_400_000)
+    )
   }
 
   def getInitialActions(implicit clock: LocalClock): IO[List[ScheduledAction[IO]]] = {

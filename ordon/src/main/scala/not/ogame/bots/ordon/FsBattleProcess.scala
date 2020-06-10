@@ -75,7 +75,7 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
 
   class HandleFleetOnFsPlanet extends OgameAction[T] {
     override def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] =
-      List(new SendMissingSmallCargoToExpeditionMoon(), new SendFleetToFsMoon())
+      List(new SendMissingSmallCargoToExpeditionMoon(), new PutOffersToMarketplaceOgameAction(), new SendFleetToFsMoon())
         .map(action => ScheduledAction(clock.now(), action))
         .pure[T]
   }
@@ -124,6 +124,27 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
   private def isFormFsPlanetToExpeditionMoon(fleet: MyFleet): Boolean = {
     fleet.from == config.fsPlanet.coordinates && fleet.to == config.expeditionMoon.coordinates
   }
+
+  class PutOffersToMarketplaceOgameAction()(implicit clock: LocalClock) extends SimpleOgameAction[T] {
+    override def nextAction: OgameAction[T] = new EndAction[T]()
+
+    override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] =
+      for {
+        myOffers <- ogame.readMyOffers()
+        missingOffers = config.expectedOffers diff myOffers
+        fleetPage <- ogame.readFleetPage(config.fsPlanet.id)
+        freeTradeSlots = fleetPage.slots.maxTradeFleets - fleetPage.slots.currentTradeFleets
+        offersToPlace = missingOffers.take(freeTradeSlots)
+        _ <- oneAfterOther(offersToPlace.map(newOffer => ogame.createOffer(config.fsPlanet.id, newOffer)))
+      } yield clock.now()
+
+    private def oneAfterOther(actions: List[T[Unit]]): T[Unit] = {
+      val unitT: T[Unit] = ().pure[T]
+      actions.fold(unitT) { (a: T[Unit], b: T[Unit]) =>
+        a.flatMap(_ => b)
+      }
+    }
+  }
 }
 
 trait BattleProcessConfig {
@@ -133,4 +154,5 @@ trait BattleProcessConfig {
   val otherMoon: PlayerPlanet
   val safeBufferInMinutes: Int
   val randomUpperLimitInSeconds: Int
+  val expectedOffers: List[MyOffer]
 }
