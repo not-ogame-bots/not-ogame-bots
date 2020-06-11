@@ -33,6 +33,12 @@ class MyOffersComponentReaderSpec extends munit.FunSuite {
     assertEquals(sixth.price, 420_000)
   }
 
+  driverFixture.test("Should read empty offers list") { driver =>
+    driver.get(getClass.getResource("/my_offers_component_reader/no_my_offers.html").toURI.toString)
+    val myOffers = testRead(driver)
+    assertEquals(myOffers.size, 0)
+  }
+
   private def testRead(driver: WebDriver): List[MyOffer] =
     new MyOffersComponentReader(driver).readMyOffers()
 }

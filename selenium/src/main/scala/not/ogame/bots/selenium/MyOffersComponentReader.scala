@@ -7,8 +7,9 @@ import org.openqa.selenium.{By, WebDriver, WebElement}
 
 class MyOffersComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) {
   def readMyOffers(): List[MyOffer] = {
-    webDriver.waitForElement(By.className("items"))
-    val items = webDriver.findElement(By.className("items")).findElementsS(By.className("item"))
+    val itemsBox = webDriver.findElement(By.className("items"))
+    webDriver.waitForElement(By.className("info"))
+    val items = itemsBox.findElementsS(By.className("item"))
     items.map(item => readMyOffer(item))
   }
 
