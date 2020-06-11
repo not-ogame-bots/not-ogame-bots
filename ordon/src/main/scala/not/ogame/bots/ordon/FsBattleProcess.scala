@@ -75,8 +75,11 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
 
   class HandleFleetOnFsPlanet extends OgameAction[T] {
     override def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] =
-      List(new SendMissingSmallCargoToExpeditionMoon(), new PutOffersToMarketplaceOgameAction(), new SendFleetToFsMoon())
-        .map(action => ScheduledAction(clock.now(), action))
+      List(
+        new SendMissingSmallCargoToExpeditionMoon(),
+        new PutOffersToMarketplaceOgameAction(),
+        new SendFleetToFsMoon()
+      ).map(action => ScheduledAction(clock.now(), action))
         .pure[T]
   }
 
@@ -98,7 +101,7 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
       new SendFleet(
         from = config.fsPlanet,
         to = config.expeditionMoon,
-        selectShips = _ => Map((SmallCargoShip, smallCargoToSend)),
+        selectShips = _ => Map(SmallCargoShip -> smallCargoToSend),
         selectResources = _ => Resources(0, 0, 0)
       )
 
@@ -107,8 +110,12 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
         myFleets <- ogame.readMyFleets()
         cargoFleets = myFleets.filter(fleet => isCargoFleet(fleet))
         flyingCargoShips = cargoFleets.map(fleet => fleet.ships(SmallCargoShip)).sum
-        shouldSendMissingCargoShips = cargoFleets.nonEmpty && flyingCargoShips < 20_000
-        endTime <- if (shouldSendMissingCargoShips) sendFleet(20_000 - flyingCargoShips).sendDeployment(ogame) else clock.now().pure[T]
+        fleetPageOnExpeditionMoon <- ogame.readFleetPage(config.expeditionMoon.id)
+        fleetPageOnOtherMoon <- ogame.readFleetPage(config.otherMoon.id)
+        waitingCargoShips = fleetPageOnExpeditionMoon.ships(SmallCargoShip) + fleetPageOnOtherMoon.ships(SmallCargoShip)
+        cargoShipsCount = waitingCargoShips + flyingCargoShips
+        shouldSendMissingCargoShips = cargoFleets.nonEmpty && cargoShipsCount < 20_000
+        endTime <- if (shouldSendMissingCargoShips) sendFleet(20_000 - cargoShipsCount).sendDeployment(ogame) else clock.now().pure[T]
       } yield endTime
 
     private def isCargoFleet(fleet: MyFleet): Boolean = {
@@ -135,6 +142,8 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
         fleetPage <- ogame.readFleetPage(config.fsPlanet.id)
         freeTradeSlots = fleetPage.slots.maxTradeFleets - fleetPage.slots.currentTradeFleets
         offersToPlace = missingOffers.take(freeTradeSlots)
+        _ = println(myOffers)
+        _ = println(offersToPlace)
         _ <- oneAfterOther(offersToPlace.map(newOffer => ogame.createOffer(config.fsPlanet.id, newOffer)))
       } yield clock.now()
 

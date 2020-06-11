@@ -55,9 +55,9 @@ object OrdonConfig {
 
   private def createExpeditionAction(implicit clock: LocalClock): ExpeditionOgameAction[IO] = {
     new ExpeditionOgameAction[IO](
-      maxNumberOfExpeditions = 6,
+      maxNumberOfExpeditions = 7,
       startPlanet = expeditionStartPlanet,
-      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 670, EspionageProbe -> 1),
+      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 655, EspionageProbe -> 1),
       targetCoordinates = Coordinates(3, 133, 16)
     )
   }
