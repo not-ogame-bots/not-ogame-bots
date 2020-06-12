@@ -59,7 +59,7 @@ lazy val facts: Project = (project in file("facts"))
 
 lazy val dockerSettings = Seq(
   dockerExposedPorts := Seq(8080),
-  dockerBaseImage := "notogamebots:core",
+  dockerBaseImage := "selenium/standalone-firefox",
   dockerUsername := Some("notogamebots"),
   packageName in Docker := "ghostbot",
   dockerCommands := {
