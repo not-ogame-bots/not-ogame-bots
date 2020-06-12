@@ -24,6 +24,7 @@ import not.ogame.bots.selenium.SeleniumOgameDriverCreator
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.syntax.kleisli._
+import org.openqa.selenium.firefox.FirefoxOptions
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import pureconfig.module.enumeratum._
@@ -53,7 +54,7 @@ object Main extends StrictLogging {
   private def app(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = { //TODO restart after 1 hour
     val httpStateExposer = new StatusEndpoint(state)
     (for {
-      selenium <- new SeleniumOgameDriverCreator[Task]().create(credentials)
+      selenium <- new SeleniumOgameDriverCreator[Task](new FirefoxOptions()).create(credentials)
       firebase <- FirebaseResource.create(SettingsDirectory)
       _ <- httpServer(httpStateExposer.getStatus)
     } yield (selenium, firebase))

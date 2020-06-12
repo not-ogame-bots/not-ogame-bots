@@ -1,3 +1,4 @@
+import com.typesafe.sbt.packager.docker.ExecCmd
 import sbt.Keys.libraryDependencies
 
 val seleniumVersion = "3.141.59"
@@ -56,8 +57,37 @@ lazy val facts: Project = (project in file("facts"))
   .settings(name := "facts")
   .dependsOn(core)
 
+lazy val dockerSettings = Seq(
+  dockerExposedPorts := Seq(8080),
+  dockerBaseImage := "notogamebots:core",
+  dockerUsername := Some("notogamebots"),
+  packageName in Docker := "ghostbot",
+  dockerCommands := {
+    dockerCommands.value.flatMap {
+      case ep @ ExecCmd("ENTRYPOINT", _*) =>
+        Seq(
+          ExecCmd("ENTRYPOINT", "/opt/docker/docker-entrypoint.sh" :: ep.args.toList: _*)
+        )
+      case other => Seq(other)
+    }
+  },
+  mappings in Docker ++= {
+    val scriptDir = baseDirectory.value / "scripts"
+    val entrypointScript = scriptDir / "docker-entrypoint.sh"
+    val entrypointScriptTargetPath = "/opt/docker/docker-entrypoint.sh"
+    Seq(
+      entrypointScript -> entrypointScriptTargetPath,
+      baseDirectory.value / "../selenium/geckodriver" -> "/opt/docker/selenium/geckodriver"
+    )
+  },
+  dockerUpdateLatest := true
+)
+
 lazy val ghostbuster: Project = (project in file("ghostbuster"))
+  .enablePlugins(DockerPlugin)
+  .enablePlugins(JavaServerAppPackaging)
   .settings(commonSettings)
+  .settings(dockerSettings)
   .settings(
     name := "ghostbuster",
     libraryDependencies ++= Seq(
