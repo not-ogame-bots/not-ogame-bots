@@ -3,24 +3,28 @@ package not.ogame.bots.ghostbuster.executor
 import java.time.ZonedDateTime
 import java.util.UUID
 
+import cats.effect.concurrent.MVar
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
+import monix.eval.Task
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.PlanetFleet
 
-sealed trait Action[T] {
-  def uuid: UUID
-  def defer(any: Any): T = any.asInstanceOf[T]
-  def success(value: T): Response = Response.Success(value, uuid)
-  def failure(throwable: Throwable): Response = Response.Failure(throwable, uuid)
+case class Request[T](action: Task[T], response: MVar[Task, Response[T]])
+object Request {
+  def apply[T](action: Task[T]): Task[Request[T]] = {
+    MVar.empty[Task, Response[T]].map(new Request[T](action, _))
+  }
 }
 
-sealed trait Response {
-  def uuid: UUID
-}
+sealed trait Action[T]
+
+sealed trait Response[T]
 object Response {
-  case class Success(value: Any, uuid: UUID) extends Response
-  case class Failure(ex: Throwable, uuid: UUID) extends Response
+  case class Success[T](value: T) extends Response[T]
+  case class Failure[T](ex: Throwable) extends Response[T]
+
+  def success[T](t: T): Response[T] = Success(t)
 }
 
 object Action {

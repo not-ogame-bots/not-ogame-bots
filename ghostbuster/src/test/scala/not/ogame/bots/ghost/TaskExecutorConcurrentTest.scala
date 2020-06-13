@@ -5,8 +5,10 @@ import java.time.ZonedDateTime
 import com.typesafe.scalalogging.StrictLogging
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
+import monix.execution.atomic.AtomicInt
 import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
 import not.ogame.bots._
+import scala.concurrent.duration._
 
 class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
   (0 to 100).foreach { i =>
@@ -35,15 +37,16 @@ class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
         override def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): Task[Unit] =
           Task.eval(())
 
-        var i = 0
+        val counter = AtomicInt(0)
 
         override def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): Task[Unit] = {
-          if (i == 0) {
-            i = i + 1
-            Task.raiseError(new RuntimeException("asd"))
-          } else {
-            Task.eval(())
-          }
+          Task.eval(println(s"counter = ${counter.get()}")) >>
+            (if (counter.get() == 0) {
+               Task.eval(counter.increment()) >>
+                 Task.raiseError(new RuntimeException("asd"))
+             } else {
+               Task.eval(())
+             })
         }
 
         override def readAllFleets(): Task[List[Fleet]] = Task.eval(List.empty)
