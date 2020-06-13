@@ -296,13 +296,6 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       ships
     )
 
-  def checkFleetOnPlanet(planetId: PlanetId): F[Map[ShipType, Int]] = {
-    for {
-      _ <- webDriver.safeUrlF(getFleetDispatchUrl(credentials, planetId))
-      result <- readShips()
-    } yield result
-  }
-
   private def readShips(): F[Map[ShipType, Int]] = {
     for {
       technologies <- webDriver.findMany(By.id("technologies"))

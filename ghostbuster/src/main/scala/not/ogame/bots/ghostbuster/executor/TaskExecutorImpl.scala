@@ -109,9 +109,9 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
           .map(fp => a.success(fp))
       case a @ Action.RefreshFleetOnPlanetStatus(planet, _) =>
         ogameDriver
-          .checkFleetOnPlanet(planet.id)
-          .flatTap(fleet => Task.fromFuture(notifications.onNext(Notification.FleetOnPlanetRefreshed(PlanetFleet(planet, fleet)))))
-          .map(f => a.success(PlanetFleet(planet, f)))
+          .readFleetPage(planet.id)
+          .flatTap(fleet => Task.fromFuture(notifications.onNext(Notification.FleetOnPlanetRefreshed(fleet, planet))))
+          .map(f => a.success(PlanetFleet(planet, f.ships)))
       case a @ Action.BuildShip(amount, shipType, planet, _) =>
         ogameDriver
           .buildShips(planet.id, shipType, amount)
