@@ -75,7 +75,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
             FleetMissionType.Expedition,
             FleetResources.Given(Resources.Zero)
           )
-        )
+        ) >> Logger[Task].info("Fleet sent")
   }
   private def lookForFleetOnPlanets(planets: List[PlayerPlanet], allFleets: List[Fleet]) = {
     Stream
