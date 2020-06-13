@@ -8,7 +8,6 @@ import monix.reactive.Consumer
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.executor.Notification
 import not.ogame.bots.ghostbuster.{EscapeConfig, FLogger}
-import scala.concurrent.duration._
 
 class EscapeFleetProcessor(taskExecutor: TaskExecutor, escapeConfig: EscapeConfig)(implicit clock: LocalClock) extends FLogger {
   def run(): Task[Unit] = {
@@ -24,15 +23,17 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, escapeConfig: EscapeConfi
     processFleets(planets, fleets)
       .flatMap(
         dateTime =>
-          Task.raceMany(
-            List(
-              taskExecutor.waitTo(dateTime) >> Logger[Task].info("Reading fleets normally") >> taskExecutor.readAllFleets(),
+          Task
+            .race(
+              taskExecutor.waitTo(dateTime) >> Logger[Task].info("Reading fleets normally"),
               taskExecutor.subscribeToNotifications
-                .delayOnNext(1 seconds)
                 .collect { case n: Notification.ReadAllFleets => n.value }
                 .consumeWith(Consumer.head) <* Logger[Task].info("Used fleets from notification")
             )
-          )
+            .flatMap {
+              case Left(_)      => taskExecutor.readAllFleets()
+              case Right(value) => Task.pure(value)
+            }
       )
       .flatMap(newFleets => loop(newFleets, planets))
   }
