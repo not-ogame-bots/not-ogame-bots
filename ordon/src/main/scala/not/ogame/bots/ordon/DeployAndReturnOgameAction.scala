@@ -19,7 +19,7 @@ class DeployAndReturnOgameAction[T[_]: Monad](
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] =
     for {
       allMyFleets <- ogame.readMyFleets()
-      thisMyFleet = allMyFleets.find(isThisMyFleet)
+      thisMyFleet = allMyFleets.fleets.find(isThisMyFleet)
       resumeOn <- processMyFleet(ogame, thisMyFleet)
     } yield resumeOn
 

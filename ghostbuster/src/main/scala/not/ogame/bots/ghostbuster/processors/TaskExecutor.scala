@@ -11,7 +11,7 @@ import not.ogame.bots.ghostbuster.PlanetFleet
 import not.ogame.bots.ghostbuster.executor.Notification
 
 trait TaskExecutor {
-  def readMyFleets(): Task[List[MyFleet]]
+  def readMyFleets(): Task[MyFleetPageData]
 
   def returnFleet(fleetId: FleetId): Task[ZonedDateTime]
 

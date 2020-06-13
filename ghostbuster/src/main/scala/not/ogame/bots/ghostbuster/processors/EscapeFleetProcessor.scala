@@ -85,7 +85,7 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, escapeConfig: EscapeConfi
       _ <- taskExecutor.waitTo(attackTime)
       _ <- Logger[Task].info("Looking for escaped fleet...")
       myFleets <- taskExecutor.readMyFleets()
-      escapedFleet = myFleets.find(
+      escapedFleet = myFleets.fleets.find(
         f => f.from == planetUnderAttack.coordinates && f.to == escapeConfig.target && f.fleetMissionType == missionType
       )
       _ <- escapedFleet match {

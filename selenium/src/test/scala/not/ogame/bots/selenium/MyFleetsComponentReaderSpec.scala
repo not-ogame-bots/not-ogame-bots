@@ -21,7 +21,8 @@ class MyFleetsComponentReaderSpec extends munit.FunSuite with GecoDriver {
 
   driverFixture.test("Should read my fleets list") { driver =>
     driver.get(getClass.getResource("/my_fleets_component_reader/my_fleets.html").toURI.toString)
-    val allFleets = testReadAllFleets(driver)
+    val myFleetPage = testReadAllFleets(driver)
+    val allFleets = myFleetPage.fleets
     assertEquals(allFleets.size, 7)
     val firstFleet = allFleets.head
     assertEquals(firstFleet.fleetId, FleetId.apply("fleet2075500"))
@@ -41,8 +42,12 @@ class MyFleetsComponentReaderSpec extends munit.FunSuite with GecoDriver {
     assertEquals(lastFleet.ships(LightFighter), 13766)
     assertEquals(lastFleet.ships(Destroyer), 3172)
     assertEquals(lastFleet.ships(LargeCargoShip), 0)
+    assertEquals(myFleetPage.fleetSlots.currentFleets, 7)
+    assertEquals(myFleetPage.fleetSlots.maxFleets, 14)
+    assertEquals(myFleetPage.fleetSlots.currentExpeditions, 6)
+    assertEquals(myFleetPage.fleetSlots.maxExpeditions, 6)
   }
 
-  private def testReadAllFleets(driver: WebDriver): List[MyFleet] =
+  private def testReadAllFleets(driver: WebDriver): MyFleetPageData =
     new MyFleetsComponentReader(driver).readMyFleets()
 }
