@@ -9,9 +9,9 @@ import not.ogame.bots.ghostbuster.FLogger
 import not.ogame.bots.ghostbuster.executor.Notification
 import not.ogame.bots.ghostbuster.infrastructure.{FCMService, PushNotificationRequest}
 import not.ogame.bots.ghostbuster.processors.TaskExecutor
-import not.ogame.bots.{Fleet, FleetAttitude, FleetMissionType}
+import not.ogame.bots.{Fleet, FleetAttitude, FleetMissionType, LocalClock}
 
-class HostileFleetReporter(fcmService: FCMService[Task], taskExecutor: TaskExecutor) extends FLogger {
+class HostileFleetReporter(fcmService: FCMService[Task], taskExecutor: TaskExecutor)(implicit clock: LocalClock) extends FLogger {
   private implicit val uEq: Eq[Fleet] = Eq.fromUniversalEquals
 
   def run(): Task[Unit] = {
@@ -20,7 +20,7 @@ class HostileFleetReporter(fcmService: FCMService[Task], taskExecutor: TaskExecu
         case Notification.ReadAllFleets(fleets) =>
           fleets.filter(
             f =>
-              f.fleetAttitude == FleetAttitude.Hostile && f.fleetMissionType == FleetMissionType.Destroy || f.fleetMissionType == FleetMissionType.Attack
+              f.fleetAttitude == FleetAttitude.Hostile && (f.fleetMissionType == FleetMissionType.Destroy || f.fleetMissionType == FleetMissionType.Attack)
           )
       }
       .distinctUntilChanged
@@ -30,7 +30,7 @@ class HostileFleetReporter(fcmService: FCMService[Task], taskExecutor: TaskExecu
           fcmService.sendMessageWithoutData(
             PushNotificationRequest(
               "Attention",
-              s"My Imperator, a hostile fleet has been detected. It will arrive at ${fleet.arrivalTime}",
+              s"${clock.now()} My Imperator, a hostile fleet has been detected. It will arrive at ${fleet.arrivalTime}",
               "attacks",
               null
             )
