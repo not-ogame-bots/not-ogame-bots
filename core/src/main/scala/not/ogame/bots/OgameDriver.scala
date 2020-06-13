@@ -41,6 +41,10 @@ trait OgameDriver[F[_]] {
   def readPlanets(): F[List[PlayerPlanet]]
 
   def checkIsLoggedIn(): F[Boolean]
+
+  def readMyOffers(): F[List[MyOffer]]
+
+  def createOffer(planetId: PlanetId, newOffer: MyOffer): F[Unit]
 }
 
 case class SuppliesPageData(
@@ -83,6 +87,7 @@ case class FleetPageData(
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
+    slots: FleetSlots,
     ships: Map[ShipType, Int]
 )
 
@@ -354,3 +359,31 @@ object Technology extends Enum[Technology] {
 
   val values: IndexedSeq[Technology] = findValues
 }
+
+case class MyOffer(
+    offerItemType: OfferItemType,
+    amount: Int,
+    priceItemType: OfferItemType,
+    price: Int
+)
+
+sealed trait OfferItemType extends EnumEntry
+
+object OfferItemType extends Enum[OfferItemType] {
+  case object Metal extends OfferItemType
+
+  case object Crystal extends OfferItemType
+
+  case object Deuterium extends OfferItemType
+
+  val values: IndexedSeq[OfferItemType] = findValues
+}
+
+case class FleetSlots(
+    currentFleets: Int,
+    maxFleets: Int,
+    currentExpeditions: Int,
+    maxExpeditions: Int,
+    currentTradeFleets: Int,
+    maxTradeFleets: Int
+)

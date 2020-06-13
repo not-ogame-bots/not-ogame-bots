@@ -287,12 +287,14 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       currentResources <- readCurrentResources
       currentProduction <- readCurrentProduction
       currentCapacity <- readCurrentCapacity
+      fleetSlots = new FleetDispatchComponentReader(webDriver).readSlots()
       ships <- readShips()
     } yield FleetPageData(
       clock.now(),
       currentResources,
       currentProduction,
       currentCapacity,
+      fleetSlots,
       ships
     )
 
@@ -364,5 +366,21 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials)(implicit webDriv
       .waitForElementF(By.className("OGameClock"))
       .map(_ => true)
       .handleError(_ => false)
+  }
+
+  override def readMyOffers(): F[List[MyOffer]] = {
+    Sync[F].delay {
+      webDriver.get(s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=marketplace&tab=overview")
+      new MyOffersComponentReader(webDriver).readMyOffers()
+    }
+  }
+
+  override def createOffer(planetId: PlanetId, newOffer: MyOffer): F[Unit] = {
+    Sync[F].delay {
+      webDriver.get(
+        s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=marketplace&tab=create_offer&cp=$planetId"
+      )
+      new CreateOfferComponentFiller(webDriver).createOffer(newOffer)
+    }
   }
 }
