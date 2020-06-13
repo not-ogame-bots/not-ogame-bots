@@ -3,8 +3,9 @@ package not.ogame.bots.ghostbuster.api
 import io.circe.{Decoder, Encoder, HCursor, Json, KeyDecoder, KeyEncoder}
 import not.ogame.bots.{Coordinates, CoordinatesType, FacilityBuilding, FleetAttitude, FleetMissionType, ShipType, SuppliesBuilding}
 import com.softwaremill.tagging._
+import io.circe.generic.AutoDerivation
 
-trait JsonCodecs {
+trait JsonCodecs extends AutoDerivation {
   implicit val coordinatesTypeEncoder: Encoder[CoordinatesType] = (a: CoordinatesType) => Json.fromString(a.entryName)
   implicit val coordinatesTypeDecoder: Decoder[CoordinatesType] = (c: HCursor) =>
     c.as[String].map { text =>

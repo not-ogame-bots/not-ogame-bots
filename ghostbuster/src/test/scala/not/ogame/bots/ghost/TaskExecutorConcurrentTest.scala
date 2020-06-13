@@ -51,7 +51,7 @@ class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
 
         override def readAllFleets(): Task[List[Fleet]] = Task.eval(List.empty)
 
-        override def readMyFleets(): Task[List[MyFleet]] = Task.eval(List.empty)
+        override def readMyFleets(): Task[MyFleetPageData] = Task.eval(MyFleetPageData(List.empty, MyFleetSlots(0, 0, 0, 0)))
 
         override def sendFleet(sendFleetRequest: SendFleetRequest): Task[Unit] = Task.eval(())
 
@@ -62,10 +62,16 @@ class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
         override def checkIsLoggedIn(): Task[Boolean] = Task.eval(true)
 
         override def readFleetPage(planetId: PlanetId): Task[FleetPageData] =
-          Task.eval(FleetPageData(ZonedDateTime.now(), Resources.Zero, Resources.Zero, Resources.Zero, Map.empty))
+          Task.eval(
+            FleetPageData(ZonedDateTime.now(), Resources.Zero, Resources.Zero, Resources.Zero, FleetSlots(0, 0, 0, 0, 0, 0), Map.empty)
+          )
 
         override def subscribeToNotifications: Observable[Notification] = ???
-      }, new RealLocalClock())
+
+        override def readMyOffers(): Task[List[MyOffer]] = ???
+
+        override def createOffer(planetId: PlanetId, newOffer: MyOffer): Task[Unit] = ???
+      })(new RealLocalClock())
 
       executor.run().runToFuture
       Task

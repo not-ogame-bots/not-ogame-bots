@@ -17,7 +17,7 @@ import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet, processors}
 
 import scala.concurrent.duration._
 
-class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware, clock: LocalClock)
+class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware)(implicit clock: LocalClock)
     extends TaskExecutor
     with FLogger
     with StrictLogging {

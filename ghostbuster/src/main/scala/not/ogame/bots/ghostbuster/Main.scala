@@ -8,7 +8,8 @@ import monix.eval.Task
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.api.StatusEndpoint
+import not.ogame.bots.ghostbuster.actions.CollectResourcesAction
+import not.ogame.bots.ghostbuster.api.{CollectResourcesEndpoint, StatusEndpoint}
 import not.ogame.bots.ghostbuster.executor.{OgameNotificationDecorator, TaskExecutorImpl}
 import not.ogame.bots.ghostbuster.infrastructure.{FCMService, FirebaseResource}
 import not.ogame.bots.ghostbuster.processors.{
@@ -52,17 +53,19 @@ object Main extends StrictLogging {
       .runSyncUnsafe()
   }
 
-  private def app(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = { //TODO restart after 1 hour
+  private def app(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = {
     val httpStateExposer = new StatusEndpoint(state)
     (for {
       selenium <- new SeleniumOgameDriverCreator[Task](new OgameUrlProvider(credentials), new FirefoxOptions()).create(credentials)
       firebase <- FirebaseResource.create(SettingsDirectory)
-      _ <- httpServer(httpStateExposer.getStatus)
-    } yield (new OgameNotificationDecorator(selenium), firebase))
+      decoratedDriver = new OgameNotificationDecorator(selenium)
+      taskExecutor = new TaskExecutorImpl(decoratedDriver)
+      collectingEndpoint = new CollectResourcesEndpoint(new CollectResourcesAction(taskExecutor))
+      _ <- httpServer(List(httpStateExposer.getStatus, collectingEndpoint.collectEndpoint))
+    } yield (taskExecutor, firebase))
       .use {
-        case (ogame, firebase) =>
+        case (taskExecutor, firebase) =>
           val fcmService = new FCMService[Task](firebase)
-          val taskExecutor = new TaskExecutorImpl(ogame, clock)
           val stateAgg = new StateAggregator(state, taskExecutor)
           val hostileFleetReporter = new HostileFleetReporter(fcmService, taskExecutor)
           val builder = new Builder(taskExecutor, botConfig.wishlist)
@@ -92,11 +95,11 @@ object Main extends StrictLogging {
       }
   }
 
-  private def httpServer(endpoint: ServerEndpoint[Unit, Unit, State, Nothing, Task]) = {
+  private def httpServer(endpoints: List[ServerEndpoint[_, _, _, Nothing, Task]]) = {
     BlazeServerBuilder[Task](Scheduler.io())
       .bindHttp(8080, "0.0.0.0")
       .withHttpApp(
-        Router("/" -> endpoint.toRoutes).orNotFound
+        Router("/" -> endpoints.toRoutes).orNotFound
       )
       .resource
       .void
