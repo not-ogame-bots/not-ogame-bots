@@ -3,12 +3,13 @@ package not.ogame.bots.ghostbuster.processors
 import java.time.ZonedDateTime
 
 import cats.implicits._
+import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.{FLogger, FsConfig, PlanetFleet}
-import fs2.Stream
-import scala.concurrent.duration.{FiniteDuration, _}
+
+import scala.concurrent.duration._
 
 class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, builder: Builder)(implicit clock: LocalClock) extends FLogger {
   def run(): Task[Unit] = {
@@ -40,8 +41,9 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
   }
 
   private def isFsFleet(planets: List[PlayerPlanet], f: Fleet) = {
-    f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Deployment && planets
-      .exists(p => p.coordinates == f.to) && planets.exists(p => p.coordinates == f.from)
+    val eligiblePlanets = fsConfig.eligiblePlanets.map(pId => planets.find(_.id == pId).get)
+    f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Deployment && eligiblePlanets
+      .exists(p => p.coordinates == f.to) && eligiblePlanets.exists(p => p.coordinates == f.from)
   }
 
   private def lookOnPlanets(planets: List[PlayerPlanet]): Task[Unit] = {
