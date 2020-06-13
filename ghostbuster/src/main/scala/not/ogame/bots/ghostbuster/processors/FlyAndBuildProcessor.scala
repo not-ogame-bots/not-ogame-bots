@@ -87,7 +87,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
       _ <- Logger[Task].info("Sending fleet...")
       suppliesPageData <- taskExecutor.readSupplyPage(from)
       arrivalTime <- if (suppliesPageData.currentResources.deuterium >= fsConfig.deuterThreshold) {
-        sendFleetImpl(from, to)
+        sendFleetImpl(from, to).flatTap(_ => Logger[Task].info("Fleet sent"))
       } else {
         val missingDeuter = fsConfig.deuterThreshold - suppliesPageData.currentResources.deuterium
         val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium

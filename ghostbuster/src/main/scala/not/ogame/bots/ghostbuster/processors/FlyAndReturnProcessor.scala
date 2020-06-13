@@ -29,7 +29,7 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, taskExecutor: TaskExecut
     for {
       allMyFleets <- taskExecutor.readMyFleets()
       thisMyFleet = allMyFleets.find(isThisMyFleet(_, from, to))
-      nextStepTime <- processMyFleet(thisMyFleet, from, to, allMyFleets)
+      nextStepTime <- processMyFleet(thisMyFleet, from, to)
       _ <- Logger[Task].info(s"Waiting to next step til $nextStepTime")
       _ <- taskExecutor.waitTo(nextStepTime)
       _ <- loop(from, to)
@@ -39,29 +39,27 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, taskExecutor: TaskExecut
   private def processMyFleet(
       thisMyFleet: Option[MyFleet],
       from: PlayerPlanet,
-      to: PlayerPlanet,
-      allMyFleets: List[MyFleet]
+      to: PlayerPlanet
   ): Task[ZonedDateTime] = {
-//    val expeditionsCount = allMyFleets.count(_.fleetMissionType == FleetMissionType.Expedition)
-//    if (expeditionsCount < 5) { //TODO configurable
-//      Task.pure(allMyFleets.map(_.arrivalTime).min) //TODO will fail if there is no fleets
-//    } else {
     thisMyFleet match {
-      case Some(fleet) if !fleet.isReturning => returnOrWait(fleet)
-      case Some(fleet) if fleet.isReturning  => Task.pure(fleet.arrivalTime.plus(3 seconds))
+      case Some(fleet) if !fleet.isReturning =>
+        Logger[Task].info(s"Found non-returning fleet: ${pprint.apply(fleet)}") >> returnOrWait(fleet)
+      case Some(fleet) if fleet.isReturning =>
+        Logger[Task].info(s"Found returning fleet ${pprint.apply(fleet)}") >> Task.pure(fleet.arrivalTime.plus(3 seconds))
       case None =>
+        Logger[Task].info(s"Fleet is on planet $from. Sending fleet to $to")
         new ResourceSelector[Task](deuteriumSelector = Selector.decreaseBy(config.remainDeuterAmount))
           .selectResources(taskExecutor, from)
           .flatMap { resources =>
             send(from, to, resources) >> Task.pure(clock.now())
           }
     }
-//    }
   }
 
   private def returnOrWait(fleet: MyFleet): Task[ZonedDateTime] = {
     if (isCloseToArrival(fleet)) {
-      taskExecutor.returnFleet(fleet.fleetId)
+      Logger[Task].info("Returning fleet!") >>
+        taskExecutor.returnFleet(fleet.fleetId)
     } else {
       Task.pure(chooseTimeWhenClickReturn(fleet))
     }
