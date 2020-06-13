@@ -5,26 +5,26 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots._
+import org.openqa.selenium.firefox.FirefoxOptions
 
 import scala.concurrent.ExecutionContext
 
 class TechnologyPageDataSpec extends CatsEffectSuite with CatsEffectFunFixtures with GecoDriver {
   implicit val clock: LocalClock = new RealLocalClock()
   private val driverFixture = CatsEffectFixture.fromResource(
-    new SeleniumOgameDriverCreator[IO].create(
-      Credentials("", "", "", ""),
-      new UrlProvider {
-        override def universeListUrl: String = ???
-        override def getFleetDispatchUrl(planetId: String): String = ???
-        override def suppliesPageUrl(planetId: String): String = ???
-        override def facilitiesPageUrl(planetId: String): String = ???
-        override def getShipyardUrl(planetId: String): String = ???
-        override def getTechnologyUrl(planetId: String): String =
-          getClass.getResource("/technology_page_data/technology_page.html").toURI.toString.replace("file:/", "file:///")
-        override def readMyFleetsUrl: String = ???
-        override def readAllFleetsUrl: String = ???
-      }
-    )
+    new SeleniumOgameDriverCreator[IO](new UrlProvider {
+      override def universeListUrl: String = ???
+      override def suppliesPageUrl(planetId: String): String = ???
+      override def facilitiesPageUrl(planetId: String): String = ???
+      override def getShipyardUrl(planetId: String): String = ???
+      override def getTechnologyUrl(planetId: String): String =
+        getClass.getResource("/technology_page_data/technology_page.html").toURI.toString.replace("file:/", "file:///")
+      override def readMyFleetsUrl: String = ???
+      override def readAllFleetsUrl: String = ???
+      override def getFleetDispatchUrl(planetId: PlanetId): String = ???
+      override def returnFleetUrl(fleetId: FleetId): String = ???
+      override def planetsUrl: String = ???
+    }, new FirefoxOptions().setHeadless(true)).create(Credentials("", "", "", ""))
   )
 
   driverFixture.test("Should read planet list") { driver =>

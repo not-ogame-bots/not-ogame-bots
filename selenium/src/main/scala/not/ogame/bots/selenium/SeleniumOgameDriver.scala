@@ -312,13 +312,9 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
     }
   }
 
-  private def getFleetDispatchUrl(credentials: Credentials, planetId: PlanetId): String = {
-    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=fleetdispatch&cp=$planetId"
-  }
-
   override def readFleetPage(planetId: PlanetId): F[FleetPageData] =
     for {
-      _ <- webDriver.goto(getFleetDispatchUrl(credentials, planetId))
+      _ <- webDriver.goto(urlProvider.getFleetDispatchUrl(planetId))
       currentResources <- readCurrentResources
       currentProduction <- readCurrentProduction
       currentCapacity <- readCurrentCapacity
@@ -365,7 +361,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
 
   override def readMyFleets(): F[List[MyFleet]] = {
     Sync[F].delay({
-      webDriver.get(s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=movement")
+      webDriver.get(urlProvider.readMyFleetsUrl)
       if (webDriver.getCurrentUrl.contains("movement")) {
         new MyFleetsComponentReader(webDriver).readMyFleets()
       } else if (webDriver.getCurrentUrl.contains("fleetdispatch")) {
@@ -378,20 +374,19 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
   }
 
   override def sendFleet(sendFleetRequest: SendFleetRequest): F[Unit] = {
-    Sync[F].delay(new SendFleetAction(webDriver, credentials).sendFleet(sendFleetRequest))
+    Sync[F].delay {
+      webDriver.goto(urlProvider.getFleetDispatchUrl(sendFleetRequest.from.id))
+      new SendFleetAction(webDriver).sendFleet(sendFleetRequest)
+    }
   }
 
   override def returnFleet(fleetId: FleetId): F[Unit] = {
-    Sync[F].delay {
-      webDriver.get(
-        s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=movement&return=${fleetId.filter(_.isDigit)}"
-      )
-    }
+    Sync[F].delay(webDriver.get(urlProvider.returnFleetUrl(fleetId)))
   }
 
   override def readPlanets(): F[List[PlayerPlanet]] = {
     Sync[F].delay {
-      webDriver.get(s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=overview")
+      webDriver.get(urlProvider.planetsUrl)
       new PlanetListComponentReader(webDriver).readPlanetList()
     }
   }

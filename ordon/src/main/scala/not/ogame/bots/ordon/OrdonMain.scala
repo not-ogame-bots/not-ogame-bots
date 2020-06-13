@@ -18,8 +18,8 @@ object OrdonMain extends IOApp {
   }
 
   private def runBot(): IO[ExitCode] = {
-    new SeleniumOgameDriverCreator[IO]()
-      .create(OrdonConfig.getCredentials, new OgameUrlProvider(OrdonConfig.getCredentials))
+    new SeleniumOgameDriverCreator[IO](new OgameUrlProvider(OrdonConfig.getCredentials))
+      .create(OrdonConfig.getCredentials)
       .use { ogame =>
         ogame.login() >> process(ogame, OrdonConfig.getInitialActions)
       }
