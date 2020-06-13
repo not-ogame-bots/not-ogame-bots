@@ -9,7 +9,6 @@ import not.ogame.bots._
 import not.ogame.bots.ghostbuster.{FLogger, FsConfig, PlanetFleet}
 import fs2.Stream
 import scala.concurrent.duration.{FiniteDuration, _}
-import scala.jdk.DurationConverters._
 
 class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, builder: Builder)(implicit clock: LocalClock) extends FLogger {
   def run(): Task[Unit] = {
@@ -136,9 +135,5 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
     } else {
       Task.unit
     }
-  }
-
-  private def timeDiff(earlier: ZonedDateTime, later: ZonedDateTime): FiniteDuration = {
-    java.time.Duration.between(earlier, later).toScala
   }
 }

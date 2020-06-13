@@ -13,7 +13,7 @@ import monix.execution.Scheduler.Implicits.global
 import monix.reactive.Observable
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.processors.TaskExecutor
-import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet}
+import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet, processors}
 
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
@@ -78,14 +78,10 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware, cl
     f.from == sendFleetRequest.from.coordinates
   }
 
-  override def waitTo(now: ZonedDateTime): Task[Unit] = {
-    val sleepTime = calculateSleepTime(now)
-    Logger[Task].debug(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til $now") >>
+  override def waitTo(future: ZonedDateTime): Task[Unit] = {
+    val sleepTime = processors.timeDiff(clock.now(), future)
+    Logger[Task].debug(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til $future") >>
       Task.sleep(sleepTime.plus(2 seconds)) // additional 1 seconds to make things go smooth
-  }
-
-  private def calculateSleepTime(futureTime: ZonedDateTime) = {
-    java.time.Duration.between(clock.now(), futureTime).toScala
   }
 
   override def readAllFleets(): Task[List[Fleet]] = {
@@ -100,8 +96,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware, cl
   override def readPlanetsAndMoons(): Task[List[PlayerPlanet]] = {
     exec(
       Logger[Task].debug("readPlanetsAndMoons") >>
-        ogameDriver
-          .readPlanets()
+        ogameDriver.readPlanets()
     )
   }
 
@@ -183,18 +178,21 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware, cl
 
   override def buildShip(shipType: ShipType, amount: Int, planet: PlayerPlanet): Task[SuppliesPageData] = {
     exec(
-      Logger[Task].debug("buildShip") >> ogameDriver
-        .buildShips(planet.id, shipType, amount)
-        .flatMap(_ => ogameDriver.readSuppliesPage(planet.id))
+      Logger[Task].debug("buildShip") >>
+        ogameDriver
+          .buildShips(planet.id, shipType, amount)
+          .flatMap(_ => ogameDriver.readSuppliesPage(planet.id))
     )
   }
 
   override def returnFleet(fleetId: FleetId): Task[ZonedDateTime] = {
     exec(
       Logger[Task].debug("returnFleet") >>
-        ogameDriver.returnFleet(fleetId) >> Task.sleep(1 seconds) >> ogameDriver
-        .readMyFleets()
-        .map(_.find(_.fleetId == fleetId).get.arrivalTime)
+        ogameDriver.returnFleet(fleetId) >>
+        Task.sleep(1 seconds) >>
+        ogameDriver
+          .readMyFleets()
+          .map(_.find(_.fleetId == fleetId).get.arrivalTime)
     )
   }
 

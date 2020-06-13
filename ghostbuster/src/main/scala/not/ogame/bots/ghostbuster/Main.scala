@@ -15,6 +15,7 @@ import not.ogame.bots.ghostbuster.processors.{
   ActivityFakerProcessor,
   Builder,
   BuilderProcessor,
+  EscapeFleetProcessor,
   ExpeditionProcessor,
   FlyAndBuildProcessor,
   FlyAndReturnProcessor
@@ -70,6 +71,7 @@ object Main extends StrictLogging {
           val activityFaker = new ActivityFakerProcessor(taskExecutor)
           val bp = new BuilderProcessor(builder, botConfig.smartBuilder, taskExecutor)
           val far = new FlyAndReturnProcessor(botConfig.flyAndReturn, taskExecutor)
+          val efp = new EscapeFleetProcessor(taskExecutor, botConfig.escapeConfig)
           Task.raceMany(
             List(
               taskExecutor.run(),
@@ -79,7 +81,8 @@ object Main extends StrictLogging {
               bp.run(),
               far.run(),
               stateAgg.run(),
-              hostileFleetReporter.run()
+              hostileFleetReporter.run(),
+              efp.run()
             )
           )
       }

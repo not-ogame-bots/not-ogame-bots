@@ -1,53 +1,97 @@
 package not.ogame.bots.ghostbuster.processors
 
-import cats.implicits._
+import java.time.ZonedDateTime
+
+import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
+import monix.reactive.Consumer
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.BotConfig
+import not.ogame.bots.ghostbuster.executor.Notification
+import not.ogame.bots.ghostbuster.{EscapeConfig, FLogger}
 
-class EscapeFleetProcessor(taskExecutor: TaskExecutor, botConfig: BotConfig, clock: LocalClock) {
+class EscapeFleetProcessor(taskExecutor: TaskExecutor, escapeConfig: EscapeConfig)(implicit clock: LocalClock) extends FLogger {
   def run(): Task[Unit] = {
-    taskExecutor
-      .readPlanets()
-      .flatMap(planets => Task.parSequence(planets.map(check)))
-      .void
+    (for {
+      planets <- taskExecutor.readPlanetsAndMoons()
+      fleets <- taskExecutor.readAllFleets()
+      _ <- loop(fleets, planets)
+    } yield ())
+      .onErrorRestartIf(_ => true)
   }
 
-  private def check(planet: PlayerPlanet): Task[Unit] = {
-    taskExecutor
-      .readAllFleets()
-      .flatMap { fleets =>
-        val hostileFleets = fleets
-          .filter(f => isHostileToGivenPlanet(planet, f))
-          .sortBy(_.arrivalTime) //hope it does ascending
-        if (hostileFleets.nonEmpty) {
-          hostileFleets.traverse(hf => escapeSingleFleet(planet, hf)) >>
-            waitAndCheck(planet)
-        } else {
-          waitAndCheck(planet)
-        }
-      }
-  }
-
-  private def isHostileToGivenPlanet(planet: PlayerPlanet, f: Fleet) = {
-    f.fleetAttitude == FleetAttitude.Hostile && f.arrivalTime
-      .isAfter(clock.now().plusSeconds(botConfig.escapeConfig.interval.toSeconds)) && //TODO check time is bigger than safe time
-    f.to == planet.coordinates
-  }
-
-  private def escapeSingleFleet(planet: PlayerPlanet, hf: Fleet) = {
-    taskExecutor.waitTo(hf.arrivalTime.minusSeconds(20)) >> taskExecutor.sendFleet( //TODO check there is any fleet on planet
-      SendFleetRequest(
-        planet,
-        SendFleetRequestShips.AllShips,
-        botConfig.escapeConfig.target,
-        FleetMissionType.Transport,
-        FleetResources.Max
+  private def loop(fleets: List[Fleet], planets: List[PlayerPlanet]): Task[Unit] = {
+    processFleets(planets, fleets)
+      .flatMap(
+        dateTime =>
+          Task.raceMany(
+            List(
+              taskExecutor.waitTo(dateTime) >> Logger[Task].info("Reading fleets normally") >> taskExecutor.readAllFleets(),
+              taskExecutor.subscribeToNotifications
+                .collect { case n: Notification.ReadAllFleets => n.value }
+                .consumeWith(Consumer.head) <* Logger[Task].info("Used fleets from notification")
+            )
+          )
       )
-    ) >> taskExecutor.waitTo(hf.arrivalTime.plusSeconds(5)) >> taskExecutor.returnFleet(???) //TODO safe time plus
-    //TODO check if attack ended
+      .flatMap(newFleets => loop(newFleets, planets))
   }
-  private def waitAndCheck(planet: PlayerPlanet) = {
-    taskExecutor.waitTo(clock.now().plusSeconds(botConfig.escapeConfig.interval.toSeconds)) >> check(planet)
+
+  private def processFleets(planets: List[PlayerPlanet], fleets: List[Fleet]) = {
+    val hostileFleets = fleets.filter(f => f.fleetMissionType == FleetMissionType.Attack && f.fleetAttitude == FleetAttitude.Hostile)
+    if (hostileFleets.nonEmpty) {
+      val firstFleet = hostileFleets.minBy(_.arrivalTime)
+      val remainingTime = timeDiff(clock.now(), firstFleet.arrivalTime)
+      if (remainingTime < escapeConfig.minEscapeTime) {
+        Logger[Task].info("Hostile fleet is too close, we are doomed!").map(_ => clock.now().plus(escapeConfig.interval))
+      } else if (remainingTime < escapeConfig.escapeTimeThreshold) {
+        checkAndEscape(firstFleet, planets).map(_ => clock.now())
+      } else {
+        Logger[Task]
+          .info(s"Hostile fleet detected but is quite far (${remainingTime.toSeconds} seconds). Waiting...")
+          .map(_ => min(firstFleet.arrivalTime, clock.now().plus(escapeConfig.interval)))
+      }
+    } else {
+      Logger[Task].info("No hostile fleets detected. Sleeping...").map(_ => clock.now().plus(escapeConfig.interval))
+    }
+  }
+
+  private def checkAndEscape(firstFleet: Fleet, planets: List[PlayerPlanet]): Task[Unit] = {
+    for {
+      _ <- Logger[Task].info(s"Hostile fleet is close enough, checking fleet on planet ${firstFleet.to}!")
+      planetUnderAttack = planets.find(_.coordinates == firstFleet.to).get
+      ourFleet <- taskExecutor.getFleetOnPlanet(planetUnderAttack)
+      _ <- if (ourFleet.fleet.values.sum > 0) {
+        escapeFrom(planetUnderAttack, firstFleet.arrivalTime)
+      } else {
+        Logger[Task].info("There are no ships on given planet. Ignoring attack...")
+      }
+    } yield ()
+  }
+
+  private def escapeFrom(planetUnderAttack: PlayerPlanet, attackTime: ZonedDateTime): Task[Unit] = {
+    val missionType = FleetMissionType.Transport
+    for {
+      _ <- Logger[Task].info("Found some ships on attacking planet. Escaping...")
+      _ <- taskExecutor.sendFleet(
+        SendFleetRequest(
+          planetUnderAttack,
+          SendFleetRequestShips.AllShips,
+          escapeConfig.target,
+          missionType,
+          FleetResources.Max,
+          FleetSpeed.Percent10
+        )
+      )
+      _ <- Logger[Task].info(s"Waiting to attack time: $attackTime")
+      _ <- taskExecutor.waitTo(attackTime)
+      _ <- Logger[Task].info("Looking for escaped fleet...")
+      myFleets <- taskExecutor.readMyFleets()
+      escapedFleet = myFleets.find(
+        f => f.from == planetUnderAttack.coordinates && f.to == escapeConfig.target && f.fleetMissionType == missionType
+      )
+      _ <- escapedFleet match {
+        case Some(value) => Logger[Task].info("Returning fleet...") >> taskExecutor.returnFleet(value.fleetId)
+        case None        => Logger[Task].warn("Couldn't find our escaped fleet :(")
+      }
+    } yield ()
   }
 }

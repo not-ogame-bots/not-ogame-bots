@@ -62,7 +62,7 @@ case class ExpeditionConfig(
 case class FleetShip(shipType: ShipType, amount: Int)
 
 case class PlanetFleet(playerPlanet: PlayerPlanet, fleet: Map[ShipType, Int])
-case class EscapeConfig(target: Coordinates, interval: FiniteDuration)
+case class EscapeConfig(target: Coordinates, interval: FiniteDuration, minEscapeTime: FiniteDuration, escapeTimeThreshold: FiniteDuration)
 case class FlyAndReturnConfig(
     from: PlanetId,
     to: PlanetId,
