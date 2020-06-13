@@ -9,7 +9,7 @@ import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.api.StatusEndpoint
-import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
+import not.ogame.bots.ghostbuster.executor.{OgameNotificationDecorator, TaskExecutorImpl}
 import not.ogame.bots.ghostbuster.infrastructure.{FCMService, FirebaseResource}
 import not.ogame.bots.ghostbuster.processors.{
   ActivityFakerProcessor,
@@ -57,7 +57,7 @@ object Main extends StrictLogging {
       selenium <- new SeleniumOgameDriverCreator[Task](new FirefoxOptions()).create(credentials)
       firebase <- FirebaseResource.create(SettingsDirectory)
       _ <- httpServer(httpStateExposer.getStatus)
-    } yield (selenium, firebase))
+    } yield (new OgameNotificationDecorator(selenium), firebase))
       .use {
         case (ogame, firebase) =>
           val fcmService = new FCMService[Task](firebase)

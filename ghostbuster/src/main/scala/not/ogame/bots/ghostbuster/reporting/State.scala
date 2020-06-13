@@ -11,7 +11,7 @@ case class State(
     summaryFleetOnPlanets: Map[ShipType, Int],
     summaryResourcesOnPlanets: Option[Resources],
     airFleets: List[Fleet],
-    planets: Map[Coordinates, PlanetState]
+    planets: Map[PlanetId, PlanetState]
 )
 
 case class PlanetState(

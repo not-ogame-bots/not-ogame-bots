@@ -6,14 +6,14 @@ import com.typesafe.scalalogging.StrictLogging
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import monix.execution.atomic.AtomicInt
-import not.ogame.bots.ghostbuster.executor.TaskExecutorImpl
+import monix.reactive.Observable
+import not.ogame.bots.ghostbuster.executor.{Notification, NotificationAware, TaskExecutorImpl}
 import not.ogame.bots._
-import scala.concurrent.duration._
 
 class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
   (0 to 100).foreach { i =>
     test(s"Asdasd $i") {
-      val executor = new TaskExecutorImpl(new OgameDriver[Task] {
+      val executor = new TaskExecutorImpl(new OgameDriver[Task] with NotificationAware {
         override def login(): Task[Unit] = Task.unit
 
         override def readSuppliesPage(planetId: PlanetId): Task[SuppliesPageData] = Task.eval(
@@ -63,6 +63,8 @@ class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
 
         override def readFleetPage(planetId: PlanetId): Task[FleetPageData] =
           Task.eval(FleetPageData(ZonedDateTime.now(), Resources.Zero, Resources.Zero, Resources.Zero, Map.empty))
+
+        override def subscribeToNotifications: Observable[Notification] = ???
       }, new RealLocalClock())
 
       executor.run().runToFuture

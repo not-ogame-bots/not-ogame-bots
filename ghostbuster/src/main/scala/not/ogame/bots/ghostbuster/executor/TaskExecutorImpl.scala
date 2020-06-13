@@ -11,7 +11,6 @@ import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import monix.reactive.Observable
-import monix.reactive.subjects.ConcurrentSubject
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.processors.TaskExecutor
 import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet}
@@ -19,11 +18,13 @@ import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet}
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 
-class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extends TaskExecutor with FLogger with StrictLogging {
+class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware, clock: LocalClock)
+    extends TaskExecutor
+    with FLogger
+    with StrictLogging {
   type Channel[A] = MVar[Task, A]
 
   private val requests: Channel[Request[_]] = MVar[Task].empty[Request[_]].runSyncUnsafe()
-  private val notifications = ConcurrentSubject.publish[Notification]
 
   def run(): Task[Unit] = {
     safeLogin() >> processNextAction()
@@ -41,7 +42,6 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
     handleAction(request)
       .handleErrorWith { e =>
         for {
-          _ <- Task.fromFuture(notifications.onNext(Notification.Failure(e)))
           _ <- Logger[Task].error(e)(e.getMessage)
           isStillLogged <- ogameDriver.checkIsLoggedIn()
           _ <- if (isStillLogged) {
@@ -60,7 +60,6 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
   private def safeLogin(): Task[Unit] = {
     ogameDriver
       .login()
-      .flatTap(_ => Task.fromFuture(notifications.onNext(Notification.Login())))
       .handleErrorWith { e =>
         Logger[Task].error(e)("Login failed, retrying in 2 seconds") >> Task.sleep(2 seconds) >> Task.raiseError(e)
       }
@@ -91,60 +90,58 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
 
   override def readAllFleets(): Task[List[Fleet]] = {
     exec(
-      ogameDriver
-        .readAllFleets()
-        .flatTap(fleets => Task.fromFuture(notifications.onNext(Notification.GetAirFleet(fleets))))
-        .flatTap(_ => ogameDriver.readPlanets().flatMap(p => Task.fromFuture(notifications.onNext(Notification.ReadPlanets(p)))))
+      Logger[Task].debug("readAllFleets") >>
+        ogameDriver
+          .readAllFleets()
+          .flatTap(_ => ogameDriver.readPlanets())
     )
   }
 
   override def readPlanetsAndMoons(): Task[List[PlayerPlanet]] = {
     exec(
-      ogameDriver
-        .readPlanets()
-        .flatTap(p => Task.fromFuture(notifications.onNext(Notification.ReadPlanets(p))))
+      Logger[Task].debug("readPlanetsAndMoons") >>
+        ogameDriver
+          .readPlanets()
     )
   }
 
   override def sendFleet(req: SendFleetRequest): Task[ZonedDateTime] = {
     exec(
-      ogameDriver.sendFleet(req).flatMap { _ =>
-        ogameDriver
-          .readAllFleets()
-          .map { fleets =>
-            fleets
-              .collect { case f if isSameFleet(req, f) => f }
-              .maxBy(_.arrivalTime)
-          }
-          .flatTap(fleet => Task.fromFuture(notifications.onNext(Notification.FleetSent(req, fleet.arrivalTime))))
-          .flatTap(_ => ogameDriver.readPlanets().flatMap(p => Task.fromFuture(notifications.onNext(Notification.ReadPlanets(p)))))
-          .map(f => f.arrivalTime)
-      }
+      Logger[Task].debug("sendFleet") >>
+        ogameDriver.sendFleet(req).flatMap { _ =>
+          ogameDriver
+            .readAllFleets()
+            .map { fleets =>
+              fleets
+                .collect { case f if isSameFleet(req, f) => f }
+                .maxBy(_.arrivalTime)
+            }
+            .flatTap(_ => ogameDriver.readPlanets())
+            .map(f => f.arrivalTime)
+        }
     )
   }
 
   override def getFleetOnPlanet(planet: PlayerPlanet): Task[PlanetFleet] = {
     exec(
-      ogameDriver
-        .readFleetPage(planet.id)
-        .flatTap(fleet => Task.fromFuture(notifications.onNext(Notification.FleetOnPlanetRefreshed(fleet, planet))))
-        .map(fp => PlanetFleet(planet, fp.ships))
+      Logger[Task].debug("getFleetOnPlanet") >>
+        ogameDriver
+          .readFleetPage(planet.id)
+          .map(fp => PlanetFleet(planet, fp.ships))
     )
   }
 
   override def readSupplyPage(playerPlanet: PlayerPlanet): Task[SuppliesPageData] = {
     exec(
-      ogameDriver
-        .readSuppliesPage(playerPlanet.id)
-        .flatTap(supplies => Task.fromFuture(notifications.onNext(Notification.SuppliesPageDateRefreshed(supplies, playerPlanet))))
+      Logger[Task].debug("readSupplyPage") >>
+        ogameDriver.readSuppliesPage(playerPlanet.id)
     )
   }
 
   override def readFacilityPage(playerPlanet: PlayerPlanet): Task[FacilityPageData] = {
     exec(
-      ogameDriver
-        .readFacilityPage(playerPlanet.id)
-        .flatTap(facilities => Task.fromFuture(notifications.onNext(Notification.FacilityPageDataRefreshed(facilities, playerPlanet))))
+      Logger[Task].debug("readFacilityPage") >>
+        ogameDriver.readFacilityPage(playerPlanet.id)
     )
   }
 
@@ -154,16 +151,15 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
       planet: PlayerPlanet
   ): Task[ZonedDateTime] = {
     exec(
-      ogameDriver
-        .buildSuppliesBuilding(planet.id, suppliesBuilding)
-        .flatMap(
-          _ =>
-            ogameDriver
-              .readSuppliesPage(planet.id)
-              .flatTap(v => Task.fromFuture(notifications.onNext(Notification.SuppliesPageDateRefreshed(v, planet))))
-              .map(_.currentBuildingProgress.get.finishTimestamp)
-              .flatTap(time => Task.fromFuture(notifications.onNext(Notification.SupplyBuilt(time))))
-        )
+      Logger[Task].debug("buildSupplyBuilding") >>
+        ogameDriver
+          .buildSuppliesBuilding(planet.id, suppliesBuilding)
+          .flatMap(
+            _ =>
+              ogameDriver
+                .readSuppliesPage(planet.id)
+                .map(_.currentBuildingProgress.get.finishTimestamp)
+          )
     )
   }
 
@@ -173,50 +169,37 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
       planet: PlayerPlanet
   ): Task[ZonedDateTime] = {
     exec(
-      ogameDriver
-        .buildFacilityBuilding(planet.id, facilityBuilding)
-        .flatMap(
-          _ =>
-            ogameDriver
-              .readFacilityPage(planet.id)
-              .flatTap(facilities => Task.fromFuture(notifications.onNext(Notification.FacilityPageDataRefreshed(facilities, planet))))
-              .map(_.currentBuildingProgress.get.finishTimestamp)
-              .flatTap(time => Task.fromFuture(notifications.onNext(Notification.FacilityBuilt(time))))
-        )
+      Logger[Task].debug("buildFacilityBuilding") >>
+        ogameDriver
+          .buildFacilityBuilding(planet.id, facilityBuilding)
+          .flatMap(
+            _ =>
+              ogameDriver
+                .readFacilityPage(planet.id)
+                .map(_.currentBuildingProgress.get.finishTimestamp)
+          )
     )
   }
 
   override def buildShip(shipType: ShipType, amount: Int, planet: PlayerPlanet): Task[SuppliesPageData] = {
     exec(
-      ogameDriver
+      Logger[Task].debug("buildShip") >> ogameDriver
         .buildShips(planet.id, shipType, amount)
         .flatMap(_ => ogameDriver.readSuppliesPage(planet.id))
-        .flatTap(
-          sp =>
-            Task.fromFuture(
-              notifications.onNext(Notification.ShipBuilt(shipType, amount, planet, sp.currentShipyardProgress.map(_.finishTimestamp)))
-            )
-        )
-        .flatTap(supplies => Task.fromFuture(notifications.onNext(Notification.SuppliesPageDateRefreshed(supplies, planet))))
     )
   }
 
   override def returnFleet(fleetId: FleetId): Task[ZonedDateTime] = {
     exec(
-      ogameDriver.returnFleet(fleetId) >> Task.sleep(1 seconds) >> ogameDriver
+      Logger[Task].debug("returnFleet") >>
+        ogameDriver.returnFleet(fleetId) >> Task.sleep(1 seconds) >> ogameDriver
         .readMyFleets()
-        .flatTap(myFleets => Task.fromFuture(notifications.onNext(Notification.ReadMyFleetAction(myFleets))))
         .map(_.find(_.fleetId == fleetId).get.arrivalTime)
-        .flatTap(time => Task.fromFuture(notifications.onNext(Notification.ReturnFleetAction(fleetId, time))))
     )
   }
 
   override def readMyFleets(): Task[List[MyFleet]] = {
-    exec(
-      ogameDriver
-        .readMyFleets()
-        .flatTap(fleets => Task.fromFuture(notifications.onNext(Notification.ReadMyFleetAction(fleets))))
-    )
+    exec(Logger[Task].debug("readMyFleets") >> ogameDriver.readMyFleets())
   }
 
   private def exec[T](action: Task[T]) = {
@@ -233,5 +216,5 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task], clock: LocalClock) extend
       }
   }
 
-  override def subscribeToNotifications: Observable[Notification] = notifications
+  override def subscribeToNotifications: Observable[Notification] = ogameDriver.subscribeToNotifications
 }

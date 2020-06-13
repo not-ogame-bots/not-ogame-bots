@@ -16,14 +16,14 @@ class StateAggregator(state: Ref[Task, State], taskExecutor: TaskExecutor)(impli
       case Notification.FacilityPageDataRefreshed(value, playerPlanet) => onNewFacilitiesPage(playerPlanet, value)
       case Notification.Failure(ex)                                    => onNewError(ex)
       case Notification.FleetOnPlanetRefreshed(fpd, planet)            => onNewPlanetFleet(planet, fpd)
-      case Notification.GetAirFleet(value)                             => onNewAirFleets(value)
+      case Notification.ReadAllFleets(value)                           => onNewAirFleets(value)
       case _                                                           => Task.unit
     })
   }
 
-  def onNewSuppliesPage(planet: PlayerPlanet, suppliesPageData: SuppliesPageData): Task[Unit] = {
+  def onNewSuppliesPage(planet: PlanetId, suppliesPageData: SuppliesPageData): Task[Unit] = {
     state.update { s =>
-      val currentPlanetState = s.planets.getOrElse(planet.coordinates, PlanetState.Empty)
+      val currentPlanetState = s.planets.getOrElse(planet, PlanetState.Empty)
       val newPlanetState = currentPlanetState
         .modify(_.currentBuildingProgress)
         .setTo(suppliesPageData.currentBuildingProgress)
@@ -39,7 +39,7 @@ class StateAggregator(state: Ref[Task, State], taskExecutor: TaskExecutor)(impli
         .setTo(Some(suppliesPageData.suppliesLevels))
       val updatedState = s
         .modify(_.planets)
-        .using(_ ++ Map(planet.coordinates -> newPlanetState))
+        .using(_ ++ Map(planet -> newPlanetState))
         .modify(_.lastTimestamp)
         .setTo(Some(clock.now()))
       updatedState
@@ -48,9 +48,9 @@ class StateAggregator(state: Ref[Task, State], taskExecutor: TaskExecutor)(impli
     }
   }
 
-  def onNewFacilitiesPage(planet: PlayerPlanet, facilityPageData: FacilityPageData): Task[Unit] = {
+  def onNewFacilitiesPage(planet: PlanetId, facilityPageData: FacilityPageData): Task[Unit] = {
     state.update { s =>
-      val currentPlanetState = s.planets.getOrElse(planet.coordinates, PlanetState.Empty)
+      val currentPlanetState = s.planets.getOrElse(planet, PlanetState.Empty)
       val newPlanetState = currentPlanetState
         .modify(_.currentBuildingProgress)
         .setTo(facilityPageData.currentBuildingProgress)
@@ -64,7 +64,7 @@ class StateAggregator(state: Ref[Task, State], taskExecutor: TaskExecutor)(impli
         .setTo(Some(facilityPageData.facilityLevels))
       val updatedState = s
         .modify(_.planets)
-        .using(_ ++ Map(planet.coordinates -> newPlanetState))
+        .using(_ ++ Map(planet -> newPlanetState))
         .modify(_.lastTimestamp)
         .setTo(Some(clock.now()))
       updatedState
@@ -73,9 +73,9 @@ class StateAggregator(state: Ref[Task, State], taskExecutor: TaskExecutor)(impli
     }
   }
 
-  def onNewPlanetFleet(planet: PlayerPlanet, fleetPageData: FleetPageData): Task[Unit] = {
+  def onNewPlanetFleet(planet: PlanetId, fleetPageData: FleetPageData): Task[Unit] = {
     state.update { s =>
-      val currentPlanetState = s.planets.getOrElse(planet.coordinates, PlanetState.Empty)
+      val currentPlanetState = s.planets.getOrElse(planet, PlanetState.Empty)
       val newPlanetState = currentPlanetState
         .modify(_.fleet)
         .setTo(Some(fleetPageData.ships))
@@ -87,7 +87,7 @@ class StateAggregator(state: Ref[Task, State], taskExecutor: TaskExecutor)(impli
         .setTo(Some(fleetPageData.currentProduction))
       val updatedState = s
         .modify(_.planets)
-        .using(_ ++ Map(planet.coordinates -> newPlanetState))
+        .using(_ ++ Map(planet -> newPlanetState))
         .modify(_.lastTimestamp)
         .setTo(Some(clock.now()))
 

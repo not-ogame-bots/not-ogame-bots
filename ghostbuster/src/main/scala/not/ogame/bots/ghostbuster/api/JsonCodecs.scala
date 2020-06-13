@@ -2,6 +2,7 @@ package not.ogame.bots.ghostbuster.api
 
 import io.circe.{Decoder, Encoder, HCursor, Json, KeyDecoder, KeyEncoder}
 import not.ogame.bots.{Coordinates, CoordinatesType, FacilityBuilding, FleetAttitude, FleetMissionType, ShipType, SuppliesBuilding}
+import com.softwaremill.tagging._
 
 trait JsonCodecs {
   implicit val coordinatesTypeEncoder: Encoder[CoordinatesType] = (a: CoordinatesType) => Json.fromString(a.entryName)
@@ -41,4 +42,10 @@ trait JsonCodecs {
       case _                  => None
     }
   }
+
+  implicit def taggedStringKeyEncoder[U]: KeyEncoder[String @@ U] = (key: String) => key
+  implicit def taggedStringKeyDecoder[U]: KeyDecoder[String @@ U] = (key: String) => Some(key.taggedWith[U])
+
+  implicit def taggedStringEncoder[U]: Encoder[String @@ U] = Encoder.encodeString.contramap[String @@ U](identity)
+  implicit def taggedStringDecoder[U]: Decoder[String @@ U] = Decoder.decodeString.map(s => s.taggedWith[U])
 }
