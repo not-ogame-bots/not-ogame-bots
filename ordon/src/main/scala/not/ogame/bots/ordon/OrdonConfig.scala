@@ -23,8 +23,8 @@ object OrdonConfig {
     override val otherMoon: PlayerPlanet = moon4
     override val fsPlanet: PlayerPlanet = planet6
     override val fsMoon: PlayerPlanet = moon6
-    override val safeBufferInMinutes: Int = 5 //50
-    override val randomUpperLimitInSeconds: Int = 120 // 1
+    override val safeBufferInMinutes: Int = 30 //50
+    override val randomUpperLimitInSeconds: Int = 300 // 1
     override val expectedOffers: List[MyOffer] = List(
       MyOffer(Metal, 1_000_000, Deuterium, 280_000),
       MyOffer(Metal, 1_000_000, Deuterium, 280_000),
@@ -42,13 +42,13 @@ object OrdonConfig {
   def getInitialActions(implicit clock: LocalClock): IO[List[ScheduledAction[IO]]] = {
     val configClass = new OgameConfig()
     val listOfActions = List(
+      new AlertOgameAction[IO](),
       new FsCargoProcess[IO](configClass).startAction(),
       new FsBattleProcess[IO](configClass).startAction(),
       //      createFlyAroundActionCargo(moon4),
       //      new DeployAndReturnOgameAction[IO](planet6, moon6),
-      createExpeditionAction,
       createKeepActiveAction,
-      new AlertOgameAction[IO]()
+      createExpeditionAction
     )
     IO.pure(listOfActions.map(ScheduledAction(clock.now(), _)))
   }
@@ -57,7 +57,7 @@ object OrdonConfig {
     new ExpeditionOgameAction[IO](
       maxNumberOfExpeditions = 7,
       startPlanet = expeditionStartPlanet,
-      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 655, EspionageProbe -> 1),
+      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 670, EspionageProbe -> 1),
       targetCoordinates = Coordinates(3, 133, 16)
     )
   }
@@ -120,5 +120,5 @@ object OrdonConfig {
   private val planets: List[PlayerPlanet] = List(planet4, planet5, planet6, planet7, planet8)
   private val moons: List[PlayerPlanet] = List(moon4, moon5, moon6, moon7, moon8)
   private val planetsAndMoons: List[PlayerPlanet] = planets ++ moons
-  private val expeditionStartPlanet = moon5
+  private val expeditionStartPlanet = moon6
 }

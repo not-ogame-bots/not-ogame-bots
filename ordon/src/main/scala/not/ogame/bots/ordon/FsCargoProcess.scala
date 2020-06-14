@@ -65,7 +65,7 @@ class FsCargoProcess[T[_]: Monad](cargoProcessConfig: CargoProcessConfig)(implic
 
   class SendFleetToFsPlanet extends SimpleOgameAction[T] {
     val resourceSelector = new ResourceSelector(
-      deuteriumSelector = Selector.decreaseBy(1_000_000)
+      deuteriumSelector = Selector.decreaseBy(1_500_000)
     )
     val fleetSelector: SelectShips = (page: FleetPageData) => {
       val smallCargoCount = (page.currentResources.metal + page.currentResources.crystal + page.currentResources.deuterium) / 7_000 + 1
@@ -99,7 +99,7 @@ class FsCargoProcess[T[_]: Monad](cargoProcessConfig: CargoProcessConfig)(implic
 
   class SendFleetFromExpeditionMoon extends SimpleOgameAction[T] {
     val resourceSelector = new ResourceSelector(
-      deuteriumSelector = Selector.decreaseBy(400_000)
+      deuteriumSelector = Selector.decreaseBy(300_000)
     )
     val fleetSelector = new FleetSelector(
       filters = Map(
