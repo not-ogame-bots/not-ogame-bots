@@ -1,25 +1,11 @@
 package not.ogame.bots.ghostbuster.executor
 
+import cats.implicits._
 import monix.eval.Task
 import monix.execution.Scheduler
-import monix.reactive.subjects.ConcurrentSubject
-import not.ogame.bots.{
-  FacilityBuilding,
-  FacilityPageData,
-  Fleet,
-  FleetId,
-  FleetPageData,
-  MyFleet,
-  OgameDriver,
-  PlanetId,
-  PlayerPlanet,
-  SendFleetRequest,
-  ShipType,
-  SuppliesBuilding,
-  SuppliesPageData
-}
-import cats.implicits._
 import monix.reactive.Observable
+import monix.reactive.subjects.ConcurrentSubject
+import not.ogame.bots._
 
 class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Scheduler) extends OgameDriver[Task] with NotificationAware {
   private val notifications = ConcurrentSubject.publish[Notification]
@@ -68,7 +54,7 @@ class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Schedule
       .flatTap(f => notify(Notification.ReadAllFleets(f)))
       .onError { case e => notify(Notification.Failure(e)) }
 
-  override def readMyFleets(): Task[List[MyFleet]] =
+  override def readMyFleets(): Task[MyFleetPageData] =
     driver
       .readMyFleets()
       .flatTap(f => notify(Notification.ReadMyFleetAction(f)))
@@ -99,6 +85,10 @@ class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Schedule
   }
 
   override def subscribeToNotifications: Observable[Notification] = notifications
+
+  override def readMyOffers(): Task[List[MyOffer]] = ???
+
+  override def createOffer(planetId: PlanetId, newOffer: MyOffer): Task[Unit] = ???
 }
 
 trait NotificationAware {

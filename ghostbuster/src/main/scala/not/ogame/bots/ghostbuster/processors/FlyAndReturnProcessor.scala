@@ -28,7 +28,7 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, taskExecutor: TaskExecut
   private def loop(from: PlayerPlanet, to: PlayerPlanet): Task[Unit] = {
     for {
       allMyFleets <- taskExecutor.readMyFleets()
-      thisMyFleet = allMyFleets.find(isThisMyFleet(_, from, to))
+      thisMyFleet = allMyFleets.fleets.find(isThisMyFleet(_, from, to))
       nextStepTime <- processMyFleet(thisMyFleet, from, to)
       _ <- Logger[Task].info(s"Waiting to next step til $nextStepTime")
       _ <- taskExecutor.waitTo(nextStepTime)

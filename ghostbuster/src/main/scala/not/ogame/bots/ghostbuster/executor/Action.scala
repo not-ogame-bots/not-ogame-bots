@@ -36,5 +36,5 @@ object Notification {
   case class ReadAllFleets(value: List[Fleet]) extends Notification
   case class ReadPlanets(value: List[PlayerPlanet]) extends Notification
   case class ReturnFleetAction(fleetId: FleetId, value: ZonedDateTime) extends Notification
-  case class ReadMyFleetAction(value: List[MyFleet]) extends Notification
+  case class ReadMyFleetAction(myFleetPageData: MyFleetPageData) extends Notification
 }

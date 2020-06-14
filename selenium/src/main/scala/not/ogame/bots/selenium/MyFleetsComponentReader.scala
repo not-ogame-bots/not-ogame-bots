@@ -7,9 +7,15 @@ import not.ogame.bots.selenium.EasySelenium._
 import org.openqa.selenium.{By, WebDriver, WebElement}
 
 class MyFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) {
-  def readMyFleets(): List[MyFleet] = {
+  def readMyFleets(): MyFleetPageData = {
     val elements = webDriver.findElementsS(By.className("fleetDetails"))
-    elements.map(readMyFleet)
+    val fleetSlotsElement = webDriver.findElement(By.className("fleetSlots"))
+    val currentFleets = fleetSlotsElement.findElement(By.className("current")).getText.toInt
+    val allFleets = fleetSlotsElement.findElement(By.className("all")).getText.toInt
+    val expeditionsSlotsElement = webDriver.findElement(By.className("expSlots"))
+    val currentExpeditions = expeditionsSlotsElement.findElement(By.className("current")).getText.toInt
+    val allExpeditions = expeditionsSlotsElement.findElement(By.className("all")).getText.toInt
+    MyFleetPageData(elements.map(readMyFleet), MyFleetSlots(currentFleets, allFleets, currentExpeditions, allExpeditions))
   }
 
   private def readMyFleet(fleetElement: WebElement): MyFleet = {

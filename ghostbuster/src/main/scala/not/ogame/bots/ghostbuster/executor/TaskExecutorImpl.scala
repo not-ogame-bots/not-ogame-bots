@@ -16,7 +16,6 @@ import not.ogame.bots.ghostbuster.processors.TaskExecutor
 import not.ogame.bots.ghostbuster.{FLogger, PlanetFleet, processors}
 
 import scala.concurrent.duration._
-import scala.jdk.DurationConverters._
 
 class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware, clock: LocalClock)
     extends TaskExecutor
@@ -192,11 +191,11 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware, cl
         Task.sleep(1 seconds) >>
         ogameDriver
           .readMyFleets()
-          .map(_.find(_.fleetId == fleetId).get.arrivalTime)
+          .map(_.fleets.find(_.fleetId == fleetId).get.arrivalTime)
     )
   }
 
-  override def readMyFleets(): Task[List[MyFleet]] = {
+  override def readMyFleets(): Task[MyFleetPageData] = {
     exec(Logger[Task].debug("readMyFleets") >> ogameDriver.readMyFleets())
   }
 

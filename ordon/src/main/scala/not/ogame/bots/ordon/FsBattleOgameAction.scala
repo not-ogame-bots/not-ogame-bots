@@ -22,7 +22,7 @@ class FsBattleOgameAction[T[_]: Monad](
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] =
     for {
       allMyFleets <- ogame.readMyFleets()
-      thisMyFleet = allMyFleets.find(isThisMyFleet)
+      thisMyFleet = allMyFleets.fleets.find(isThisMyFleet)
       resumeOn <- processMyFleet(ogame, thisMyFleet)
     } yield resumeOn
 
@@ -61,7 +61,7 @@ class FsBattleOgameAction[T[_]: Monad](
   private def send(ogame: OgameDriver[T]): T[ZonedDateTime] =
     for {
       myFleets <- ogame.readMyFleets()
-      smallCargoFlying = countSmallCargoFlyingInCargoFleet(myFleets)
+      smallCargoFlying = countSmallCargoFlyingInCargoFleet(myFleets.fleets)
       smallCargoOnExpeditionMoon <- ogame.readFleetPage(expeditionMoon.id).map(_.ships(SmallCargoShip))
       smallCargoOnOtherMoon <- ogame.readFleetPage(otherMoon.id).map(_.ships(SmallCargoShip))
       totalSmallCargo = smallCargoFlying + smallCargoOnExpeditionMoon + smallCargoOnOtherMoon

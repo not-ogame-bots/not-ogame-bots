@@ -359,14 +359,15 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
     })
   }
 
-  override def readMyFleets(): F[List[MyFleet]] = {
+  override def readMyFleets(): F[MyFleetPageData] = {
     Sync[F].delay({
       webDriver.get(urlProvider.readMyFleetsUrl)
       if (webDriver.getCurrentUrl.contains("movement")) {
         new MyFleetsComponentReader(webDriver).readMyFleets()
       } else if (webDriver.getCurrentUrl.contains("fleetdispatch")) {
         //When there are no fleets movement page redirects to fleetdispatch
-        List()
+        val slots = new FleetDispatchComponentReader(webDriver).readSlots()
+        MyFleetPageData(List.empty, MyFleetSlots(slots.currentFleets, slots.maxFleets, slots.currentExpeditions, slots.maxExpeditions))
       } else {
         throw new RuntimeException(s"Couldn't proceed to movement page")
       }

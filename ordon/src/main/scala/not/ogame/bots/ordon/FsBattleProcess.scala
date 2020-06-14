@@ -16,7 +16,7 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
 
   class InitialAction extends OgameAction[T] {
     override def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] = {
-      ogame.readMyFleets().map(fleets => handleFleets(fleets)).map(action => List(action))
+      ogame.readMyFleets().map(myFleet => handleFleets(myFleet.fleets)).map(action => List(action))
     }
 
     private def handleFleets(fleets: List[MyFleet]): ScheduledAction[T] = {
@@ -65,11 +65,11 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
 
     override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] =
       for {
-        myFleets <- ogame.readMyFleets()
-        thisFleet = myFleets.filter(fleet => isThisFleet(fleet)).head
+        myFleet <- ogame.readMyFleets()
+        thisFleet = myFleet.fleets.filter(fleet => isThisFleet(fleet)).head
         _ <- ogame.returnFleet(thisFleet.fleetId)
         myFleetsAfterReturn <- ogame.readMyFleets()
-        thisFleetReturning = myFleetsAfterReturn.filter(fleet => isThisFleet(fleet)).head
+        thisFleetReturning = myFleetsAfterReturn.fleets.filter(fleet => isThisFleet(fleet)).head
       } yield thisFleetReturning.arrivalTime.plusSeconds(3)
   }
 
@@ -108,7 +108,7 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
     override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] =
       for {
         myFleets <- ogame.readMyFleets()
-        cargoFleets = myFleets.filter(fleet => isCargoFleet(fleet))
+        cargoFleets = myFleets.fleets.filter(fleet => isCargoFleet(fleet))
         flyingCargoShips = cargoFleets.map(fleet => fleet.ships(SmallCargoShip)).sum
         fleetPageOnExpeditionMoon <- ogame.readFleetPage(config.expeditionMoon.id)
         fleetPageOnOtherMoon <- ogame.readFleetPage(config.otherMoon.id)
