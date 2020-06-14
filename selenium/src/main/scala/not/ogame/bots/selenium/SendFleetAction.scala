@@ -102,8 +102,9 @@ class SendFleetAction(webDriver: WebDriver) {
       case FleetMissionType.Transport    => "missionButton3"
       case FleetMissionType.Attack       => "missionButton1"
       case FleetMissionType.Spy          => "missionButton6"
+      case FleetMissionType.Recycle      => "missionButton8"
       case FleetMissionType.Destroy      => "missionButton9"
-      case FleetMissionType.Unknown      => ???
+      case FleetMissionType.Unknown      => throw new IllegalArgumentException("Cannot send fleet with unknown mission")
     }
   }
 
