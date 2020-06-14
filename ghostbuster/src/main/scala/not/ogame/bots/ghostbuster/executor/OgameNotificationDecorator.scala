@@ -89,6 +89,9 @@ class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Schedule
   override def readMyOffers(): Task[List[MyOffer]] = ???
 
   override def createOffer(planetId: PlanetId, newOffer: MyOffer): Task[Unit] = ???
+
+  override def readTechnologyPage(planetId: PlanetId): Task[TechnologyPageData] =
+    driver.readTechnologyPage(planetId).flatTap(tp => notify(Notification.TechnologyPageDataRefreshed(tp, planetId)))
 }
 
 trait NotificationAware {

@@ -28,6 +28,7 @@ object Notification {
   case class FacilityBuilt(facilityBuilding: FacilityBuilding) extends Notification
   case class SuppliesPageDateRefreshed(value: SuppliesPageData, planetId: PlanetId) extends Notification
   case class FacilityPageDataRefreshed(value: FacilityPageData, planetId: PlanetId) extends Notification
+  case class TechnologyPageDataRefreshed(value: TechnologyPageData, planetId: PlanetId) extends Notification
   case class Failure(ex: Throwable) extends Notification
   case class FleetOnPlanetRefreshed(value: FleetPageData, planetId: PlanetId) extends Notification
   case class ShipBuilt(shipType: ShipType, amount: Int, planetId: PlanetId) extends Notification
