@@ -13,6 +13,7 @@ import scala.concurrent.duration._
 object OrdonMain extends IOApp {
   private implicit val clock: LocalClock = new RealLocalClock()
   private var lastClockUpdate: ZonedDateTime = clock.now()
+  private var errors: List[ZonedDateTime] = List()
 
   override def run(args: List[String]): IO[ExitCode] = {
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
@@ -20,8 +21,15 @@ object OrdonMain extends IOApp {
     runBot()
   }
 
+  def addError(time: ZonedDateTime): Unit = {
+    errors = errors ++ List(time)
+  }
+
   private def runBot(): IO[ExitCode] = {
     if (lastClockUpdate.isBefore(clock.now().minusMinutes(4))) {
+      Noise.makeNoise()
+    }
+    if (errors.count(error => error.isAfter(clock.now().minusMinutes(4))) > 3) {
       Noise.makeNoise()
     }
     new SeleniumOgameDriverCreator[IO](new OgameUrlProvider(OrdonConfig.getCredentials))
@@ -31,6 +39,7 @@ object OrdonMain extends IOApp {
       }
       .as(ExitCode.Success)
       .handleErrorWith(throwable => {
+        addError(clock.now())
         println("Fatal error while running bot:")
         println(throwable)
         throwable.printStackTrace()
