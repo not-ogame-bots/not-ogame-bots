@@ -7,17 +7,12 @@ import org.openqa.selenium.{By, JavascriptExecutor, WebDriver}
 
 import scala.util.Random
 
-class SendFleetAction(webDriver: WebDriver, credentials: Credentials) {
+class SendFleetAction(webDriver: WebDriver) {
   def sendFleet(request: SendFleetRequest): Unit = {
-    webDriver.safeUrl(getFleetDispatchUrl(credentials, request.from.id))
     fillFleet(request.ships)
     selectSpeed(request.speed)
     fillTarget(request.targetCoordinates)
     fillResources(request.resources, request.fleetMissionType)
-  }
-
-  private def getFleetDispatchUrl(credentials: Credentials, planetId: String): String = {
-    s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=fleetdispatch&cp=$planetId"
   }
 
   private def fillFleet(ships: SendFleetRequestShips): Unit = {

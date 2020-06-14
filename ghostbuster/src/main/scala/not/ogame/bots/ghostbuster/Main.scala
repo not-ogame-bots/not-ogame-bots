@@ -21,7 +21,7 @@ import not.ogame.bots.ghostbuster.processors.{
   FlyAndReturnProcessor
 }
 import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator}
-import not.ogame.bots.selenium.SeleniumOgameDriverCreator
+import not.ogame.bots.selenium.{OgameUrlProvider, SeleniumOgameDriverCreator}
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.syntax.kleisli._
@@ -55,7 +55,7 @@ object Main extends StrictLogging {
   private def app(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = { //TODO restart after 1 hour
     val httpStateExposer = new StatusEndpoint(state)
     (for {
-      selenium <- new SeleniumOgameDriverCreator[Task](new FirefoxOptions()).create(credentials)
+      selenium <- new SeleniumOgameDriverCreator[Task](new OgameUrlProvider(credentials), new FirefoxOptions()).create(credentials)
       firebase <- FirebaseResource.create(SettingsDirectory)
       _ <- httpServer(httpStateExposer.getStatus)
     } yield (new OgameNotificationDecorator(selenium), firebase))

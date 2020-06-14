@@ -7,7 +7,7 @@ import not.ogame.bots.{Coordinates, Fleet, LocalClock, RealLocalClock}
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.firefox.FirefoxDriver
 
-class AllFleetsComponentReaderSpec extends munit.FunSuite {
+class AllFleetsComponentReaderSpec extends munit.FunSuite with GecoDriver {
   implicit val clock: LocalClock = new RealLocalClock()
 
   private val driverFixture = FunFixture[WebDriver](

@@ -6,7 +6,7 @@ import org.openqa.selenium.MutableCapabilities
 import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
 import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
 
-class SeleniumOgameDriverCreator[F[_]: Sync](options: FirefoxOptions = new FirefoxOptions())(
+class SeleniumOgameDriverCreator[F[_]: Sync](urlProvider: UrlProvider, options: FirefoxOptions = new FirefoxOptions())(
     implicit timer: Timer[F],
     clock: LocalClock
 ) extends OgameDriverCreator[F] {
@@ -14,7 +14,7 @@ class SeleniumOgameDriverCreator[F[_]: Sync](options: FirefoxOptions = new Firef
     Resource
       .make(Sync[F].delay(new FirefoxDriver(options)))(r => Sync[F].delay(r.close()))
       .map { implicit driver =>
-        new SeleniumOgameDriver(credentials)
+        new SeleniumOgameDriver(credentials, urlProvider)
       }
   }
 }

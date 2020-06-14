@@ -26,6 +26,8 @@ trait OgameDriver[F[_]] {
 
   def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): F[Unit]
 
+  def readTechnologyPage(planetId: PlanetId): F[TechnologyPageData]
+
   def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit]
 
   def readFleetPage(planetId: PlanetId): F[FleetPageData]
@@ -91,6 +93,19 @@ case class FleetPageData(
     ships: Map[ShipType, Int]
 )
 
+case class TechnologyPageData(
+    timestamp: ZonedDateTime,
+    currentResources: Resources,
+    currentProduction: Resources,
+    currentCapacity: Resources,
+    technologyLevels: TechnologyLevels,
+    currentResearchProgress: Option[BuildingProgress]
+) {
+  def getLevel(technology: Technology): Int Refined NonNegative = {
+    technologyLevels.values(technology)
+  }
+}
+
 case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
   def multiply(amount: Int): Resources = {
     Resources(metal * amount, crystal * amount, deuterium * amount, energy)
@@ -133,6 +148,8 @@ object Resources {
 case class SuppliesBuildingLevels(values: Map[SuppliesBuilding, Int Refined NonNegative])
 
 case class FacilitiesBuildingLevels(values: Map[FacilityBuilding, Int Refined NonNegative])
+
+case class TechnologyLevels(values: Map[Technology, Int Refined NonNegative])
 
 case class BuildingProgress(finishTimestamp: ZonedDateTime)
 
@@ -322,7 +339,7 @@ object FleetSpeed extends Enum[FleetSpeed] {
   val values: IndexedSeq[FleetSpeed] = findValues
 }
 
-sealed trait Technology extends EnumEntry
+sealed trait Technology extends EnumEntry with Snakecase
 
 object Technology extends Enum[Technology] {
   case object Energy extends Technology

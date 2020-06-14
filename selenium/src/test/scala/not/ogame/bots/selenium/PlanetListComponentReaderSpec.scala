@@ -4,7 +4,7 @@ import not.ogame.bots.{Coordinates, CoordinatesType, PlanetId, PlayerPlanet}
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.firefox.FirefoxDriver
 
-class PlanetListComponentReaderSpec extends munit.FunSuite {
+class PlanetListComponentReaderSpec extends munit.FunSuite with GecoDriver {
   private val driverFixture = FunFixture[WebDriver](
     setup = { _ =>
       new FirefoxDriver()
