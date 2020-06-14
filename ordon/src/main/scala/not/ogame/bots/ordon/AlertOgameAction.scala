@@ -1,12 +1,12 @@
 package not.ogame.bots.ordon
 
-import java.awt.Toolkit
 import java.time.ZonedDateTime
 
 import cats.Monad
 import cats.implicits._
 import not.ogame.bots.FleetAttitude.Hostile
 import not.ogame.bots.FleetMissionType.Spy
+import not.ogame.bots.ordon.utils.Noise
 import not.ogame.bots.{Fleet, LocalClock, OgameDriver}
 
 class AlertOgameAction[T[_]: Monad](implicit clock: LocalClock) extends SimpleOgameAction[T] {
@@ -19,10 +19,7 @@ class AlertOgameAction[T[_]: Monad](implicit clock: LocalClock) extends SimpleOg
   def alert(allFleets: List[Fleet]): Unit = {
     val maybeHostileFleet = allFleets.find(fleet => fleet.fleetAttitude == Hostile && fleet.fleetMissionType != Spy)
     if (maybeHostileFleet.isDefined) {
-      for (a <- 1 to 30) {
-        Toolkit.getDefaultToolkit.beep()
-        Thread.sleep(100)
-      }
+      Noise.makeNoise()
     }
   }
 }

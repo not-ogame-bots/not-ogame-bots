@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
+import not.ogame.bots.ordon.utils.Noise
 import not.ogame.bots.selenium.{OgameUrlProvider, SeleniumOgameDriverCreator}
 import not.ogame.bots.{LocalClock, OgameDriver, RealLocalClock}
 
@@ -11,6 +12,7 @@ import scala.concurrent.duration._
 
 object OrdonMain extends IOApp {
   private implicit val clock: LocalClock = new RealLocalClock()
+  private var lastClockUpdate: ZonedDateTime = clock.now()
 
   override def run(args: List[String]): IO[ExitCode] = {
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
@@ -19,6 +21,9 @@ object OrdonMain extends IOApp {
   }
 
   private def runBot(): IO[ExitCode] = {
+    if (lastClockUpdate.isBefore(clock.now().minusMinutes(4))) {
+      Noise.makeNoise()
+    }
     new SeleniumOgameDriverCreator[IO](new OgameUrlProvider(OrdonConfig.getCredentials))
       .create(OrdonConfig.getCredentials)
       .use { ogame =>
@@ -42,6 +47,7 @@ object OrdonMain extends IOApp {
       .map(newList => printState(scheduledActionList, newList))
       //TODO sleep to next action
       .flatMap(a => IO.sleep(1 second).map(_ => a))
+    lastClockUpdate = clock.now()
     process(ogame, withSleep)
   }
 
