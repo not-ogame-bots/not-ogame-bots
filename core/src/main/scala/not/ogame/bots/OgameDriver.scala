@@ -284,6 +284,8 @@ object FleetMissionType extends Enum[FleetMissionType] {
 
   case object Destroy extends FleetMissionType
 
+  case object Recycle extends FleetMissionType
+
   case object Unknown extends FleetMissionType
 
   val values: IndexedSeq[FleetMissionType] = findValues

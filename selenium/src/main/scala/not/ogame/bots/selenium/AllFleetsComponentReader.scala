@@ -67,6 +67,7 @@ class AllFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock)
       case 1  => FleetMissionType.Attack
       case 6  => FleetMissionType.Spy
       case 9  => FleetMissionType.Destroy
+      case 8  => FleetMissionType.Recycle
       case _  => FleetMissionType.Unknown
     }
   }
