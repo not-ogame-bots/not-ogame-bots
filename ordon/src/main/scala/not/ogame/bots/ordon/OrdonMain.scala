@@ -14,6 +14,7 @@ object OrdonMain extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
+    System.setProperty("webdriver.chrome.driver", "selenium/chromedriver-v83")
     runBot()
   }
 
@@ -25,7 +26,10 @@ object OrdonMain extends IOApp {
       }
       .as(ExitCode.Success)
       .handleErrorWith(throwable => {
+        println("Fatal error while running bot:")
         println(throwable)
+        throwable.printStackTrace()
+        println("Restarting bot from scratch...")
         runBot()
       })
   }
