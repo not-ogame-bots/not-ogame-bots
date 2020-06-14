@@ -7,13 +7,14 @@ import cats.implicits._
 import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots.ShipType.LargeCargoShip
 import not.ogame.bots._
-import not.ogame.bots.ordon.utils.{FleetSelector, Selector, SendFleet}
+import not.ogame.bots.ordon.utils.{FleetSelector, PutOffersToMarket, Selector, SendFleet}
 
 import scala.util.Random
 
 class DeployAndReturnNoLargeCargoOgameAction[T[_]: Monad](
     planet: PlayerPlanet,
     moon: PlayerPlanet,
+    expectedOffers: List[MyOffer] = List(),
     safeBufferInMinutes: Int = 5,
     randomUpperLimitInSeconds: Int = 120
 )(implicit clock: LocalClock)
@@ -58,6 +59,7 @@ class DeployAndReturnNoLargeCargoOgameAction[T[_]: Monad](
   }
 
   private def send(ogame: OgameDriver[T]): T[ZonedDateTime] = {
+    new PutOffersToMarket().putOffersToMarket(ogame, planet, expectedOffers)
     val fleetSelector = new FleetSelector(filters = Map(LargeCargoShip -> Selector.skip))
     new SendFleet(from = planet, to = moon, selectShips = fleetSelector, fleetSpeed = FleetSpeed.Percent10)
       .sendDeployment(ogame)

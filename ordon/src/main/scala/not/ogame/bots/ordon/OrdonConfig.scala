@@ -44,7 +44,7 @@ object OrdonConfig {
     val listOfActions = List(
       new AlertOgameAction[IO](),
       new FlyAroundWithLargeCargoOgameAction[IO](planet7, moon7),
-      new DeployAndReturnNoLargeCargoOgameAction[IO](planet7, moon7),
+      new DeployAndReturnNoLargeCargoOgameAction[IO](planet7, moon7, configClass.expectedOffers),
       //      new FsCargoProcess[IO](configClass).startAction(),
       //      new FsBattleProcess[IO](configClass).startAction(),
       //      createFlyAroundActionCargo(moon4),
