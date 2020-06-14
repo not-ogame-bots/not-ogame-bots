@@ -9,13 +9,13 @@ import scala.util.Random
 
 class SendFleetAction(webDriver: WebDriver) {
   def sendFleet(request: SendFleetRequest): Unit = {
-    fillFleet(request.ships)
-    selectSpeed(request.speed)
-    fillTarget(request.targetCoordinates)
-    fillResources(request.resources, request.fleetMissionType)
+    fillFleet1(request.ships)
+    fillFleet2(request)
+    fillFleet3(request.resources, request.fleetMissionType)
   }
 
-  private def fillFleet(ships: SendFleetRequestShips): Unit = {
+  private def fillFleet1(ships: SendFleetRequestShips): Unit = {
+    waitUntilVisible(By.id("fleet1"))
     webDriver.asInstanceOf[JavascriptExecutor].executeScript("javascript:window.scrollBy(0,1000)")
     Thread.sleep(200)
     ships match {
@@ -31,8 +31,17 @@ class SendFleetAction(webDriver: WebDriver) {
     webDriver.findElement(By.id("continueToFleet2")).click()
   }
 
+  private def fillFleet2(request: SendFleetRequest): Unit = {
+    waitUntilVisible(By.id("fleet2"))
+    selectSpeed(request.speed)
+    fillTarget(request.targetCoordinates)
+  }
+
+  private def selectSpeed(speedLevel: FleetSpeed): Unit = {
+    webDriver.findElementsS(By.className("step")).find(_.getText == getSpeedLevelText(speedLevel)).get.click()
+  }
+
   private def fillTarget(targetCoordinates: Coordinates): Unit = {
-    webDriver.waitForElement(By.id("continueToFleet3"))
     val galaxy = webDriver.findElement(By.id("galaxy"))
     galaxy.clear()
     galaxy.sendKeys(targetCoordinates.galaxy.toString)
@@ -43,13 +52,12 @@ class SendFleetAction(webDriver: WebDriver) {
     position.clear()
     position.sendKeys(targetCoordinates.position.toString)
     webDriver.findElement(By.id(buttonCoordinatesType(targetCoordinates.coordinatesType))).click()
-    Thread.sleep(Random.nextLong(10) + 10)
+    waitUntilIsOn(By.id("continueToFleet3"))
     webDriver.findElement(By.id("continueToFleet3")).click()
   }
 
-  def fillResources(resources: FleetResources, fleetMissionType: FleetMissionType): Unit = {
-    webDriver.waitForElement(By.id("sendFleet"))
-    Thread.sleep(3_000)
+  def fillFleet3(resources: FleetResources, fleetMissionType: FleetMissionType): Unit = {
+    waitUntilVisible(By.id("fleet3"))
     webDriver.findElement(By.id(buttonFleetMissionType(fleetMissionType))).click()
     webDriver.asInstanceOf[JavascriptExecutor].executeScript("javascript:window.scrollBy(0,1000)")
     Thread.sleep(200)
@@ -63,7 +71,9 @@ class SendFleetAction(webDriver: WebDriver) {
         webDriver.findElement(By.id("selectMaxCrystal")).click()
         webDriver.findElement(By.id("selectMaxDeuterium")).click()
     }
+    waitUntilIsOn(By.id("sendFleet"))
     webDriver.findElement(By.id("sendFleet")).click()
+    waitUntilInvisible(By.id("fleet3"))
   }
 
   private def shipTypeToClassName(shipType: ShipType): String = {
@@ -108,11 +118,6 @@ class SendFleetAction(webDriver: WebDriver) {
     }
   }
 
-  private def selectSpeed(speedLevel: FleetSpeed): Unit = {
-    webDriver.waitForElement(By.className("step"))
-    webDriver.findElementsS(By.className("step")).find(_.getText == getSpeedLevelText(speedLevel)).get.click()
-  }
-
   private def getSpeedLevelText(speedLevel: FleetSpeed): String = {
     speedLevel match {
       case Percent10  => "10"
@@ -126,5 +131,17 @@ class SendFleetAction(webDriver: WebDriver) {
       case Percent90  => "90"
       case Percent100 => "100"
     }
+  }
+
+  private def waitUntilVisible(by: By): Unit = {
+    webDriver.waitForPredicate(_.findElementsS(by).map(_.getAttribute("style")).exists(!_.contains("none")))
+  }
+
+  private def waitUntilInvisible(by: By): Unit = {
+    webDriver.waitForPredicate(_.findElementsS(by).map(_.getAttribute("style")).exists(_.contains("none")))
+  }
+
+  private def waitUntilIsOn(by: By): Unit = {
+    webDriver.waitForPredicate(_.findElementsS(by).map(_.getAttribute("class")).exists(_.contains("on")))
   }
 }
