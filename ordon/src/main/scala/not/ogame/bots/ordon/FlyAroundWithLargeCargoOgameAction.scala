@@ -38,7 +38,7 @@ class FlyAroundWithLargeCargoOgameAction[T[_]: Monad](
   )
 
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = {
-    ogame.readMyFleets().flatMap(page => findThisFleet(page.fleets.fleets).map(getResumeOnForFleet).getOrElse(sendFleet(ogame)))
+    ogame.readMyFleets().flatMap(page => findThisFleet(page.fleets).map(getResumeOnForFleet).getOrElse(sendFleet(ogame)))
   }
 
   private def findThisFleet(fleets: List[MyFleet]): Option[MyFleet] = {
