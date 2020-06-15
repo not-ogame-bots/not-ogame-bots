@@ -8,10 +8,7 @@ import org.openqa.selenium.{By, WebDriver, WebElement}
 
 class AllFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) {
   def readAllFleets(): List[Fleet] = {
-    val elements = webDriver
-      .findElementsS(By.className("eventFleet"))
-      // Filter out hidden rows. Happen for union attacks.
-      .filterNot(_.getAttribute("style").contains("none"))
+    val elements = webDriver.findElementsS(By.className("eventFleet"))
     elements.map(readFleet)
   }
 
@@ -52,6 +49,11 @@ class AllFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock)
   }
 
   private def getArrivalTime(fleetElement: WebElement): ZonedDateTime = {
+    if (fleetElement.findElementsS(By.className("arrivalTime")).isEmpty) {
+      val unionId = fleetElement.getAttribute("class").split(" ").find(_.contains("union")).get
+      val timeText = webDriver.findElement(By.className("union" + unionId)).findElement(By.className("arrivalTime")).getText
+      return ParsingUtils.parseTimeInFuture(timeText)
+    }
     val timeText = fleetElement.findElement(By.className("arrivalTime")).getText
     ParsingUtils.parseTimeInFuture(timeText)
   }
