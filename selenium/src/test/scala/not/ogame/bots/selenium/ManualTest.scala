@@ -10,7 +10,7 @@ object ManualTest extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
     val testCredentials = Credentials("fire@fire.pl", "1qaz2wsx", "Mensa", "s165-pl")
-    new SeleniumOgameDriverCreator[IO]()
+    new SeleniumOgameDriverCreator[IO](new OgameUrlProvider(testCredentials))
       .create(testCredentials)
       .use(manualTestCase)
       .as(ExitCode.Success)
@@ -30,6 +30,6 @@ object ManualTest extends IOApp {
         )
       )
       myFleets <- ogame.readMyFleets()
-      _ <- ogame.returnFleet(myFleets.head.fleetId)
+      _ <- ogame.returnFleet(myFleets.fleets.head.fleetId)
     } yield ()
 }
