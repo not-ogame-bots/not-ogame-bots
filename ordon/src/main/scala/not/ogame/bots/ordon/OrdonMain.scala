@@ -27,9 +27,12 @@ object OrdonMain extends IOApp {
 
   private def runBot(): IO[ExitCode] = {
     if (lastClockUpdate.isBefore(clock.now().minusMinutes(4))) {
+      println("lastClockUpdate" + lastClockUpdate)
       Noise.makeNoise()
     }
     if (errors.count(error => error.isAfter(clock.now().minusMinutes(4))) > 3) {
+      println("errors")
+      errors.filter(error => error.isAfter(clock.now().minusMinutes(4))).foreach(println(_))
       Noise.makeNoise()
     }
     new SeleniumOgameDriverCreator[IO](new OgameUrlProvider(OrdonConfig.getCredentials))

@@ -19,7 +19,7 @@ object OrdonConfig {
   }
 
   class OgameConfig extends CargoProcessConfig with BattleProcessConfig {
-    override val expeditionMoon: PlayerPlanet = moon5
+    override val expeditionMoon: PlayerPlanet = expeditionStartPlanet
     override val otherMoon: PlayerPlanet = moon4
     override val fsPlanet: PlayerPlanet = planet6
     override val fsMoon: PlayerPlanet = moon6
@@ -59,7 +59,7 @@ object OrdonConfig {
     new ExpeditionOgameAction[IO](
       maxNumberOfExpeditions = 7,
       startPlanet = expeditionStartPlanet,
-      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 670, EspionageProbe -> 1),
+      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 700, EspionageProbe -> 1),
       targetCoordinates = Coordinates(3, 133, 16)
     )
   }
@@ -122,5 +122,5 @@ object OrdonConfig {
   private val planets: List[PlayerPlanet] = List(planet4, planet5, planet6, planet7, planet8)
   private val moons: List[PlayerPlanet] = List(moon4, moon5, moon6, moon7, moon8)
   private val planetsAndMoons: List[PlayerPlanet] = planets ++ moons
-  private val expeditionStartPlanet = moon6
+  private val expeditionStartPlanet = moon7
 }

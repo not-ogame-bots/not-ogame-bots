@@ -17,7 +17,8 @@ class FlyAroundWithLargeCargoOgameAction[T[_]: Monad](
   val fromPlanetToMoon = new SendFleet(
     from = planet,
     to = moon,
-    selectResources = _ => Resources(0, 0, 0),
+    selectResources =
+      new ResourceSelector(metalSelector = Selector.skip, crystalSelector = Selector.skip, deuteriumSelector = Selector.atMost(300_000)),
     selectShips = page => Map(LargeCargoShip -> page.ships(LargeCargoShip)),
     fleetSpeed = FleetSpeed.Percent10
   )
