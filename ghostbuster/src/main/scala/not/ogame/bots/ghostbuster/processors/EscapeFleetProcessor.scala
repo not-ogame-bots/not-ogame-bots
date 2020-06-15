@@ -48,9 +48,11 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, escapeConfig: EscapeConfi
       } else if (remainingTime < escapeConfig.escapeTimeThreshold) {
         checkAndEscape(firstFleet, planets).map(_ => clock.now())
       } else {
+        val nextInterval = clock.now().plus(escapeConfig.interval)
+        val minTimeToWait = min(firstFleet.arrivalTime.minus(escapeConfig.escapeTimeThreshold), nextInterval)
         Logger[Task]
-          .info(s"Hostile fleet detected but is quite far (${remainingTime.toSeconds} seconds). Waiting...")
-          .map(_ => min(firstFleet.arrivalTime, clock.now().plus(escapeConfig.interval)))
+          .info(s"Hostile fleet detected but is quite far (${remainingTime.toSeconds} seconds). Waiting... $minTimeToWait")
+          .map(_ => minTimeToWait)
       }
     } else {
       Logger[Task].info("No hostile fleets detected. Sleeping...").map(_ => clock.now().plus(escapeConfig.interval))
