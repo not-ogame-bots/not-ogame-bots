@@ -77,6 +77,12 @@ class MyFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) 
       FleetMissionType.Deployment
     } else if (missionTextLocalized.contains("Ekspedycja")) {
       FleetMissionType.Expedition
+    } else if (missionTextLocalized.contains("Transport")) {
+      FleetMissionType.Transport
+    } else if (missionTextLocalized.contains("Atakuj")) {
+      FleetMissionType.Attack
+    } else if (missionTextLocalized.contains("Szpieguj")) {
+      FleetMissionType.Spy
     } else {
       FleetMissionType.Unknown
     }
