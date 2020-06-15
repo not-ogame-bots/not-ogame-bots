@@ -2,8 +2,6 @@ package not.ogame.bots.selenium
 
 import cats.effect.{Resource, Sync, Timer}
 import not.ogame.bots.{Credentials, LocalClock, OgameDriver, OgameDriverCreator}
-import org.openqa.selenium.MutableCapabilities
-import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
 import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
 
 class SeleniumOgameDriverCreator[F[_]: Sync](urlProvider: UrlProvider, options: FirefoxOptions = new FirefoxOptions())(
@@ -12,9 +10,15 @@ class SeleniumOgameDriverCreator[F[_]: Sync](urlProvider: UrlProvider, options: 
 ) extends OgameDriverCreator[F] {
   override def create(credentials: Credentials): Resource[F, OgameDriver[F]] = {
     Resource
-      .make(Sync[F].delay(new FirefoxDriver(options)))(r => Sync[F].delay(r.close()))
+      .make(Sync[F].delay(createFirefoxDriver()))(r => Sync[F].delay(r.close()))
       .map { implicit driver =>
         new SeleniumOgameDriver(credentials, urlProvider)
       }
+  }
+
+  private def createFirefoxDriver(): FirefoxDriver = {
+    val driver = new FirefoxDriver(options)
+    driver.manage().window().maximize()
+    driver
   }
 }
