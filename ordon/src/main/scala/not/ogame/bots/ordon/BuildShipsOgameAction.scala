@@ -14,7 +14,7 @@ class BuildShipsOgameAction[T[_]: Monad](
 )(implicit clock: LocalClock)
     extends OgameAction[T] {
   override def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] = {
-    oneAfterOther(sendResources(ogame)).flatMap(_ => createScheduledBuildActions(ogame))
+    sendResources(ogame).sequence.flatMap(_ => createScheduledBuildActions(ogame))
   }
 
   private def sendResources(ogame: OgameDriver[T]): List[T[Unit]] = {
@@ -36,13 +36,6 @@ class BuildShipsOgameAction[T[_]: Monad](
             )
           )
       )
-  }
-
-  private def oneAfterOther(actions: List[T[Unit]]): T[Unit] = {
-    val unitT: T[Unit] = ().pure[T]
-    actions.fold(unitT) { (a: T[Unit], b: T[Unit]) =>
-      a.flatMap(_ => b)
-    }
   }
 
   private def createScheduledBuildActions(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] = {

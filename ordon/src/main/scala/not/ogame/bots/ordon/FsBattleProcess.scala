@@ -144,15 +144,8 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
         offersToPlace = missingOffers.take(freeTradeSlots)
         _ = println(myOffers)
         _ = println(offersToPlace)
-        _ <- oneAfterOther(offersToPlace.map(newOffer => ogame.createOffer(config.fsPlanet.id, newOffer)))
+        _ <- offersToPlace.map(newOffer => ogame.createOffer(config.fsPlanet.id, newOffer)).sequence
       } yield clock.now()
-
-    private def oneAfterOther(actions: List[T[Unit]]): T[Unit] = {
-      val unitT: T[Unit] = ().pure[T]
-      actions.fold(unitT) { (a: T[Unit], b: T[Unit]) =>
-        a.flatMap(_ => b)
-      }
-    }
   }
 }
 
