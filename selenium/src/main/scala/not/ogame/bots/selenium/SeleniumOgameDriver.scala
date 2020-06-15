@@ -376,7 +376,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
 
   override def sendFleet(sendFleetRequest: SendFleetRequest): F[Unit] = {
     Sync[F].delay {
-      webDriver.goto(urlProvider.getFleetDispatchUrl(sendFleetRequest.from.id))
+      webDriver.get(urlProvider.getFleetDispatchUrl(sendFleetRequest.from.id))
       new SendFleetAction(webDriver).sendFleet(sendFleetRequest)
     }
   }
