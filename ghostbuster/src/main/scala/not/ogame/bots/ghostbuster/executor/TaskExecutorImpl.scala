@@ -1,6 +1,7 @@
 package not.ogame.bots.ghostbuster.executor
 
 import java.time.ZonedDateTime
+import java.util.UUID
 
 import cats.effect.concurrent.MVar
 import cats.implicits._
@@ -200,7 +201,8 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware)(im
   }
 
   private def exec[T](action: Task[T]) = {
-    Request[T](action)
+    val uuid = UUID.randomUUID()
+    Request[T](Logger[Task].debug(s"start action: $uuid") >> action <* Logger[Task].debug(s"end action $uuid"))
       .flatMap { r =>
         requests.put(r) >>
           r.response.take
