@@ -8,7 +8,10 @@ import org.openqa.selenium.{By, WebDriver, WebElement}
 
 class AllFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) {
   def readAllFleets(): List[Fleet] = {
-    val elements = webDriver.findElementsS(By.className("eventFleet"))
+    val elements = webDriver
+      .findElementsS(By.className("eventFleet"))
+      // Filter out hidden rows. Happen for union attacks.
+      .filterNot(_.getAttribute("style").contains("none"))
     elements.map(readFleet)
   }
 
