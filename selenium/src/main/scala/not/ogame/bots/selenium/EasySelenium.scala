@@ -1,6 +1,6 @@
 package not.ogame.bots.selenium
 
-import org.openqa.selenium.{By, WebDriver, WebElement}
+import org.openqa.selenium.{By, StaleElementReferenceException, WebDriver, WebElement}
 
 import scala.jdk.CollectionConverters._
 
@@ -32,7 +32,14 @@ object EasySelenium {
 
     @scala.annotation.tailrec
     final def waitForPredicate(predicate: WebDriver => Boolean, attempts: Int = 100): Unit = {
-      if (!predicate(webDriver)) {
+      val predicateResult: Boolean = {
+        try {
+          predicate(webDriver)
+        } catch {
+          case _: StaleElementReferenceException => false
+        }
+      }
+      if (!predicateResult) {
         if (attempts > 0) {
           Thread.sleep(100)
           waitForPredicate(predicate, attempts - 1)
