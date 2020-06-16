@@ -47,19 +47,14 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
     fleet.fleetAttitude == FleetAttitude.Friendly && fleet.fleetMissionType == FleetMissionType.Expedition
   }
 
-  private def sendExpedition(fromPlanet: PlayerPlanet): Task[ZonedDateTime] = {
+  private def sendExpedition(fromPlanet: PlayerPlanet): Task[Unit] = {
     taskExecutor
       .readSupplyPage(fromPlanet)
       .flatMap { suppliesPageData =>
         if (suppliesPageData.currentResources.deuterium >= expeditionConfig.deuterThreshold) {
-          sendFleetImpl(fromPlanet)
+          sendFleetImpl(fromPlanet).void
         } else {
-          val missingDeuter = expeditionConfig.deuterThreshold - suppliesPageData.currentResources.deuterium
-          val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium
-          val timeInSeconds = (timeToProduceInHours * 60 * 60).toInt
-          Logger[Task].info(s"There was not enough deuter, expedition sending delayed by $timeInSeconds seconds") >> Task.sleep(
-            timeInSeconds seconds
-          ) >> sendFleetImpl(fromPlanet)
+          Logger[Task].info(s"There was not enough deuter, expedition won't be send this time")
         }
       }
   }
