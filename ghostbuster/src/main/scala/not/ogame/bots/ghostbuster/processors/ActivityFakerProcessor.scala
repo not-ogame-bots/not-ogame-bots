@@ -7,6 +7,7 @@ import monix.reactive.{Consumer, Observable}
 import not.ogame.bots.ghostbuster.FLogger
 
 import scala.concurrent.duration._
+import scala.util.Random
 
 class ActivityFakerProcessor(taskExecutor: TaskExecutor) extends FLogger {
   def run(): Task[Unit] = {
@@ -20,14 +21,9 @@ class ActivityFakerProcessor(taskExecutor: TaskExecutor) extends FLogger {
   private def checkSomething = {
     Logger[Task].info("activity faker running...") >>
       taskExecutor
-        .readPlanets()
+        .readPlanetsAndMoons()
         .flatMap { planets =>
-          planets
-            .take(2)
-            .map { planet =>
-              taskExecutor.readSupplyPage(planet)
-            }
-            .sequence
+          Random.shuffle(planets).take(planets.size / 2 + 1).map(it => taskExecutor.readSupplyPage(it).void).sequence
         }
         .void
   }
