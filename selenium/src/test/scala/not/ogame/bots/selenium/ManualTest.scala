@@ -9,8 +9,13 @@ object ManualTest extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
     val testCredentials = Credentials("fire@fire.pl", "1qaz2wsx", "Mensa", "s165-pl")
-    new SeleniumOgameDriverCreator[IO]()
-      .create(testCredentials)
+    WebDriverResource
+      .firefox[IO]()
+      .map(
+        driver =>
+          new SeleniumOgameDriverCreator[IO](driver)
+            .create(testCredentials)
+      )
       .use(manualTestCase)
       .as(ExitCode.Success)
   }
