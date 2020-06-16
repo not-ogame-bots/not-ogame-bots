@@ -1,7 +1,6 @@
 package not.ogame.bots.selenium
 
 import cats.effect.{ExitCode, IO, IOApp}
-import cats.implicits._
 import not.ogame.bots._
 
 object ManualTest extends IOApp {
@@ -10,7 +9,7 @@ object ManualTest extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
     val testCredentials = Credentials("fire@fire.pl", "1qaz2wsx", "Mensa", "s165-pl")
-    new SeleniumOgameDriverCreator[IO](new OgameUrlProvider(testCredentials))
+    new SeleniumOgameDriverCreator[IO]()
       .create(testCredentials)
       .use(manualTestCase)
       .as(ExitCode.Success)
