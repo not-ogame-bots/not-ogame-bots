@@ -33,6 +33,7 @@ import pureconfig.module.enumeratum._
 import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.http4s._
+import scala.concurrent.duration._
 
 object Main extends StrictLogging {
   private implicit val clock: LocalClock = new RealLocalClock()
@@ -97,6 +98,8 @@ object Main extends StrictLogging {
 
   private def httpServer(endpoints: List[ServerEndpoint[_, _, _, Nothing, Task]]) = {
     BlazeServerBuilder[Task](Scheduler.io())
+      .withIdleTimeout(240 seconds)
+      .withResponseHeaderTimeout(240 seconds)
       .bindHttp(8080, "0.0.0.0")
       .withHttpApp(
         Router("/" -> endpoints.toRoutes).orNotFound
