@@ -15,7 +15,7 @@ class DeployAndReturnNoLargeCargoOgameAction[T[_]: Monad](
     planet: PlayerPlanet,
     moon: PlayerPlanet,
     expectedOffers: List[MyOffer] = List(),
-    safeBufferInMinutes: Int = 5,
+    safeBufferInMinutes: Int = 30,
     randomUpperLimitInSeconds: Int = 120
 )(implicit clock: LocalClock)
     extends SimpleOgameAction[T] {
