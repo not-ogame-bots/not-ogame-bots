@@ -34,7 +34,7 @@ class FlyAroundWithLargeCargoOgameAction[T[_]: Monad](
         LargeCargoShip -> Selector.decreaseBy(410)
       )
     ),
-    fleetSpeed = FleetSpeed.Percent10
+    fleetSpeed = FleetSpeed.Percent100
   )
 
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = {
