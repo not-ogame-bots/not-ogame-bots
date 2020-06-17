@@ -8,11 +8,13 @@ import not.ogame.bots.FleetMissionType.Expedition
 import not.ogame.bots.SendFleetRequestShips.Ships
 import not.ogame.bots._
 
+import scala.util.Random
+
 class ExpeditionOgameAction[T[_]: Monad](
     maxNumberOfExpeditions: Int,
     startPlanet: PlayerPlanet,
     expeditionFleet: Map[ShipType, Int],
-    targetCoordinates: Coordinates
+    targetList: List[Coordinates]
 )(implicit clock: LocalClock)
     extends SimpleOgameAction[T] {
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = {
@@ -34,6 +36,7 @@ class ExpeditionOgameAction[T[_]: Monad](
   }
 
   def sendFleet(ogame: OgameDriver[T]): T[ZonedDateTime] = {
+    val targetCoordinates = Random.shuffle(targetList).head
     ogame
       .sendFleet(
         SendFleetRequest(
