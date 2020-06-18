@@ -57,7 +57,9 @@ case class ExpeditionConfig(
     isOn: Boolean,
     maxNumberOfExpeditions: Int,
     deuterThreshold: Int,
-    eligiblePlanets: List[PlanetId]
+    eligiblePlanets: List[PlanetId],
+    collectingPlanet: PlanetId,
+    target: Coordinates
 )
 case class FleetShip(shipType: ShipType, amount: Int)
 

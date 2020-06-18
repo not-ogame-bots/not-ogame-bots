@@ -1,15 +1,11 @@
 package not.ogame.bots.ghostbuster.processors
 
-import java.time.ZonedDateTime
-
 import cats.implicits._
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.{ExpeditionConfig, FLogger, PlanetFleet}
-
-import scala.concurrent.duration._
+import not.ogame.bots.ghostbuster.{ExpeditionConfig, FLogger, FleetShip, PlanetFleet}
 
 class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: TaskExecutor)(implicit clock: LocalClock) extends FLogger {
   def run(): Task[Unit] = {
@@ -27,24 +23,59 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
 
   private def lookForFleet(planets: List[PlayerPlanet]): Task[Unit] = {
     for {
-      fleets <- taskExecutor.readAllFleets()
-      expeditions = fleets.filter(fleet => isExpedition(fleet))
-      returningExpeditions = expeditions.filter(_.isReturning)
-      _ <- if (returningExpeditions.size < expeditionConfig.maxNumberOfExpeditions) {
+      myFleets <- taskExecutor.readMyFleets()
+      expeditions = myFleets.fleets.filter(isExpedition)
+      _ <- if (expeditions.size < expeditionConfig.maxNumberOfExpeditions) {
         Logger[Task].info(
-          s"Only ${returningExpeditions.size}/${expeditionConfig.maxNumberOfExpeditions} expeditions are in the air"
+          s"Only ${expeditions.size}/${expeditionConfig.maxNumberOfExpeditions} expeditions are in the air"
         ) >>
-          lookForFleetOnPlanets(planets, fleets) >> lookForFleet(planets)
+          lookForFleetOnPlanets(planets, myFleets.fleets) >> lookForFleet(planets)
       } else {
+        val collectingDebris = collectDebris(planets, expeditions)
         val min = expeditions.map(_.arrivalTime).min
-        Logger[Task].info(s"All expeditions are in the air, waiting for first to reach its target - $min") >>
-          taskExecutor.waitTo(min) >> lookForFleet(planets)
+        for {
+          _ <- collectingDebris
+          _ <- Logger[Task].info(s"All expeditions are in the air, waiting for first to reach its target - $min")
+          _ <- taskExecutor.waitTo(min)
+          _ <- lookForFleet(planets)
+        } yield ()
       }
     } yield ()
   }
 
-  private def isExpedition(fleet: Fleet) = {
-    fleet.fleetAttitude == FleetAttitude.Friendly && fleet.fleetMissionType == FleetMissionType.Expedition
+  private def collectDebris(planets: List[PlayerPlanet], expeditions: List[MyFleet]) = {
+    val shouldCollectDebris = expeditions.filter(_.isReturning) match {
+      case l if l.nonEmpty =>
+        !expeditionConfig.ships.forall { case FleetShip(shipType, amount) => amount <= l.maxBy(_.arrivalTime).ships(shipType) }
+      case Nil => false
+    }
+    if (shouldCollectDebris) {
+      val debrisCollectingPlanet = planets.filter(_.id == expeditionConfig.collectingPlanet).head
+      taskExecutor.getFleetOnPlanet(debrisCollectingPlanet).flatMap { pf =>
+        if (pf.fleet(ShipType.Explorer) >= 300) {
+          Logger[Task].info("Will send fleet to collect debris...") >>
+            taskExecutor
+              .sendFleet(
+                SendFleetRequest(
+                  debrisCollectingPlanet,
+                  SendFleetRequestShips.Ships(Map(ShipType.Explorer -> 300)),
+                  expeditionConfig.target.copy(coordinatesType = CoordinatesType.Debris),
+                  FleetMissionType.Recycle,
+                  FleetResources.Given(Resources.Zero)
+                )
+              )
+              .void
+        } else {
+          Logger[Task].warn("There is not enough ships to collect debris")
+        }
+      }
+    } else {
+      Logger[Task].info("Returning fleet is ok, no need to collect debris")
+    }
+  }
+
+  private def isExpedition(fleet: MyFleet) = {
+    fleet.fleetMissionType == FleetMissionType.Expedition
   }
 
   private def sendExpedition(fromPlanet: PlayerPlanet): Task[Unit] = {
@@ -73,7 +104,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
         )
         .flatTap(_ => Logger[Task].info("Fleet sent"))
   }
-  private def lookForFleetOnPlanets(planets: List[PlayerPlanet], allFleets: List[Fleet]) = {
+  private def lookForFleetOnPlanets(planets: List[PlayerPlanet], allFleets: List[MyFleet]) = {
     Stream
       .emits(planets)
       .evalMap(taskExecutor.getFleetOnPlanet)
@@ -83,11 +114,11 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
       .last
       .flatMap {
         case Some(_) => ().pure[Task]
-        case None    => waitToEarliestFleet(allFleets) // flatMap checkFleetOnGivenPlanet >> repairIfNeeded
+        case None    => waitToEarliestFleet(allFleets)
       }
   }
 
-  private def waitToEarliestFleet(allFleets: List[Fleet]) = {
+  private def waitToEarliestFleet(allFleets: List[MyFleet]) = {
     val tenMinutesFromNow = clock.now().plusMinutes(10)
     val minAnyFleetArrivalTime = minOr(allFleets.map(_.arrivalTime))(tenMinutesFromNow)
     val waitTo = List(minAnyFleetArrivalTime, tenMinutesFromNow).min
