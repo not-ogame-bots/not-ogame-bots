@@ -22,17 +22,17 @@ import not.ogame.bots.ghostbuster.processors.{
   FlyAndReturnProcessor
 }
 import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator}
-import not.ogame.bots.selenium.{OgameUrlProvider, SeleniumOgameDriverCreator}
+import not.ogame.bots.selenium.{SeleniumOgameDriverCreator, WebDriverResource}
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.syntax.kleisli._
-import org.openqa.selenium.firefox.FirefoxOptions
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import pureconfig.module.enumeratum._
 import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.http4s._
+
 import scala.concurrent.duration._
 
 object Main extends StrictLogging {
@@ -57,7 +57,8 @@ object Main extends StrictLogging {
   private def app(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = {
     val httpStateExposer = new StatusEndpoint(state)
     (for {
-      selenium <- new SeleniumOgameDriverCreator[Task](new OgameUrlProvider(credentials), new FirefoxOptions()).create(credentials)
+      driver <- WebDriverResource.firefox[Task]()
+      selenium = SeleniumOgameDriverCreator.create[Task](driver, credentials)
       firebase <- FirebaseResource.create(SettingsDirectory)
       decoratedDriver = new OgameNotificationDecorator(selenium)
       taskExecutor = new TaskExecutorImpl(decoratedDriver)

@@ -2,7 +2,6 @@ package not.ogame.bots.ghost
 
 import java.time.{Clock, Instant, ZoneOffset, ZonedDateTime}
 
-import io.circe.Printer
 import not.ogame.bots.RealLocalClock
 
 class ATest extends munit.FunSuite {
