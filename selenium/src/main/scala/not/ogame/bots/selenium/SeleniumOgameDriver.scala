@@ -181,7 +181,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
   }
 
   private def extractFinishTime(researchCountdown: WebElement) = {
-    researchCountdown.readText.map(str=>clock.now().plusSeconds(timeTextToSeconds(str)))
+    researchCountdown.readText.map(str => clock.now().plusSeconds(timeTextToSeconds(str)))
   }
 
   private def extractConstructionName(constructionElement: WebElement) = {
