@@ -59,7 +59,7 @@ object OrdonConfig {
     new ExpeditionOgameAction[IO](
       maxNumberOfExpeditions = 7,
       startPlanet = expeditionStartPlanet,
-      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 760, EspionageProbe -> 1),
+      expeditionFleet = Map(Destroyer -> 1, LargeCargoShip -> 410, Explorer -> 800, EspionageProbe -> 1),
       targetList = List(Coordinates(3, 133, 16), Coordinates(3, 134, 16))
     )
   }

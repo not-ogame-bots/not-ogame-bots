@@ -55,7 +55,7 @@ class DeployAndReturnNoLargeCargoOgameAction[T[_]: Monad](
   }
 
   private def scheduleSend(fleet: MyFleet): T[ZonedDateTime] = {
-    fleet.arrivalTime.plusSeconds(3).pure[T]
+    fleet.arrivalTime.plusSeconds(40).pure[T]
   }
 
   private def send(ogame: OgameDriver[T]): T[ZonedDateTime] =
