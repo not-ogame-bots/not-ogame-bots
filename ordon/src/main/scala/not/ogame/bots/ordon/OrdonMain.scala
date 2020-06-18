@@ -11,7 +11,7 @@ import not.ogame.bots.{LocalClock, OgameDriver, RealLocalClock}
 import scala.concurrent.duration._
 
 object OrdonMain extends IOApp {
-  private val ordonConfig = OrdonPasiphaeConfig
+  private val ordonConfig = OrdonTestConfig
   private implicit val clock: LocalClock = new RealLocalClock()
   private var lastClockUpdate: ZonedDateTime = clock.now()
   private var errors: List[ZonedDateTime] = List()
