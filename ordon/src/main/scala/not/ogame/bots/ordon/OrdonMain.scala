@@ -11,6 +11,7 @@ import not.ogame.bots.{LocalClock, OgameDriver, RealLocalClock}
 import scala.concurrent.duration._
 
 object OrdonMain extends IOApp {
+  private val ordonConfig = OrdonPasiphaeConfig
   private implicit val clock: LocalClock = new RealLocalClock()
   private var lastClockUpdate: ZonedDateTime = clock.now()
   private var errors: List[ZonedDateTime] = List()
@@ -35,10 +36,10 @@ object OrdonMain extends IOApp {
       errors.filter(error => error.isAfter(clock.now().minusMinutes(4))).foreach(println(_))
       Noise.makeNoise()
     }
-    new SeleniumOgameDriverCreator[IO](new OgameUrlProvider(OrdonConfig.getCredentials))
-      .create(OrdonConfig.getCredentials)
+    new SeleniumOgameDriverCreator[IO](new OgameUrlProvider(ordonConfig.getCredentials))
+      .create(ordonConfig.getCredentials)
       .use { ogame =>
-        ogame.login() >> process(ogame, OrdonConfig.getInitialActions)
+        ogame.login() >> process(ogame, ordonConfig.getInitialActions)
       }
       .as(ExitCode.Success)
       .handleErrorWith(throwable => {
