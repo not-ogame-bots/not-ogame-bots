@@ -1,10 +1,15 @@
 package not.ogame.bots.facts
 
-import eu.timepit.refined.api.Refined
+import eu.timepit.refined.api.{Refined, Validate}
 import eu.timepit.refined.numeric.Positive
+import eu.timepit.refined.refineV
 import not.ogame.bots.{Resources, SuppliesBuilding}
 
 object SuppliesBuildingCosts {
+  def buildingCost(buildingType: SuppliesBuilding, level: Int): Resources = {
+    buildingCost(buildingType, refineVUnsafe[Positive, Int](level))
+  }
+
   def buildingCost(buildingType: SuppliesBuilding, level: Int Refined Positive): Resources = {
     buildingType match {
       case SuppliesBuilding.MetalMine            => metalMineCost(level.value)
@@ -40,4 +45,7 @@ object SuppliesBuildingCosts {
       deuterium = (baseCost.deuterium * 2.0.pow(level - 1.0)).toInt
     )
   }
+
+  private def refineVUnsafe[P, V](v: V)(implicit ev: Validate[V, P]): Refined[V, P] =
+    refineV[P](v).fold(s => throw new IllegalArgumentException(s), identity)
 }
