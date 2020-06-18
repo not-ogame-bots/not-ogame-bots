@@ -29,7 +29,7 @@ class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Schedule
   override def buildSuppliesBuilding(planetId: PlanetId, suppliesBuilding: SuppliesBuilding): Task[Unit] = logStartEnd("buildSupplies") {
     driver
       .buildSuppliesBuilding(planetId, suppliesBuilding)
-      .flatTap(_ => notify(Notification.SupplyBuilt(suppliesBuilding)))
+      .flatTap(_ => notify(Notification.SupplyBuilt(planetId, suppliesBuilding)))
       .onError { case e => notify(Notification.Failure(e)) }
   }
 
@@ -43,7 +43,7 @@ class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Schedule
   override def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): Task[Unit] = logStartEnd("buildFacility") {
     driver
       .buildFacilityBuilding(planetId, facilityBuilding)
-      .flatTap(_ => notify(Notification.FacilityBuilt(facilityBuilding)))
+      .flatTap(_ => notify(Notification.FacilityBuilt(planetId, facilityBuilding)))
       .onError { case e => notify(Notification.Failure(e)) }
   }
 
@@ -115,6 +115,10 @@ class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Schedule
 
   override def readTechnologyPage(planetId: PlanetId): Task[TechnologyPageData] = logStartEnd("readTechnology") {
     driver.readTechnologyPage(planetId).flatTap(tp => notify(Notification.TechnologyPageDataRefreshed(tp, planetId)))
+  }
+
+  override def startResearch(planetId: PlanetId, technology: Technology): Task[Unit] = {
+    driver.startResearch(planetId, technology).flatTap(_ => notify(Notification.ResearchStarted(planetId, technology)))
   }
 }
 

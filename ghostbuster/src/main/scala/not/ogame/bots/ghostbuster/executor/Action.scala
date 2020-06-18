@@ -24,8 +24,9 @@ object Response {
 sealed trait Notification
 object Notification {
   case class Login() extends Notification
-  case class SupplyBuilt(suppliesBuilding: SuppliesBuilding) extends Notification
-  case class FacilityBuilt(facilityBuilding: FacilityBuilding) extends Notification
+  case class SupplyBuilt(planetId: PlanetId, suppliesBuilding: SuppliesBuilding) extends Notification
+  case class FacilityBuilt(planetId: PlanetId, facilityBuilding: FacilityBuilding) extends Notification
+  case class ResearchStarted(planetId: PlanetId, technology: Technology) extends Notification
   case class SuppliesPageDateRefreshed(value: SuppliesPageData, planetId: PlanetId) extends Notification
   case class FacilityPageDataRefreshed(value: FacilityPageData, planetId: PlanetId) extends Notification
   case class TechnologyPageDataRefreshed(value: TechnologyPageData, planetId: PlanetId) extends Notification

@@ -57,6 +57,7 @@ class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
         override def readMyOffers(): Task[List[MyOffer]] = ???
         override def createOffer(planetId: PlanetId, newOffer: MyOffer): Task[Unit] = ???
         override def readTechnologyPage(planetId: PlanetId): Task[TechnologyPageData] = ???
+        override def startResearch(planetId: PlanetId, technology: Technology): Task[Unit] = ???
       })(new RealLocalClock())
 
       executor.run().runToFuture
