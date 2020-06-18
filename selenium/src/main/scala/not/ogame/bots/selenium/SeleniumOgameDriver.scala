@@ -1,12 +1,13 @@
 package not.ogame.bots.selenium
 
+import cats.data.OptionT
 import cats.effect.{Sync, Timer}
 import cats.implicits._
 import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots._
 import not.ogame.bots.selenium.EasySelenium._
 import not.ogame.bots.selenium.WebDriverUtils._
-import org.openqa.selenium.{By, WebDriver}
+import org.openqa.selenium.{By, WebDriver, WebElement}
 
 import scala.concurrent.duration._
 
@@ -148,28 +149,45 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
       .map(getCapacityFromTooltip)
 
   private def readCurrentBuildingProgress: F[Option[BuildingProgress]] =
-    for {
-      _ <- webDriver.waitForElementF(By.className("construction"))
-      buildingCountdown <- webDriver.findMany(By.id("buildingCountdown")).map(_.headOption)
-      seconds = buildingCountdown.map(_.getText).map(timeTextToSeconds)
-      buildingProgress = seconds.map(s => BuildingProgress(clock.now().plusSeconds(s)))
-    } yield buildingProgress
+    (for {
+      constructions <- OptionT.liftF(webDriver.waitForElementsF(By.className("construction")))
+      buildingCountdown <- OptionT(webDriver.findMany(By.id("buildingCountdown")).map(_.headOption))
+      constructionName <- getConstructionName(constructions, "buildingCountdown")
+      seconds = timeTextToSeconds(buildingCountdown.getText)
+      buildingProgress = BuildingProgress(clock.now().plusSeconds(seconds), constructionName)
+    } yield buildingProgress).value
 
   private def readCurrentShipyardProgress: F[Option[BuildingProgress]] =
-    for {
-      _ <- webDriver.waitForElementF(By.className("construction"))
-      shipyardCountdown <- webDriver.findMany(By.id("shipyardCountdown")).map(_.headOption)
-      seconds = shipyardCountdown.map(_.getText).map(timeTextToSeconds)
-      buildingProgress = seconds.map(s => BuildingProgress(clock.now().plusSeconds(s)))
-    } yield buildingProgress
+    (for {
+      constructions <- OptionT.liftF(webDriver.waitForElementsF(By.className("construction")))
+      shipyardCountdown <- OptionT(webDriver.findMany(By.id("shipyardCountdown")).map(_.headOption))
+      constructionName <- getConstructionName(constructions, "shipyardCountdown")
+      seconds = timeTextToSeconds(shipyardCountdown.getText)
+      buildingProgress = BuildingProgress(clock.now().plusSeconds(seconds), constructionName)
+    } yield buildingProgress).value
 
   private def readCurrentResearchProgress: F[Option[BuildingProgress]] =
-    for {
-      _ <- webDriver.waitForElementF(By.className("construction"))
-      shipyardCountdown <- webDriver.findMany(By.id("researchCountdown")).map(_.headOption)
-      seconds = shipyardCountdown.map(_.getText).map(timeTextToSeconds)
-      buildingProgress = seconds.map(s => BuildingProgress(clock.now().plusSeconds(s)))
-    } yield buildingProgress
+    (for {
+      constructions <- OptionT.liftF(webDriver.waitForElementsF(By.className("construction")))
+      researchCountdown <- OptionT(webDriver.findMany(By.id("researchCountdown")).map(_.headOption))
+      constructionName <- getConstructionName(constructions, "researchCountdown")
+      seconds = timeTextToSeconds(researchCountdown.getText)
+      buildingProgress = BuildingProgress(clock.now().plusSeconds(seconds), constructionName)
+    } yield buildingProgress).value
+
+  private def getConstructionName(constructions: List[WebElement], countdownId: String): OptionT[F, String] = {
+    OptionT
+      .fromOption[F](
+        constructions.find(cElement => cElement.findElementsS(By.id(countdownId)).nonEmpty)
+      )
+      .semiflatMap { buildingConstruction =>
+        buildingConstruction
+          .find(By.tagName("tbody"))
+          .flatMap(_.find(By.tagName("tr")))
+          .flatMap(_.find(By.tagName("th")))
+          .map(_.getText)
+      }
+  }
 
   private def timeTextToSeconds(timeText: String): Int =
     timeText.split(" ").map(parseTimeSection).sum
@@ -219,7 +237,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
       technologies <- webDriver.waitForElementF(By.id("technologies"))
       buildingComponent <- technologies.find(By.className(componentName))
       level <- buildingComponent.find(By.className("level"))
-    } yield level.getText.toInt
+    } yield level.getText.takeWhile(_.isDigit).toInt //hack for spy boost - X(+2)
   }
 
   private def getComponentName(suppliesBuilding: SuppliesBuilding): String = {
