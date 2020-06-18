@@ -19,6 +19,6 @@ package object bots {
     def apply(id: String): FleetId = id.taggedWith[FleetIdTag]
   }
 
-  class AvailableDeuterExceeded(requiredAmount: String)
+  case class AvailableDeuterExceeded(requiredAmount: BigInt)
       extends RuntimeException(s"There was not enough deuterium to send fleet, needed: $requiredAmount")
 }

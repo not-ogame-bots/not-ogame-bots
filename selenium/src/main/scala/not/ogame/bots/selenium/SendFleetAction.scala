@@ -36,9 +36,15 @@ class SendFleetAction(webDriver: WebDriver) {
     waitUntilVisible(By.id("fleet2"))
     selectSpeed(request.speed)
     fillTarget(request.targetCoordinates)
+    verifyDeuteriumAmount
+  }
+
+  private def verifyDeuteriumAmount = {
     val overmarkElement = webDriver.findElement(By.id("consumption")).findElements(By.className("overmark")).asScala.headOption
     overmarkElement match {
-      case Some(value) => throw new AvailableDeuterExceeded(value.getText.split(" ").head)
+      case Some(value) =>
+        val requiredAmount = BigInt(value.getText.split(" ").head.filter(_.isDigit))
+        throw AvailableDeuterExceeded(requiredAmount)
       case None        => // do nothing
     }
   }
