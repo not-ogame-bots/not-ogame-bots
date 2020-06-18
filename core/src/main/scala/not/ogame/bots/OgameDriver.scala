@@ -24,6 +24,8 @@ trait OgameDriver[F[_]] {
 
   def readTechnologyPage(planetId: PlanetId): F[TechnologyPageData]
 
+  def startResearch(planetId: PlanetId, technology: Technology): F[Unit]
+
   def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit]
 
   def readFleetPage(planetId: PlanetId): F[FleetPageData]

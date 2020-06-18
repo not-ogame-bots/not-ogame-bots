@@ -266,15 +266,20 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
 
   override def buildSuppliesBuilding(planetId: PlanetId, suppliesBuilding: SuppliesBuilding): F[Unit] = {
     webDriver.goto(urlProvider.suppliesPageUrl(planetId)) >>
-      buildBuilding(getComponentName(suppliesBuilding))
+      upgrade(getComponentName(suppliesBuilding))
   }
 
   override def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): F[Unit] = {
     webDriver.goto(urlProvider.facilitiesPageUrl(planetId)) >>
-      buildBuilding(getComponentName(facilityBuilding))
+      upgrade(getComponentName(facilityBuilding))
   }
 
-  private def buildBuilding(componentName: String) = {
+  override def startResearch(planetId: PlanetId, technology: Technology): F[Unit] = {
+    webDriver.goto(urlProvider.getTechnologyUrl(planetId)) >>
+      upgrade(getComponentName(technology))
+  }
+
+  private def upgrade(componentName: String) = {
     for {
       technologies <- webDriver.waitForElementF(By.id("technologies"))
       buildingComponent <- technologies.find(By.className(componentName))
@@ -282,6 +287,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
       _ <- upgrade.clickF()
     } yield ()
   }
+
   override def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit] = {
     for {
       _ <- webDriver.safeUrlF(urlProvider.getShipyardUrl(planetId))
