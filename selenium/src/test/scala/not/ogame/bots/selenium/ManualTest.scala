@@ -12,9 +12,7 @@ object ManualTest extends IOApp {
     WebDriverResource
       .firefox[IO]()
       .map(
-        driver =>
-          new SeleniumOgameDriverCreator[IO](driver)
-            .create(testCredentials)
+        driver => SeleniumOgameDriverCreator.create[IO](driver, testCredentials)
       )
       .use(manualTestCase)
       .as(ExitCode.Success)
