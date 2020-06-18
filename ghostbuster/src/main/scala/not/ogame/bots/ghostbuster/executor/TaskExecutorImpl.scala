@@ -140,6 +140,23 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware)(im
     )
   }
 
+  override def readTechnologyPage(playerPlanet: PlayerPlanet): Task[TechnologyPageData] = {
+    exec(
+      Logger[Task].debug("readingTechnologyPage") >>
+        ogameDriver.readTechnologyPage(playerPlanet.id)
+    )
+  }
+
+  override def startResearch(playerPlanet: PlayerPlanet, technology: Technology): Task[ZonedDateTime] = {
+    exec(
+      Logger[Task].debug("startResearch") >>
+        ogameDriver
+          .startResearch(playerPlanet.id, technology)
+          .flatMap(_ => ogameDriver.readTechnologyPage(playerPlanet.id))
+          .map(_.currentResearchProgress.get.finishTimestamp)
+    )
+  }
+
   override def buildSupplyBuilding(
       suppliesBuilding: SuppliesBuilding,
       level: Int Refined Positive,
@@ -149,12 +166,8 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware)(im
       Logger[Task].debug("buildSupplyBuilding") >>
         ogameDriver
           .buildSuppliesBuilding(planet.id, suppliesBuilding)
-          .flatMap(
-            _ =>
-              ogameDriver
-                .readSuppliesPage(planet.id)
-                .map(_.currentBuildingProgress.get.finishTimestamp)
-          )
+          .flatMap(_ => ogameDriver.readSuppliesPage(planet.id))
+          .map(_.currentBuildingProgress.get.finishTimestamp)
     )
   }
 
@@ -167,21 +180,18 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware)(im
       Logger[Task].debug("buildFacilityBuilding") >>
         ogameDriver
           .buildFacilityBuilding(planet.id, facilityBuilding)
-          .flatMap(
-            _ =>
-              ogameDriver
-                .readFacilityPage(planet.id)
-                .map(_.currentBuildingProgress.get.finishTimestamp)
-          )
+          .flatMap(_ => ogameDriver.readFacilityPage(planet.id))
+          .map(_.currentBuildingProgress.get.finishTimestamp)
     )
   }
 
-  override def buildShip(shipType: ShipType, amount: Int, planet: PlayerPlanet): Task[SuppliesPageData] = {
+  override def buildShip(shipType: ShipType, amount: Int, planet: PlayerPlanet): Task[ZonedDateTime] = {
     exec(
       Logger[Task].debug("buildShip") >>
         ogameDriver
           .buildShips(planet.id, shipType, amount)
           .flatMap(_ => ogameDriver.readSuppliesPage(planet.id))
+          .map(_.currentShipyardProgress.get.finishTimestamp)
     )
   }
 
