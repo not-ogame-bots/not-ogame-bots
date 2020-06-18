@@ -46,7 +46,6 @@ case class FsConfig(
     takeResources: Boolean,
     gatherShips: Boolean,
     fleetSpeed: FleetSpeed,
-    deuterThreshold: Int,
     eligiblePlanets: List[PlanetId],
     builder: Boolean,
     maxWaitTime: FiniteDuration,
@@ -56,7 +55,6 @@ case class ExpeditionConfig(
     ships: List[FleetShip],
     isOn: Boolean,
     maxNumberOfExpeditions: Int,
-    deuterThreshold: Int,
     eligiblePlanets: List[PlanetId],
     collectingPlanet: PlanetId,
     target: Coordinates

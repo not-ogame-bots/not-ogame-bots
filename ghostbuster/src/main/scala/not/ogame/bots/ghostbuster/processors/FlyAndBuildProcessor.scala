@@ -86,16 +86,19 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
   private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[ZonedDateTime] = {
     for {
       _ <- Logger[Task].info("Sending fleet...")
-      suppliesPageData <- taskExecutor.readSupplyPage(from)
-      arrivalTime <- if (suppliesPageData.currentResources.deuterium >= fsConfig.deuterThreshold) {
-        sendFleetImpl(from, to).flatTap(_ => Logger[Task].info("Fleet sent"))
-      } else {
-        val missingDeuter = fsConfig.deuterThreshold - suppliesPageData.currentResources.deuterium
-        val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium
-        val timeInSeconds = (timeToProduceInHours * 60 * 60).toInt
-        Logger[Task].info(s"There was not enough deuter, fleet sending delayed by $timeInSeconds seconds") >> Task.sleep(
-          timeInSeconds seconds
-        ) >> sendFleet(from, to)
+      arrivalTime <- sendFleetImpl(from, to).flatTap(_ => Logger[Task].info("Fleet sent")).recoverWith {
+        case AvailableDeuterExceeded(requiredAmount) =>
+          taskExecutor
+            .readSupplyPage(from)
+            .flatMap { suppliesPageData =>
+              val missingDeuter = requiredAmount - suppliesPageData.currentResources.deuterium
+              val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium
+              val timeInSeconds = (timeToProduceInHours * 60 * 60).toInt
+              val maxWaitingTime = Math.min(timeInSeconds, 60 * 10)
+              Logger[Task].info(s"There was not enough deuter, fleet sending delayed by $maxWaitingTime seconds") >>
+                Task.sleep(maxWaitingTime seconds) >>
+                sendFleet(from, to)
+            }
       }
     } yield arrivalTime
   }

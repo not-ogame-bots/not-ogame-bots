@@ -79,15 +79,10 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
   }
 
   private def sendExpedition(fromPlanet: PlayerPlanet): Task[Unit] = {
-    taskExecutor
-      .readSupplyPage(fromPlanet)
-      .flatMap { suppliesPageData =>
-        if (suppliesPageData.currentResources.deuterium >= expeditionConfig.deuterThreshold) {
-          sendFleetImpl(fromPlanet).void
-        } else {
-          Logger[Task].info(s"There was not enough deuter, expedition won't be send this time")
-        }
-      }
+    sendFleetImpl(fromPlanet).void.recoverWith {
+      case AvailableDeuterExceeded(requiredAmount) =>
+        Logger[Task].info(s"There was not enough deuter($requiredAmount), expedition won't be send this time")
+    }
   }
 
   private def sendFleetImpl(fromPlanet: PlayerPlanet) = {
