@@ -6,55 +6,59 @@ import cats.Monad
 import cats.implicits._
 import not.ogame.bots.FacilityBuilding.{ResearchLab, RoboticsFactory, Shipyard}
 import not.ogame.bots.SuppliesBuilding.{CrystalMine, DeuteriumSynthesizer, MetalMine, SolarPlant}
+import not.ogame.bots.Technology.Energy
 import not.ogame.bots._
-import not.ogame.bots.facts.{FacilityBuildingCosts, SuppliesBuildingCosts}
+import not.ogame.bots.facts.{FacilityBuildingCosts, SuppliesBuildingCosts, TechnologyCosts}
 
 class BuildBuildingsOgameAction[T[_]: Monad](planet: PlayerPlanet)(implicit clock: LocalClock) extends SimpleOgameAction[T] {
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] =
     for {
-      page <- ogame.readSuppliesPage(planet.id)
-      resumeOn <- if (page.currentBuildingProgress.isDefined) {
-        page.currentBuildingProgress.get.finishTimestamp.pure[T]
-      } else {
-        buildOrWaitForResources(ogame, page)
-      }
+      suppliesPage <- ogame.readSuppliesPage(planet.id)
+      facilityPage <- ogame.readFacilityPage(planet.id)
+      technologyPage <- ogame.readTechnologyPage(planet.id)
+      nextTask = getNextTask(suppliesPage, facilityPage, technologyPage)
+      resumeOn <- buildOrWaitForResources(ogame, suppliesPage, facilityPage, technologyPage, nextTask)
     } yield resumeOn
 
   def isAnyPositive(resources: Resources): Boolean = {
     resources.metal > 0 || resources.crystal > 0 || resources.deuterium > 0
   }
 
-  private def buildOrWaitForResources(ogame: OgameDriver[T], page: SuppliesPageData): T[ZonedDateTime] = {
-    val maybeTask = getNextBuilding(page)
-    if (maybeTask.isDefined) {
-      val task: TaskOnPlanet = maybeTask.get
-      val cost = task.cost()
-      val currentResources = page.currentResources
-      val deficit = minus(cost, currentResources)
-      if (isAnyPositive(deficit)) {
-        var maxTimeInHours = 0.0
-        if (deficit.metal > 0) {
-          if (page.currentProduction.metal > 0) {
-            maxTimeInHours = Math.max(maxTimeInHours, deficit.metal.toDouble / page.currentProduction.metal)
-          }
+  private def buildOrWaitForResources(
+      ogame: OgameDriver[T],
+      suppliesPage: SuppliesPageData,
+      facilityPage: FacilityPageData,
+      technologyPage: TechnologyPageData,
+      task: TaskOnPlanet
+  ): T[ZonedDateTime] = {
+    val maybeTimeToFree = task.isBusy(suppliesPage, facilityPage, technologyPage)
+    if (maybeTimeToFree.isDefined) {
+      return maybeTimeToFree.get.pure[T]
+    }
+    val cost = task.cost()
+    val currentResources = suppliesPage.currentResources
+    val deficit = minus(cost, currentResources)
+    if (isAnyPositive(deficit)) {
+      var maxTimeInHours = 0.0
+      if (deficit.metal > 0) {
+        if (suppliesPage.currentProduction.metal > 0) {
+          maxTimeInHours = Math.max(maxTimeInHours, deficit.metal.toDouble / suppliesPage.currentProduction.metal)
         }
-        if (deficit.crystal > 0) {
-          if (page.currentProduction.crystal > 0) {
-            maxTimeInHours = Math.max(maxTimeInHours, deficit.crystal.toDouble / page.currentProduction.crystal)
-          }
-        }
-        if (deficit.deuterium > 0) {
-          if (page.currentProduction.deuterium > 0) {
-            maxTimeInHours = Math.max(maxTimeInHours, deficit.deuterium.toDouble / page.currentProduction.deuterium)
-          }
-        }
-        val maxTimeInSeconds = maxTimeInHours * 3600
-        clock.now().plusSeconds(maxTimeInSeconds.toInt).pure[T]
-      } else {
-        task.construct(ogame, planet)
       }
+      if (deficit.crystal > 0) {
+        if (suppliesPage.currentProduction.crystal > 0) {
+          maxTimeInHours = Math.max(maxTimeInHours, deficit.crystal.toDouble / suppliesPage.currentProduction.crystal)
+        }
+      }
+      if (deficit.deuterium > 0) {
+        if (suppliesPage.currentProduction.deuterium > 0) {
+          maxTimeInHours = Math.max(maxTimeInHours, deficit.deuterium.toDouble / suppliesPage.currentProduction.deuterium)
+        }
+      }
+      val maxTimeInSeconds = maxTimeInHours * 3600
+      clock.now().plusSeconds(maxTimeInSeconds.toInt).pure[T]
     } else {
-      clock.now().plusDays(1).pure[T]
+      task.construct(ogame, planet)
     }
   }
 
@@ -62,11 +66,15 @@ class BuildBuildingsOgameAction[T[_]: Monad](planet: PlayerPlanet)(implicit cloc
     Resources(one.metal - other.metal, one.crystal - other.crystal, one.deuterium - other.deuterium)
   }
 
-  private def getNextBuilding(page: SuppliesPageData): Option[TaskOnPlanet] = {
-    if (page.currentResources.energy < 0) {
-      Option.apply(new SuppliesBuildingTask(SolarPlant, page.getLevel(SolarPlant).value + 1))
+  private def getNextTask(
+      suppliesPage: SuppliesPageData,
+      facilityPage: FacilityPageData,
+      technologyPage: TechnologyPageData
+  ): TaskOnPlanet = {
+    if (suppliesPage.currentResources.energy < 0) {
+      new SuppliesBuildingTask(SolarPlant, suppliesPage.getLevel(SolarPlant).value + 1)
     } else {
-      taskQueue().find(p => p.isValid(page))
+      taskQueue().find(p => p.isValid(suppliesPage, facilityPage, technologyPage)).get
     }
   }
 
@@ -92,13 +100,16 @@ class BuildBuildingsOgameAction[T[_]: Monad](planet: PlayerPlanet)(implicit cloc
       new FacilityBuildingTask(RoboticsFactory, 1),
       new FacilityBuildingTask(RoboticsFactory, 2),
       new FacilityBuildingTask(Shipyard, 1),
-      new FacilityBuildingTask(ResearchLab, 1)
+      new FacilityBuildingTask(ResearchLab, 1),
+      new TechnologyBuildingTask(Energy, 1)
     )
   }
 }
 
 class SuppliesBuildingTask(suppliesBuilding: SuppliesBuilding, level: Int)(implicit clock: LocalClock) extends TaskOnPlanet {
-  override def isValid(page: SuppliesPageData): Boolean = page.getLevel(suppliesBuilding).value < level
+  override def isValid(suppliesPage: SuppliesPageData, facilityPage: FacilityPageData, technologyPage: TechnologyPageData): Boolean = {
+    suppliesPage.getLevel(suppliesBuilding).value < level
+  }
 
   override def cost(): Resources = SuppliesBuildingCosts.buildingCost(suppliesBuilding, level)
 
@@ -108,10 +119,20 @@ class SuppliesBuildingTask(suppliesBuilding: SuppliesBuilding, level: Int)(impli
       page <- ogameDriver.readSuppliesPage(planet.id)
       resumeOn = page.currentBuildingProgress.map(_.finishTimestamp).getOrElse(clock.now())
     } yield resumeOn
+
+  override def isBusy(
+      suppliesPage: SuppliesPageData,
+      facilityPage: FacilityPageData,
+      technologyPage: TechnologyPageData
+  ): Option[ZonedDateTime] = {
+    suppliesPage.currentBuildingProgress.map(_.finishTimestamp)
+  }
 }
 
 class FacilityBuildingTask(facilityBuilding: FacilityBuilding, level: Int)(implicit clock: LocalClock) extends TaskOnPlanet {
-  override def isValid(page: SuppliesPageData): Boolean = false
+  override def isValid(suppliesPage: SuppliesPageData, facilityPage: FacilityPageData, technologyPage: TechnologyPageData): Boolean = {
+    facilityPage.getLevel(facilityBuilding).value < level
+  }
 
   override def cost(): Resources = FacilityBuildingCosts.buildingCost(facilityBuilding, level)
 
@@ -121,21 +142,43 @@ class FacilityBuildingTask(facilityBuilding: FacilityBuilding, level: Int)(impli
       page <- ogameDriver.readSuppliesPage(planet.id)
       resumeOn = page.currentBuildingProgress.map(_.finishTimestamp).getOrElse(clock.now())
     } yield resumeOn
+
+  override def isBusy(
+      suppliesPage: SuppliesPageData,
+      facilityPage: FacilityPageData,
+      technologyPage: TechnologyPageData
+  ): Option[ZonedDateTime] = {
+    facilityPage.currentBuildingProgress.map(_.finishTimestamp)
+  }
 }
 
-//class TechnologyBuildingTask(technology: Technology, level: Int)(implicit clock: LocalClock) extends TaskOnPlanet {
-//  override def cost(): Resources = TechnologyCosts.technologyCost(technology, level)
-//
-//  override def construct[T[_]: Monad](ogameDriver: OgameDriver[T], planet: PlayerPlanet): T[ZonedDateTime] =
-//    for {
-//      _ <- ogameDriver.buildTechnology(planet.id, technology)
-//      page <- ogameDriver.readTechnologyPage(planet.id)
-//      resumeOn = page.currentResearchProgress.map(_.finishTimestamp).getOrElse(clock.now())
-//    } yield resumeOn
-//}
+class TechnologyBuildingTask(technology: Technology, level: Int)(implicit clock: LocalClock) extends TaskOnPlanet {
+  override def isValid(suppliesPage: SuppliesPageData, facilityPage: FacilityPageData, technologyPage: TechnologyPageData): Boolean = {
+    technologyPage.getLevel(technology).value < level
+  }
+
+  override def cost(): Resources = TechnologyCosts.technologyCost(technology, level)
+
+  override def construct[T[_]: Monad](ogameDriver: OgameDriver[T], planet: PlayerPlanet): T[ZonedDateTime] =
+    for {
+      _ <- ogameDriver.startResearch(planet.id, technology)
+      page <- ogameDriver.readTechnologyPage(planet.id)
+      resumeOn = page.currentResearchProgress.map(_.finishTimestamp).getOrElse(clock.now())
+    } yield resumeOn
+
+  override def isBusy(
+      suppliesPage: SuppliesPageData,
+      facilityPage: FacilityPageData,
+      technologyPage: TechnologyPageData
+  ): Option[ZonedDateTime] = {
+    technologyPage.currentResearchProgress.map(_.finishTimestamp)
+  }
+}
 
 trait TaskOnPlanet {
-  def isValid(page: SuppliesPageData): Boolean
+  def isBusy(suppliesPage: SuppliesPageData, facilityPage: FacilityPageData, technologyPage: TechnologyPageData): Option[ZonedDateTime]
+
+  def isValid(suppliesPage: SuppliesPageData, facilityPage: FacilityPageData, technologyPage: TechnologyPageData): Boolean
 
   def cost(): Resources
 
