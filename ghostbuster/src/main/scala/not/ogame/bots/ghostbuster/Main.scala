@@ -58,7 +58,7 @@ object Main extends StrictLogging {
     val httpStateExposer = new StatusEndpoint(state)
     (for {
       driver <- WebDriverResource.firefox[Task]()
-      selenium = new SeleniumOgameDriverCreator[Task](driver).create(credentials)
+      selenium = SeleniumOgameDriverCreator.create[Task](driver, credentials)
       firebase <- FirebaseResource.create(SettingsDirectory)
       decoratedDriver = new OgameNotificationDecorator(selenium)
       taskExecutor = new TaskExecutorImpl(decoratedDriver)

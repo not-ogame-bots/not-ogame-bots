@@ -38,11 +38,7 @@ object OrdonMain extends IOApp {
     }
     WebDriverResource
       .firefox[IO]()
-      .map(
-        driver =>
-          new SeleniumOgameDriverCreator[IO](driver)
-            .create(ordonConfig.getCredentials)
-      )
+      .map(driver => SeleniumOgameDriverCreator.create[IO](driver, ordonConfig.getCredentials))
       .use { ogame =>
         ogame.login() >> process(ogame, ordonConfig.getInitialActions)
       }
