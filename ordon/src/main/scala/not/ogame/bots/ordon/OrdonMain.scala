@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import not.ogame.bots.ordon.utils.Noise
-import not.ogame.bots.selenium.{SeleniumOgameDriverCreator, WebDriverResource}
+import not.ogame.bots.selenium.{OgameUrlProvider, SeleniumOgameDriver, WebDriverResource}
 import not.ogame.bots.{LocalClock, OgameDriver, RealLocalClock}
 
 import scala.concurrent.duration._
@@ -38,7 +38,10 @@ object OrdonMain extends IOApp {
     }
     WebDriverResource
       .firefox[IO]()
-      .map(driver => SeleniumOgameDriverCreator.create[IO](driver, ordonConfig.getCredentials))
+      .map(driver => {
+        implicit val d = driver
+        new SeleniumOgameDriver[IO](ordonConfig.getCredentials, new OgameUrlProvider(ordonConfig.getCredentials))
+      })
       .use { ogame =>
         ogame.login() >> process(ogame, ordonConfig.getInitialActions)
       }
