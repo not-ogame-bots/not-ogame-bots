@@ -20,6 +20,8 @@ object WebDriverUtils {
 
     def sendKeysF(keys: String): F[Unit] = Sync[F].delay(webElement.sendKeys(keys))
 
+    def readText: F[String] = Sync[F].delay(webElement.getText)
+
     def readInt(by: By): F[Int] = {
       find(by).map { component =>
         testToInt(component.getText)

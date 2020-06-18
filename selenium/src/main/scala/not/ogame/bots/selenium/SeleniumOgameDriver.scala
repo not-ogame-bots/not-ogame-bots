@@ -1,5 +1,6 @@
 package not.ogame.bots.selenium
 
+import cats.Monad
 import cats.data.OptionT
 import cats.effect.{Sync, Timer}
 import cats.implicits._
@@ -149,44 +150,46 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
       .map(getCapacityFromTooltip)
 
   private def readCurrentBuildingProgress: F[Option[BuildingProgress]] =
-    (for {
-      constructions <- OptionT.liftF(webDriver.waitForElementsF(By.className("construction")))
-      buildingCountdown <- OptionT(webDriver.findMany(By.id("buildingCountdown")).map(_.headOption))
-      constructionName <- getConstructionName(constructions, "buildingCountdown")
-      seconds = timeTextToSeconds(buildingCountdown.getText)
-      buildingProgress = BuildingProgress(clock.now().plusSeconds(seconds), constructionName)
-    } yield buildingProgress).value
+    for {
+      constructions <- webDriver.waitForElementsF(By.className("construction"))
+      buildingProgress <- getConstructionInProgress(constructions, "buildingCountdown")
+    } yield buildingProgress
 
   private def readCurrentShipyardProgress: F[Option[BuildingProgress]] =
-    (for {
-      constructions <- OptionT.liftF(webDriver.waitForElementsF(By.className("construction")))
-      shipyardCountdown <- OptionT(webDriver.findMany(By.id("shipyardCountdown")).map(_.headOption))
-      constructionName <- getConstructionName(constructions, "shipyardCountdown")
-      seconds = timeTextToSeconds(shipyardCountdown.getText)
-      buildingProgress = BuildingProgress(clock.now().plusSeconds(seconds), constructionName)
-    } yield buildingProgress).value
+    for {
+      constructions <- webDriver.waitForElementsF(By.className("construction"))
+      buildingProgress <- getConstructionInProgress(constructions, "shipyardCountdown")
+    } yield buildingProgress
 
   private def readCurrentResearchProgress: F[Option[BuildingProgress]] =
-    (for {
-      constructions <- OptionT.liftF(webDriver.waitForElementsF(By.className("construction")))
-      researchCountdown <- OptionT(webDriver.findMany(By.id("researchCountdown")).map(_.headOption))
-      constructionName <- getConstructionName(constructions, "researchCountdown")
-      seconds = timeTextToSeconds(researchCountdown.getText)
-      buildingProgress = BuildingProgress(clock.now().plusSeconds(seconds), constructionName)
-    } yield buildingProgress).value
+    for {
+      constructions <- webDriver.waitForElementsF(By.className("construction"))
+      buildingProgress <- getConstructionInProgress(constructions, "researchCountdown")
+    } yield buildingProgress
 
-  private def getConstructionName(constructions: List[WebElement], countdownId: String): OptionT[F, String] = {
-    OptionT
-      .fromOption[F](
-        constructions.find(cElement => cElement.findElementsS(By.id(countdownId)).nonEmpty)
-      )
-      .semiflatMap { buildingConstruction =>
-        buildingConstruction
-          .find(By.tagName("tbody"))
-          .flatMap(_.find(By.tagName("tr")))
-          .flatMap(_.find(By.tagName("th")))
-          .map(_.getText)
+  private def getConstructionInProgress(constructions: List[WebElement], countdownId: String): F[Option[BuildingProgress]] = {
+    fs2.Stream
+      .emits(constructions)
+      .evalMap(cElement => cElement.findMany(By.id(countdownId)).map(cElement -> _))
+      .collectFirst { case (constructionElement, countdownElement :: _) => constructionElement -> countdownElement }
+      .evalMap {
+        case (constructionElement, countdownElement) =>
+          Monad[F].map2(extractFinishTime(countdownElement), extractConstructionName(constructionElement))(BuildingProgress)
       }
+      .compile
+      .last
+  }
+
+  private def extractFinishTime(researchCountdown: WebElement) = {
+    researchCountdown.readText.map(str=>clock.now().plusSeconds(timeTextToSeconds(str)))
+  }
+
+  private def extractConstructionName(constructionElement: WebElement) = {
+    constructionElement
+      .find(By.tagName("tbody"))
+      .flatMap(_.find(By.tagName("tr")))
+      .flatMap(_.find(By.tagName("th")))
+      .map(_.getText)
   }
 
   private def timeTextToSeconds(timeText: String): Int =
