@@ -127,13 +127,20 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
 
   private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: ZonedDateTime): Task[Unit] = {
     if (fsConfig.builder) {
-      builder.buildNextThingFromWishList(planet).flatMap {
-        case Some(finishTime)
-            if timeDiff(clock.now(), finishTime) < fsConfig.maxBuildingTime && timeDiff(startedBuildingAt, clock.now()) < fsConfig.maxWaitTime =>
-          Logger[Task].info(s"Decided to wait for building to finish til $finishTime") >>
-            taskExecutor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
-        case _ => Task.unit
-      }
+      builder
+        .buildNextThingFromWishList(planet)
+        .flatMap {
+          case BuilderResult.Building(finishTime)
+              if timeDiff(clock.now(), finishTime) < fsConfig.maxBuildingTime && timeDiff(startedBuildingAt, clock.now()) < fsConfig.maxWaitTime =>
+            Logger[Task].info(s"Decided to wait for building to finish til $finishTime") >>
+              taskExecutor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
+          case BuilderResult.Waiting(finishTime)
+              if timeDiff(clock.now(), finishTime) < fsConfig.maxBuildingTime && timeDiff(startedBuildingAt, clock.now()) < fsConfig.maxWaitTime =>
+            Logger[Task].info(s"Decided to wait for building to finish til $finishTime") >>
+              taskExecutor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
+          case BuilderResult.Idle =>
+            Task.unit
+        }
     } else {
       Task.unit
     }

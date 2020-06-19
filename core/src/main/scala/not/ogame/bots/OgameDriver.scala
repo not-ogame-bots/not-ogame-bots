@@ -116,8 +116,8 @@ case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) 
     Resources(Math.max(metal - other.metal, 0), Math.max(crystal - other.crystal, 0), Math.max(deuterium - other.deuterium, 0))
   }
 
-  def div(other: Resources): (Double, Double, Double) = {
-    (
+  def div(other: Resources): List[Double] = {
+    List(
       divideIfGreaterThanZero(metal, other.metal),
       divideIfGreaterThanZero(crystal, other.crystal),
       divideIfGreaterThanZero(deuterium, other.deuterium)
