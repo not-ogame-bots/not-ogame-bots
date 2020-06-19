@@ -44,9 +44,7 @@ class StartBuildingsOgameAction[T[_]: Monad](implicit clock: LocalClock) extends
       new TechnologyBuildingTask(ImpulseDrive, 3),
       new TechnologyBuildingTask(Astrophysics, 1),
       new TechnologyBuildingTask(Computer, 1),
-      new TechnologyBuildingTask(Computer, 2),
-      new TechnologyBuildingTask(Computer, 3),
-      new TechnologyBuildingTask(Computer, 4)
+      new TechnologyBuildingTask(Computer, 2)
     )
   }
 }
