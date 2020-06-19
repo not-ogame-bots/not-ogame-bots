@@ -11,22 +11,22 @@ import not.ogame.bots.{LocalClock, OgameDriver, RealLocalClock}
 import scala.concurrent.duration._
 
 object OrdonMain extends IOApp {
-  private val ordonConfig = OrdonQuasarConfig
   private implicit val clock: LocalClock = new RealLocalClock()
   private var lastClockUpdate: ZonedDateTime = clock.now()
   private var errors: List[ZonedDateTime] = List()
 
   override def run(args: List[String]): IO[ExitCode] = {
+    val ordonConfig = if (args.contains("169")) OrdonQuasarConfig else OrdonPasiphaeConfig
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
     System.setProperty("webdriver.chrome.driver", "selenium/chromedriver-v83")
-    runBot()
+    runBot(ordonConfig)
   }
 
   def addError(time: ZonedDateTime): Unit = {
     errors = errors ++ List(time)
   }
 
-  private def runBot(): IO[ExitCode] = {
+  private def runBot(ordonConfig: OrdonConfig): IO[ExitCode] = {
     if (lastClockUpdate.isBefore(clock.now().minusMinutes(4))) {
       println("lastClockUpdate" + lastClockUpdate)
       Noise.makeNoise()
@@ -52,7 +52,7 @@ object OrdonMain extends IOApp {
         println(throwable)
         throwable.printStackTrace()
         println("Restarting bot from scratch...")
-        runBot()
+        runBot(ordonConfig)
       })
   }
 

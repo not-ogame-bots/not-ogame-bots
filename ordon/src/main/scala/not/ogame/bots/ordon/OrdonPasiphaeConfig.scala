@@ -43,14 +43,14 @@ object OrdonPasiphaeConfig extends OrdonConfig {
     val configClass = new OgameConfig()
     val listOfActions = List(
       new AlertOgameAction[IO](),
-      new FlyAroundWithLargeCargoOgameAction[IO](planet7, moon7),
-      new DeployAndReturnNoLargeCargoOgameAction[IO](planet7, moon7, configClass.expectedOffers),
+      //      new FlyAroundWithLargeCargoOgameAction[IO](planet7, moon7),
+      //      new DeployAndReturnNoLargeCargoOgameAction[IO](planet7, moon7, configClass.expectedOffers),
       //      new FsCargoProcess[IO](configClass).startAction(),
       //      new FsBattleProcess[IO](configClass).startAction(),
       //      createFlyAroundActionCargo(moon4),
       //      new DeployAndReturnOgameAction[IO](planet6, moon6),
-      createKeepActiveAction,
-      createExpeditionAction
+      createKeepActiveAction //,
+      //      createExpeditionAction
     )
     IO.pure(listOfActions.map(ScheduledAction(clock.now(), _)))
   }

@@ -4,13 +4,12 @@ import java.time.ZonedDateTime
 
 import cats.Monad
 import cats.implicits._
-import not.ogame.bots.FacilityBuilding.{ResearchLab, RoboticsFactory, Shipyard}
-import not.ogame.bots.SuppliesBuilding.{CrystalMine, DeuteriumSynthesizer, MetalMine, SolarPlant}
-import not.ogame.bots.Technology.Energy
+import not.ogame.bots.SuppliesBuilding.SolarPlant
 import not.ogame.bots._
 import not.ogame.bots.facts.{FacilityBuildingCosts, SuppliesBuildingCosts, TechnologyCosts}
 
-class BuildBuildingsOgameAction[T[_]: Monad](planet: PlayerPlanet)(implicit clock: LocalClock) extends SimpleOgameAction[T] {
+class BuildBuildingsOgameAction[T[_]: Monad](planet: PlayerPlanet, tasks: List[TaskOnPlanet])(implicit clock: LocalClock)
+    extends SimpleOgameAction[T] {
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] =
     for {
       suppliesPage <- ogame.readSuppliesPage(planet.id)
@@ -74,35 +73,8 @@ class BuildBuildingsOgameAction[T[_]: Monad](planet: PlayerPlanet)(implicit cloc
     if (suppliesPage.currentResources.energy < 0) {
       new SuppliesBuildingTask(SolarPlant, suppliesPage.getLevel(SolarPlant).value + 1)
     } else {
-      taskQueue().find(p => p.isValid(suppliesPage, facilityPage, technologyPage)).get
+      tasks.find(p => p.isValid(suppliesPage, facilityPage, technologyPage)).get
     }
-  }
-
-  private def taskQueue(): List[TaskOnPlanet] = {
-    List(
-      new SuppliesBuildingTask(MetalMine, 1),
-      new SuppliesBuildingTask(MetalMine, 2),
-      new SuppliesBuildingTask(MetalMine, 3),
-      new SuppliesBuildingTask(MetalMine, 4),
-      new SuppliesBuildingTask(MetalMine, 5),
-      new SuppliesBuildingTask(CrystalMine, 1),
-      new SuppliesBuildingTask(CrystalMine, 2),
-      new SuppliesBuildingTask(CrystalMine, 3),
-      new SuppliesBuildingTask(MetalMine, 6),
-      new SuppliesBuildingTask(CrystalMine, 4),
-      new SuppliesBuildingTask(DeuteriumSynthesizer, 1),
-      new SuppliesBuildingTask(DeuteriumSynthesizer, 2),
-      new SuppliesBuildingTask(DeuteriumSynthesizer, 3),
-      new SuppliesBuildingTask(DeuteriumSynthesizer, 4),
-      new SuppliesBuildingTask(DeuteriumSynthesizer, 5),
-      new SuppliesBuildingTask(CrystalMine, 5),
-      new SuppliesBuildingTask(CrystalMine, 6),
-      new FacilityBuildingTask(RoboticsFactory, 1),
-      new FacilityBuildingTask(RoboticsFactory, 2),
-      new FacilityBuildingTask(Shipyard, 1),
-      new FacilityBuildingTask(ResearchLab, 1),
-      new TechnologyBuildingTask(Energy, 1)
-    )
   }
 }
 
