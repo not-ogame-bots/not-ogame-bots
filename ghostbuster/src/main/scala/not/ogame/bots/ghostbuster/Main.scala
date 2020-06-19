@@ -37,15 +37,15 @@ import scala.concurrent.duration._
 
 object Main extends StrictLogging {
   private implicit val clock: LocalClock = new RealLocalClock()
-  private val SettingsDirectory = s"${System.getenv("HOME")}/.not-ogame-bots/"
+  private val SettingsDirectory = s"${System.getenv("HOME")}/.not-ogame-bots"
 
   def main(args: Array[String]): Unit = {
     Thread.setDefaultUncaughtExceptionHandler { (t, e) =>
       logger.error(s"Uncaught exception in thread: $t", e)
     }
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
-    val botConfig = ConfigSource.default.loadOrThrow[BotConfig]
-    val credentials = ConfigSource.file(s"${SettingsDirectory}credentials.conf").loadOrThrow[Credentials]
+    val botConfig = ConfigSource.resources("quasar.conf").loadOrThrow[BotConfig]
+    val credentials = ConfigSource.file(s"${SettingsDirectory}/quasar-credentials.conf").loadOrThrow[Credentials]
     logger.info(pprint.apply(botConfig).render)
 
     Ref
