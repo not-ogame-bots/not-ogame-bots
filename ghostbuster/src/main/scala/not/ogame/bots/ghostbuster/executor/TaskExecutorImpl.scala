@@ -219,8 +219,8 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware)(im
             .flatMap {
               case Response.Success(value) =>
                 Task.pure(value)
-              case Response.Failure(_) =>
-                Task.raiseError[T](new RuntimeException(s"Couldn't execute operation"))
+              case Response.Failure(ex) =>
+                Task.raiseError[T](ex)
             }
       }
   }
