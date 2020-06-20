@@ -19,7 +19,8 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: 
         sp <- taskExecutor.readSupplyPage(planet)
         fp <- taskExecutor.readFacilityPage(planet)
         tp <- taskExecutor.readTechnologyPage(planet)
-        time <- buildNextThingFromWishList(planet, sp, fp, tp, wishesForPlanet)
+        mfp <- taskExecutor.getFleetOnPlanet(planet)
+        time <- buildNextThingFromWishList(planet, sp, fp, tp, mfp.fleet, wishesForPlanet)
       } yield time
     } else {
       Task.pure(BuilderResult.Idle)
@@ -31,6 +32,7 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: 
       suppliesPageData: SuppliesPageData,
       facilityPageData: FacilityPageData,
       technologyPageData: TechnologyPageData,
+      fleet: Map[ShipType, Int],
       wishesForPlanet: List[Wish]
   ) = {
     wishesForPlanet
@@ -41,7 +43,7 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: 
           buildFacilityBuildingOrNothing(w.facilityBuilding, facilityPageData, suppliesPageData, planet)
         case w: Wish.SmartSupplyBuilder if isSmartBuilderApplicable(planet, suppliesPageData, w) =>
           smartBuilder(planet, suppliesPageData, w)
-        case w: Wish.BuildShip =>
+        case w: Wish.BuildShip if fleet(w.shipType) <= w.amount.value =>
           buildShips(planet, w, suppliesPageData)
         case w: Wish.Research if technologyPageData.getLevel(w.technology).value < w.level.value =>
           startResearch(planet, w.technology, technologyPageData)
@@ -78,15 +80,18 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: 
   }
 
   private def buildShips(planet: PlayerPlanet, w: Wish.BuildShip, suppliesPageData: SuppliesPageData) = { //TODO check not building and shipyard is not upgrading
-    val requiredResources = ShipCosts.shipCost(w.shipType).multiply(w.amount.value)
-    if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
-      taskExecutor.buildShip(w.shipType, w.amount.value, planet).map(BuilderResult.Building)
+    val requiredResourcesSingleShip = ShipCosts.shipCost(w.shipType)
+    if (suppliesPageData.currentResources.gtEqTo(requiredResourcesSingleShip)) {
+      val canBuildAmount = suppliesPageData.currentResources.div(requiredResourcesSingleShip).min
+      val buildAmount = Math.min(canBuildAmount, w.amount.value).toInt
+      taskExecutor.buildShip(w.shipType, buildAmount, planet).map(BuilderResult.Building)
     } else {
-      val secondsToWait = calculateWaitingTime(requiredResources, suppliesPageData.currentProduction, suppliesPageData.currentResources)
+      val secondsToWait =
+        calculateWaitingTime(requiredResourcesSingleShip, suppliesPageData.currentProduction, suppliesPageData.currentResources)
       Logger[Task]
         .info(
           s"Wanted to build $w but there were not enough resources on ${planet.coordinates} " +
-            s"- ${suppliesPageData.currentResources}/$requiredResources"
+            s"- ${suppliesPageData.currentResources}/$requiredResourcesSingleShip"
         )
         .map(_ => BuilderResult.Waiting(clock.now().plusSeconds(secondsToWait)))
     }
@@ -174,15 +179,15 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: 
           buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
         } else { //TODO can we get rid of hardcoded ratio?
           val shouldBuildDeuter = suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value -
-            suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer).value > 2 &&
+            suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer).value > 4 &&
             suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer).value < w.deuterLevel.value
           val shouldBuildCrystal = suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value -
             suppliesPageData.getLevel(SuppliesBuilding.CrystalMine).value > 2 &&
             suppliesPageData.getLevel(SuppliesBuilding.CrystalMine).value < w.crystalLevel.value
-          if (shouldBuildDeuter) {
-            buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
-          } else if (shouldBuildCrystal) {
+          if (shouldBuildCrystal) {
             buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.CrystalMine)
+          } else if (shouldBuildDeuter) {
+            buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
           } else if (suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value < w.metalLevel.value) {
             buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.MetalMine)
           } else {
