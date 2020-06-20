@@ -6,6 +6,7 @@ import not.ogame.bots.selenium.EasySelenium._
 import org.openqa.selenium.{By, JavascriptExecutor, WebDriver}
 
 import scala.util.Random
+import scala.jdk.CollectionConverters._
 
 class SendFleetAction(webDriver: WebDriver) {
   def sendFleet(request: SendFleetRequest): Unit = {
@@ -35,6 +36,17 @@ class SendFleetAction(webDriver: WebDriver) {
     waitUntilVisible(By.id("fleet2"))
     selectSpeed(request.speed)
     fillTarget(request.targetCoordinates)
+    verifyDeuteriumAmount
+  }
+
+  private def verifyDeuteriumAmount = {
+    val overmarkElement = webDriver.findElement(By.id("consumption")).findElements(By.className("overmark")).asScala.headOption
+    overmarkElement match {
+      case Some(value) =>
+        val requiredAmount = value.getText.split(" ").head.filter(_.isDigit).toInt
+        throw AvailableDeuterExceeded(requiredAmount)
+      case None => // do nothing
+    }
   }
 
   private def selectSpeed(speedLevel: FleetSpeed): Unit = {
