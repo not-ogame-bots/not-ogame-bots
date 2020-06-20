@@ -43,9 +43,9 @@ class SendFleetAction(webDriver: WebDriver) {
     val overmarkElement = webDriver.findElement(By.id("consumption")).findElements(By.className("overmark")).asScala.headOption
     overmarkElement match {
       case Some(value) =>
-        val requiredAmount = BigInt(value.getText.split(" ").head.filter(_.isDigit))
+        val requiredAmount = value.getText.split(" ").head.filter(_.isDigit).toInt
         throw AvailableDeuterExceeded(requiredAmount)
-      case None        => // do nothing
+      case None => // do nothing
     }
   }
 
