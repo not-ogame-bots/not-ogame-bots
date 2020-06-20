@@ -44,11 +44,11 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
   }
 
   private def collectDebris(planets: List[PlayerPlanet], expeditions: List[MyFleet]) = {
-    val shouldCollectDebris = expeditions.filter(_.isReturning) match {
+    val shouldCollectDebris = expeditionConfig.collectingOn && (expeditions.filter(_.isReturning) match {
       case l if l.nonEmpty =>
         !expeditionConfig.ships.forall { case FleetShip(shipType, amount) => amount <= l.maxBy(_.arrivalTime).ships(shipType) }
       case Nil => false
-    }
+    })
     if (shouldCollectDebris) {
       val debrisCollectingPlanet = planets.filter(_.id == expeditionConfig.collectingPlanet).head
       taskExecutor.getFleetOnPlanet(debrisCollectingPlanet).flatMap { pf =>

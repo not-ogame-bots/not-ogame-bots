@@ -61,6 +61,7 @@ case class ExpeditionConfig(
     deuterThreshold: Int,
     eligiblePlanets: List[PlanetId],
     collectingPlanet: PlanetId,
+    collectingOn: Boolean,
     target: Coordinates
 )
 case class FleetShip(shipType: ShipType, amount: Int)
