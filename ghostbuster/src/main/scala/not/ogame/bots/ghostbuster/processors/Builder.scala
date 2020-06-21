@@ -187,12 +187,10 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         if (suppliesPageData.currentResources.energy < 0) {
-          suppliesPageData.currentShipyardProgress match {
-            case Some(value) => BuilderResult.building(value.finishTimestamp).pure[OgameAction]
-            case None =>
-              ogameActionDriver.buildSolarSatellites(planet.id, 1) >> ogameActionDriver
-                .readSuppliesPage(planet.id)
-                .map(f => BuilderResult.building(f.currentShipyardProgress.get.finishTimestamp))
+          if (suppliesPageData.getLevel(SuppliesBuilding.SolarPlant).value >= 17) {
+            buildSolarSatellite(planet, suppliesPageData)
+          } else {
+            buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
           }
         } else { //TODO can we get rid of hardcoded ratio?
           val shouldBuildDeuter = suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value -
@@ -211,6 +209,16 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
             BuilderResult.idle().pure[OgameAction]
           }
         }
+    }
+  }
+
+  private def buildSolarSatellite(planet: PlayerPlanet, suppliesPageData: SuppliesPageData) = {
+    suppliesPageData.currentShipyardProgress match {
+      case Some(value) => BuilderResult.building(value.finishTimestamp).pure[OgameAction]
+      case None =>
+        ogameActionDriver.buildSolarSatellites(planet.id, 1) >> ogameActionDriver
+          .readSuppliesPage(planet.id)
+          .map(f => BuilderResult.building(f.currentShipyardProgress.get.finishTimestamp))
     }
   }
 
