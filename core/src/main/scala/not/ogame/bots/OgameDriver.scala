@@ -2,7 +2,6 @@ package not.ogame.bots
 
 import java.time.ZonedDateTime
 
-import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import eu.timepit.refined.api.Refined

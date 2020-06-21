@@ -19,7 +19,7 @@ class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: 
   def run(): Task[Unit] = {
     (for {
       planets <- ogameDriver.readPlanets().execute()
-      fleets <- ogameDriver.readAllFleets().execute()
+      fleets <- ogameDriver.readAllFleetsRedirect().execute()
       _ <- loop(fleets, planets)
     } yield ())
       .onError(e => Logger[Task].error(e)(s"restarting escape processor ${e.getMessage}"))
@@ -38,7 +38,7 @@ class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: 
                 .consumeWith(Consumer.head) <* Logger[Task].info("Used fleets from notification")
             )
             .flatMap {
-              case Left(_)      => ogameDriver.readAllFleets().execute()
+              case Left(_)      => ogameDriver.readAllFleetsRedirect().execute()
               case Right(value) => Task.pure(value)
             }
       )

@@ -5,6 +5,7 @@ import cats.free.Free
 import not.ogame.bots.{
   BuildingProgress,
   FacilityBuilding,
+  Fleet,
   MyFleet,
   OgameDriver,
   PlanetId,
@@ -79,5 +80,7 @@ package object executor {
           .readTechnologyPage(planetId)
           .map(_.currentResearchProgress.get)
     }
+
+    def readAllFleetsRedirect(): F[List[Fleet]] = ogameDriver.readAllFleets() <* ogameDriver.readPlanets()
   }
 }

@@ -50,7 +50,7 @@ class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, ogameDriver
 
   private def firstFleetArrivalTime(planet: PlayerPlanet) = {
     ogameDriver
-      .readAllFleets()
+      .readAllFleetsRedirect()
       .map(_.filter(f => f.to == planet.coordinates))
       .map {
         case l if l.nonEmpty => l.map(_.arrivalTime).min.some

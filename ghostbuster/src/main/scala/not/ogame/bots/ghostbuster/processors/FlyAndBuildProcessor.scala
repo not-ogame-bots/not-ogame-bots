@@ -33,7 +33,7 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
 
   private def lookAtInTheAir(planets: List[PlayerPlanet]): Task[Unit] = {
     (for {
-      fleets <- ogameDriver.readAllFleets()
+      fleets <- ogameDriver.readAllFleetsRedirect()
       possibleFsFleets = fleets.filter(f => isFsFleet(planets, f))
       waitingTime <- possibleFsFleets match {
         case l @ _ :: _ =>
