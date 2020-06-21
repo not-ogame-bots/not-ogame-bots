@@ -27,7 +27,7 @@ trait OgameDriver[F[_]] {
 
   def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit]
 
-  def buildSolarSatellite(planetId: PlanetId): F[Unit]
+  def buildSolarSatellites(planetId: PlanetId, count: Int): F[Unit]
 
   def readFleetPage(planetId: PlanetId): F[FleetPageData]
 
