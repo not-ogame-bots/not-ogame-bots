@@ -20,7 +20,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
         .execute()
         .map(planets => planets.filter(p => expeditionConfig.eligiblePlanets.contains(p.id)))
         .flatMap(lookForFleet)
-        .onError(e => Logger[Task].error(s"restarting expedition processor ${e.getMessage}"))
+        .onError(e => Logger[Task].error(e)(s"restarting expedition processor ${e.getMessage}"))
         .onErrorRestartIf(_ => true)
     } else {
       Task.never

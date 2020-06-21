@@ -20,12 +20,14 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver
 ) extends FLogger {
   def run(): Task[Unit] = { //TODO add support for other way
     if (config.isOn) {
-      for {
+      (for {
         planets <- ogameDriver.readPlanets().execute()
         from = planets.find(p => p.id == config.from).get
         to = planets.find(p => p.id == config.to).get
         _ <- loop(from, to)
-      } yield ()
+      } yield ())
+        .onError(e => Logger[Task].error(e)(s"restarting flyAndReturn processor ${e.getMessage}"))
+        .onErrorRestartIf(_ => true)
     } else {
       Task.never
     }

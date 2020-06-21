@@ -10,6 +10,7 @@ import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.notifications.Notification
 import not.ogame.bots.ghostbuster.ogame.OgameAction
 import not.ogame.bots.ghostbuster.{EscapeConfig, FLogger}
+import cats.implicits._
 
 class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: EscapeConfig)(
     implicit executor: OgameActionExecutor[Task],
@@ -21,6 +22,7 @@ class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: 
       fleets <- ogameDriver.readAllFleets().execute()
       _ <- loop(fleets, planets)
     } yield ())
+      .onError(e => Logger[Task].error(e)(s"restarting escape processor ${e.getMessage}"))
       .onErrorRestartIf(_ => true)
   }
 
@@ -95,7 +97,6 @@ class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: 
         .execute()
       _ <- Logger[Task].info(s"Waiting to attack time: $attackTime")
       _ <- executor.waitTo(attackTime)
-      _ <- Logger[Task].info("Looking for escaped fleet...")
       _ <- Logger[Task].info("Returning fleet...")
       _ <- ogameDriver.returnFleet(myFleet.fleetId).execute()
     } yield ()
