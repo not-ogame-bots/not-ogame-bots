@@ -8,40 +8,44 @@ import not.ogame.bots.facts.{EnergyConsumption, FacilityBuildingCosts, Productio
 import not.ogame.bots.{Resources, SuppliesBuilding}
 
 class TestStrategiesSpec extends munit.FunSuite {
-  test("Test strategies") {
+  //  test("Test strategies") {
+  //    val ogame = Ogame(
+  //      resources = Resources(120, 200, 75),
+  //      buildings = Map(MetalMine -> 6, CrystalMine -> 4, DeuteriumSynthesizer -> 3, SolarPlant -> 6)
+  //    ).buildE(CrystalMine) //5
+  //      .buildE(MetalMine) //7
+  //      .buildE(CrystalMine) //6
+  //      .buildE(MetalMine) //8
+  //      .buildE(CrystalMine) //7
+  //      .buildE(DeuteriumSynthesizer) //4
+  //      .buildE(DeuteriumSynthesizer) //5
+  //      .buildE(CrystalMine) //8
+  //      .advanceTime(costForAstrophysics())
+  //    println(ogame)
+  //    println(ogame.timeInSeconds.toDouble / 60 / 60)
+  //    println(costForAstrophysics())
+  //  }
+
+  test("Test strategies base") {
     val ogame = Ogame(
-      resources = Resources(120, 200, 75),
-      buildings = Map(MetalMine -> 6, CrystalMine -> 4, DeuteriumSynthesizer -> 3, SolarPlant -> 6)
-    ).buildE(CrystalMine) //5
-      .buildE(MetalMine) //7
-      .buildE(CrystalMine) //6
-      .buildE(MetalMine) //8
-      .buildE(CrystalMine) //7
-      .buildE(DeuteriumSynthesizer) //4
-      .buildE(DeuteriumSynthesizer) //5
-      .buildE(CrystalMine) //8
-      .advanceTime(costForAstrophysics())
+      resources = Resources(2_000, 700, 560),
+      buildings = Map(MetalMine -> 8, CrystalMine -> 8, DeuteriumSynthesizer -> 5, SolarPlant -> 10)
+    ).buildE(CrystalMine)
+      .advanceTime(remainingCost())
     println(ogame)
     println(ogame.timeInSeconds.toDouble / 60 / 60)
-    println(costForAstrophysics())
+    println(remainingCost())
   }
 
   test("Test strategies") {
     val ogame = Ogame(
-      resources = Resources(120, 200, 75),
-      buildings = Map(MetalMine -> 6, CrystalMine -> 4, DeuteriumSynthesizer -> 3, SolarPlant -> 6)
-    ).buildE(CrystalMine) //5
-      .buildE(MetalMine) //7
-      .buildE(CrystalMine) //6
-      .buildE(MetalMine) //8
-      .buildE(DeuteriumSynthesizer) //4
-      .buildE(CrystalMine) //7
-      .buildE(DeuteriumSynthesizer) //5
-      .buildE(CrystalMine) //8
-      .advanceTime(costForAstrophysics())
+      resources = Resources(2_000, 700, 560),
+      buildings = Map(MetalMine -> 8, CrystalMine -> 8, DeuteriumSynthesizer -> 5, SolarPlant -> 10)
+    ).buildE(CrystalMine)
+      .advanceTime(remainingCost())
     println(ogame)
     println(ogame.timeInSeconds.toDouble / 60 / 60)
-    println(costForAstrophysics())
+    println(remainingCost())
   }
 
   case class Ogame(
@@ -118,6 +122,23 @@ class TestStrategiesSpec extends munit.FunSuite {
         resources = newResources,
         buildings = buildings.map(entry => if (entry._1 == building) entry._1 -> (entry._2 + 1) else entry._1 -> entry._2)
       )
+    }
+  }
+
+  private def remainingCost(): Resources = {
+    List(
+      TechnologyCosts.technologyCost(Espionage, 4),
+      TechnologyCosts.technologyCost(ImpulseDrive, 1),
+      //    TechnologyCosts.technologyCost(Shipyard, 2),
+      FacilityBuildingCosts.buildingCost(Shipyard, 3),
+      TechnologyCosts.technologyCost(ImpulseDrive, 2),
+      FacilityBuildingCosts.buildingCost(Shipyard, 4),
+      TechnologyCosts.technologyCost(ImpulseDrive, 3),
+      TechnologyCosts.technologyCost(Computer, 1),
+      TechnologyCosts.technologyCost(Computer, 2),
+      TechnologyCosts.technologyCost(Astrophysics, 1)
+    ).fold(Resources.Zero) { (one, other) =>
+      one.add(other)
     }
   }
 
