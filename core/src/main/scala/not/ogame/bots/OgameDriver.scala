@@ -53,12 +53,12 @@ case class SuppliesPageData(
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
-    @Deprecated
-    suppliesLevels: SuppliesBuildingLevels,
+    suppliesIntLevels: SuppliesBuildingIntLevels,
     currentBuildingProgress: Option[BuildingProgress],
     currentShipyardProgress: Option[BuildingProgress]
 ) {
-  val suppliesIntLevels: SuppliesBuildingIntLevels = SuppliesBuildingIntLevels(suppliesLevels.values.map(e => e._1 -> e._2.value))
+  @Deprecated
+  val suppliesLevels: SuppliesBuildingLevels = SuppliesBuildingLevels(suppliesIntLevels.values.map(e => e._1 -> nonNegative(e._2)))
 
   def buildingInProgress: Boolean = currentBuildingProgress.isDefined
 
@@ -83,11 +83,11 @@ case class FacilityPageData(
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
-    @Deprecated
-    facilityLevels: FacilitiesBuildingLevels,
+    val facilityIntLevels: FacilitiesBuildingIntLevels,
     currentBuildingProgress: Option[BuildingProgress]
 ) {
-  val facilityIntLevels: FacilitiesBuildingIntLevels = FacilitiesBuildingIntLevels(facilityLevels.values.map(e => e._1 -> e._2.value))
+  @Deprecated
+  val facilityLevels: FacilitiesBuildingLevels = FacilitiesBuildingLevels(facilityIntLevels.values.map(e => e._1 -> nonNegative(e._2)))
 
   @Deprecated
   def getLevel(facilityBuilding: FacilityBuilding): Int Refined NonNegative = {
@@ -113,11 +113,11 @@ case class TechnologyPageData(
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
-    @Deprecated
-    technologyLevels: TechnologyLevels,
+    technologyIntLevels: TechnologyIntLevels,
     currentResearchProgress: Option[BuildingProgress]
 ) {
-  val technologyIntLevels: TechnologyIntLevels = TechnologyIntLevels(technologyLevels.values.map(e => e._1 -> e._2.value))
+  @Deprecated
+  val technologyLevels: TechnologyLevels = TechnologyLevels(technologyIntLevels.values.map(e => e._1 -> nonNegative(e._2)))
 
   @Deprecated
   def getLevel(technology: Technology): Int Refined NonNegative = {

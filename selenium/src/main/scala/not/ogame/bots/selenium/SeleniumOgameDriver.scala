@@ -3,7 +3,6 @@ package not.ogame.bots.selenium
 import cats.Monad
 import cats.effect.{Sync, Timer}
 import cats.implicits._
-import eu.timepit.refined.numeric.NonNegative
 import not.ogame.bots._
 import not.ogame.bots.selenium.EasySelenium._
 import not.ogame.bots.selenium.WebDriverUtils._
@@ -73,9 +72,9 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
       suppliesLevels <- SuppliesBuilding.values.toList
         .map(suppliesBuilding => suppliesBuilding -> getSuppliesBuildingLevel(suppliesBuilding))
         .traverse {
-          case (building, fetchLevel) => fetchLevel.map(level => building -> refineVUnsafe[NonNegative, Int](level))
+          case (building, fetchLevel) => fetchLevel.map(level => building -> level)
         }
-        .map(list => SuppliesBuildingLevels(list.toMap))
+        .map(list => SuppliesBuildingIntLevels(list.toMap))
       currentBuildingProgress <- readCurrentBuildingProgress
       currentShipyardProgress <- readCurrentShipyardProgress
     } yield SuppliesPageData(
@@ -96,8 +95,8 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
       currentCapacity <- readCurrentCapacity
       facilityLevels <- FacilityBuilding.values.toList
         .map(facilityBuilding => facilityBuilding -> getFacilityBuildingLevel(facilityBuilding))
-        .traverse { case (building, fetchLevel) => fetchLevel.map(level => building -> refineVUnsafe[NonNegative, Int](level)) }
-        .map(list => FacilitiesBuildingLevels(list.toMap))
+        .traverse { case (building, fetchLevel) => fetchLevel.map(level => building -> level) }
+        .map(list => FacilitiesBuildingIntLevels(list.toMap))
       currentBuildingProgress <- readCurrentBuildingProgress
     } yield FacilityPageData(clock.now(), currentResources, currentProduction, currentCapacity, facilityLevels, currentBuildingProgress)
 
@@ -109,8 +108,8 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
       currentCapacity <- readCurrentCapacity
       technologyLevels <- Technology.values.toList
         .map(technology => technology -> getTechnologyLevel(technology))
-        .traverse { case (building, fetchLevel) => fetchLevel.map(level => building -> refineVUnsafe[NonNegative, Int](level)) }
-        .map(list => TechnologyLevels(list.toMap))
+        .traverse { case (building, fetchLevel) => fetchLevel.map(level => building -> level) }
+        .map(list => TechnologyIntLevels(list.toMap))
       currentReserchProgress <- readCurrentResearchProgress
     } yield TechnologyPageData(clock.now(), currentResources, currentProduction, currentCapacity, technologyLevels, currentReserchProgress)
 
