@@ -1,5 +1,6 @@
 package not.ogame.bots.ghostbuster.ogame
 import acyclic.skipped
+import cats.effect.ExitCase
 import not.ogame.bots._
 
 sealed trait OgameOp[T]
@@ -26,4 +27,6 @@ object OgameOp {
 
   case class RaiseError[A](throwable: Throwable) extends OgameOp[A]
   case class HandleError[A](fa: OgameAction[A], f: Throwable => OgameAction[A]) extends OgameOp[A]
+  case class BracketCase[A, B](acquire: OgameAction[A], use: A => OgameAction[B], release: (A, ExitCase[Throwable]) => OgameAction[Unit])
+      extends OgameOp[B]
 }

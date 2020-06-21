@@ -2,6 +2,7 @@ package not.ogame.bots.ghostbuster.interpreter
 
 import java.time.ZonedDateTime
 
+import cats.effect.Async
 import cats.implicits._
 import cats.~>
 import io.chrisdavenport.log4cats.Logger
@@ -63,6 +64,8 @@ class OgameActionInterpreterImpl(ogameDriver: OgameDriver[Task] with Notificatio
             val fa2 = fa.foldMap(compiler)
             val f2 = f.andThen(_.foldMap(compiler))
             fa2.handleErrorWith(f2)
+          case OgameOp.BracketCase(acquire, use, release) =>
+            implicitly[Async[Task]].bracketCase(acquire.foldMap(compiler))(use(_).foldMap(compiler))(release(_, _).foldMap(compiler))
         })
     }
   }

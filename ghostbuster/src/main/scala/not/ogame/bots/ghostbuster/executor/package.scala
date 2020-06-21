@@ -13,7 +13,7 @@ package object executor {
       override def suspend[A](thunk: => OgameAction[A]): OgameAction[A] = monad.unit.flatMap(_ => thunk)
       override def bracketCase[A, B](acquire: OgameAction[A])(use: A => OgameAction[B])(
           release: (A, ExitCase[Throwable]) => OgameAction[Unit]
-      ): OgameAction[B] = ???
+      ): OgameAction[B] = OgameAction.bracketCase(acquire)(use)(release)
       override def raiseError[A](e: Throwable): OgameAction[A] = OgameAction.raiseError(e)
       override def handleErrorWith[A](fa: OgameAction[A])(f: Throwable => OgameAction[A]): OgameAction[A] =
         OgameAction.handleErrorWith(fa, f)
