@@ -164,7 +164,7 @@ class SolarSatelliteBuildingTask extends TaskOnPlanet {
 
   override def construct[T[_]: Monad](ogameDriver: OgameDriver[T], planet: PlayerPlanet): T[ZonedDateTime] =
     for {
-      _ <- ogameDriver.buildSolarSatellite(planet.id)
+      _ <- ogameDriver.buildSolarSatellites(planet.id, 1)
       page <- ogameDriver.readSuppliesPage(planet.id)
       resumeOn = page.currentShipyardProgress.get.finishTimestamp
     } yield resumeOn
