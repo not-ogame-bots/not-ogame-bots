@@ -39,7 +39,7 @@ class OgameActionInterpreterImpl(ogameDriver: OgameDriver[Task] with Notificatio
           case OgameOp.ReadPlanets() =>
             ogameDriver.readPlanets()
           case OgameOp.CheckLoginStatus() =>
-            ogameDriver.checkLoginStatus()
+            ogameDriver.checkIsLoggedIn()
           case OgameOp.ReadMyOffers() =>
             ogameDriver.readMyOffers()
           case OgameOp.Login() =>
@@ -66,6 +66,8 @@ class OgameActionInterpreterImpl(ogameDriver: OgameDriver[Task] with Notificatio
             fa2.handleErrorWith(f2)
           case OgameOp.BracketCase(acquire, use, release) =>
             implicitly[Async[Task]].bracketCase(acquire.foldMap(compiler))(use(_).foldMap(compiler))(release(_, _).foldMap(compiler))
+          case OgameOp.BuildSolarSatellite(planetId, count) =>
+            ogameDriver.buildSolarSatellites(planetId, count)
         })
     }
   }

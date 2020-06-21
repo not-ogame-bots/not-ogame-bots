@@ -24,6 +24,7 @@ object OgameOp {
   case class SendFleet(request: SendFleetRequest) extends OgameOp[Unit]
   case class ReturnFleet(fleetId: FleetId) extends OgameOp[Unit]
   case class CreateOffer(planetId: PlanetId, newOffer: MyOffer) extends OgameOp[Unit]
+  case class BuildSolarSatellite(planetId: PlanetId, count: Int) extends OgameOp[Unit]
 
   case class RaiseError[A](throwable: Throwable) extends OgameOp[A]
   case class HandleError[A](fa: OgameAction[A], f: Throwable => OgameAction[A]) extends OgameOp[A]

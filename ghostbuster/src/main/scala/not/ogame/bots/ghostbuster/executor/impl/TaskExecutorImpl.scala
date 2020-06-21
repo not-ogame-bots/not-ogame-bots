@@ -39,7 +39,7 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task])(implicit clock: LocalCloc
       .handleErrorWith { e =>
         for {
           _ <- Logger[Task].error(e)(e.getMessage)
-          isStillLogged <- ogameDriver.checkLoginStatus()
+          isStillLogged <- ogameDriver.checkIsLoggedIn()
           _ <- if (isStillLogged) {
             val response = Response.Failure[T](e)
             Logger[Task].warn("still logged, failing action...") >>

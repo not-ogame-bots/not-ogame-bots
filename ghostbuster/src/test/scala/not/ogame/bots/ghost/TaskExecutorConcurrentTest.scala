@@ -49,7 +49,7 @@ class TaskExecutorConcurrentTest extends munit.FunSuite with StrictLogging {
         override def sendFleet(sendFleetRequest: SendFleetRequest): Task[Unit] = Task.eval(())
         override def returnFleet(fleetId: FleetId): Task[Unit] = Task.eval(())
         override def readPlanets(): Task[List[PlayerPlanet]] = Task.eval(List.empty)
-        override def checkLoginStatus(): Task[Boolean] = Task.eval(true)
+        override def checkIsLoggedIn(): Task[Boolean] = Task.eval(true)
         override def readFleetPage(planetId: PlanetId): Task[FleetPageData] =
           Task.eval(
             FleetPageData(ZonedDateTime.now(), Resources.Zero, Resources.Zero, Resources.Zero, FleetSlots(0, 0, 0, 0, 0, 0), Map.empty)

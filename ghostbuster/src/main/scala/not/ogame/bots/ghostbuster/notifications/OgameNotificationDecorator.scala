@@ -95,8 +95,8 @@ class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Schedule
       .onError { case e => notify(Notification.Failure(e)) }
   }
 
-  override def checkLoginStatus(): Task[Boolean] = logStartEnd("checkIsLogged") {
-    driver.checkLoginStatus()
+  override def checkIsLoggedIn(): Task[Boolean] = logStartEnd("checkIsLogged") {
+    driver.checkIsLoggedIn()
   }
 
   private def notify(refreshed: Notification) = {

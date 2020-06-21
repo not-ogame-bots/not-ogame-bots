@@ -428,7 +428,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
     }
   }
 
-  override def checkLoginStatus(): F[Boolean] = {
+  override def checkIsLoggedIn(): F[Boolean] = {
     webDriver
       .waitForElementF(By.className("OGameClock"))
       .map(_ => true)

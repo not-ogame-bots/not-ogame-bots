@@ -14,7 +14,7 @@ class OgameActionDriver extends OgameDriver[OgameAction] {
   def readAllFleets(): OgameAction[List[Fleet]] = liftF[OgameOp, List[Fleet]](OgameOp.ReadAllFleets())
   def readMyFleets(): OgameAction[MyFleetPageData] = liftF[OgameOp, MyFleetPageData](OgameOp.ReadMyFleets())
   def readPlanets(): OgameAction[List[PlayerPlanet]] = liftF[OgameOp, List[PlayerPlanet]](OgameOp.ReadPlanets())
-  def checkLoginStatus(): OgameAction[Boolean] = liftF[OgameOp, Boolean](OgameOp.CheckLoginStatus())
+  def checkIsLoggedIn(): OgameAction[Boolean] = liftF[OgameOp, Boolean](OgameOp.CheckLoginStatus())
   def readMyOffers(): OgameAction[List[MyOffer]] = liftF[OgameOp, List[MyOffer]](OgameOp.ReadMyOffers())
 
   def login(): OgameAction[Unit] = liftF[OgameOp, Unit](OgameOp.Login())
@@ -32,4 +32,6 @@ class OgameActionDriver extends OgameDriver[OgameAction] {
     liftF[OgameOp, Unit](OgameOp.ReturnFleet(fleetId))
   def createOffer(planetId: PlanetId, newOffer: MyOffer): OgameAction[Unit] =
     liftF[OgameOp, Unit](OgameOp.CreateOffer(planetId, newOffer))
+  def buildSolarSatellites(planetId: PlanetId, count: Int): OgameAction[Unit] =
+    liftF[OgameOp, Unit](OgameOp.BuildSolarSatellite(planetId, count))
 }
