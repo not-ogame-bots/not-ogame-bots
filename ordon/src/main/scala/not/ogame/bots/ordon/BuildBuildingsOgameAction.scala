@@ -71,7 +71,11 @@ class BuildBuildingsOgameAction[T[_]: Monad](planet: PlayerPlanet, tasks: List[T
       technologyPage: TechnologyPageData
   ): TaskOnPlanet = {
     if (suppliesPage.currentResources.energy < 0) {
-      new SuppliesBuildingTask(SolarPlant, suppliesPage.getLevel(SolarPlant).value + 1)
+      if (suppliesPage.getLevel(SolarPlant).value >= 16) {
+        new SolarSatelliteBuildingTask()
+      } else {
+        new SuppliesBuildingTask(SolarPlant, suppliesPage.getLevel(SolarPlant).value + 1)
+      }
     } else {
       tasks.find(p => p.isValid(suppliesPage, facilityPage, technologyPage)).get
     }
@@ -145,6 +149,25 @@ class TechnologyBuildingTask(technology: Technology, level: Int)(implicit clock:
   ): Option[ZonedDateTime] = {
     technologyPage.currentResearchProgress.map(_.finishTimestamp)
   }
+}
+
+class SolarSatelliteBuildingTask extends TaskOnPlanet {
+  override def isBusy(
+      suppliesPage: SuppliesPageData,
+      facilityPage: FacilityPageData,
+      technologyPage: TechnologyPageData
+  ): Option[ZonedDateTime] = suppliesPage.currentShipyardProgress.map(_.finishTimestamp)
+
+  override def isValid(suppliesPage: SuppliesPageData, facilityPage: FacilityPageData, technologyPage: TechnologyPageData): Boolean = ???
+
+  override def cost(): Resources = Resources(0, 2_000, 500)
+
+  override def construct[T[_]: Monad](ogameDriver: OgameDriver[T], planet: PlayerPlanet): T[ZonedDateTime] =
+    for {
+      _ <- ogameDriver.buildSolarSatellite(planet.id)
+      page <- ogameDriver.readSuppliesPage(planet.id)
+      resumeOn = page.currentShipyardProgress.get.finishTimestamp
+    } yield resumeOn
 }
 
 trait TaskOnPlanet {
