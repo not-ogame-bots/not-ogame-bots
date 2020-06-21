@@ -90,7 +90,7 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
 
     override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] =
       sendFleet
-        .sendDeployment(ogame)
+        .sendFleet(ogame)
         .map(arrivalTime => chooseTimeWhenClickReturn(arrivalTime))
   }
 
@@ -115,7 +115,7 @@ class FsBattleProcess[T[_]: Monad](config: BattleProcessConfig)(implicit clock: 
         waitingCargoShips = fleetPageOnExpeditionMoon.ships(SmallCargoShip) + fleetPageOnOtherMoon.ships(SmallCargoShip)
         cargoShipsCount = waitingCargoShips + flyingCargoShips
         shouldSendMissingCargoShips = cargoFleets.nonEmpty && cargoShipsCount < 20_000
-        endTime <- if (shouldSendMissingCargoShips) sendFleet(20_000 - cargoShipsCount).sendDeployment(ogame) else clock.now().pure[T]
+        endTime <- if (shouldSendMissingCargoShips) sendFleet(20_000 - cargoShipsCount).sendFleet(ogame) else clock.now().pure[T]
       } yield endTime
 
     private def isCargoFleet(fleet: MyFleet): Boolean = {

@@ -65,6 +65,6 @@ class FlyAroundWithLargeCargoOgameAction[T[_]: Monad](
     for {
       shipsOnPlanet <- ogame.readFleetPage(planet.id)
       sendFormPlanet = shipsOnPlanet.ships(LargeCargoShip) > 0
-      arrivalTime <- if (sendFormPlanet) fromPlanetToMoon.sendDeployment(ogame) else fromMoonToPlanet.sendDeployment(ogame)
+      arrivalTime <- if (sendFormPlanet) fromPlanetToMoon.sendFleet(ogame) else fromMoonToPlanet.sendFleet(ogame)
     } yield arrivalTime
 }

@@ -12,9 +12,10 @@ class SendFleet(
     to: PlayerPlanet,
     selectResources: SelectResources = fleetPageData => fleetPageData.currentResources,
     selectShips: SelectShips = fleetPageData => fleetPageData.ships,
-    fleetSpeed: FleetSpeed = FleetSpeed.Percent100
+    fleetSpeed: FleetSpeed = FleetSpeed.Percent100,
+    missionType: FleetMissionType = Deployment
 ) {
-  def sendDeployment[T[_]: Monad](ogameDriver: OgameDriver[T]): T[ZonedDateTime] =
+  def sendFleet[T[_]: Monad](ogameDriver: OgameDriver[T]): T[ZonedDateTime] =
     for {
       fleetPage <- ogameDriver.readFleetPage(from.id)
       _ <- ogameDriver.sendFleet(
@@ -22,14 +23,14 @@ class SendFleet(
           from = from,
           ships = SendFleetRequestShips.Ships(selectShips(fleetPage)),
           targetCoordinates = to.coordinates,
-          fleetMissionType = Deployment,
+          fleetMissionType = missionType,
           resources = FleetResources.Given(selectResources(fleetPage)),
           speed = fleetSpeed
         )
       )
       fleets <- ogameDriver.readAllFleets()
       thisFleet = fleets
-        .find(fleet => fleet.fleetMissionType == Deployment && fleet.from == from.coordinates && fleet.to == to.coordinates)
+        .find(fleet => fleet.fleetMissionType == missionType && fleet.from == from.coordinates && fleet.to == to.coordinates)
         .get
       // There is an issue in ogame that fleet just after arrival is still on fleet list as returning. To avoid that 3 second delay was added.
     } yield thisFleet.arrivalTime.plusSeconds(3)

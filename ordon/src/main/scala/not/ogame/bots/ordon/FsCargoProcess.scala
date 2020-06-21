@@ -60,7 +60,7 @@ class FsCargoProcess[T[_]: Monad](cargoProcessConfig: CargoProcessConfig)(implic
 
     override def nextAction: OgameAction[T] = new HandleFleetOnExpeditionMoon()
 
-    override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = sendFleet.sendDeployment(ogame)
+    override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = sendFleet.sendFleet(ogame)
   }
 
   class SendFleetToFsPlanet extends SimpleOgameAction[T] {
@@ -93,7 +93,7 @@ class FsCargoProcess[T[_]: Monad](cargoProcessConfig: CargoProcessConfig)(implic
       for {
         page <- ogame.readFleetPage(cargoProcessConfig.expeditionMoon.id)
         isLotsOfResources = (page.currentResources.metal + page.currentResources.crystal + page.currentResources.deuterium) > 10_000 * 7_000
-        endTime <- if (isLotsOfResources) sendFleet.sendDeployment(ogame) else clock.now().pure[T]
+        endTime <- if (isLotsOfResources) sendFleet.sendFleet(ogame) else clock.now().pure[T]
       } yield endTime
   }
 
@@ -120,7 +120,7 @@ class FsCargoProcess[T[_]: Monad](cargoProcessConfig: CargoProcessConfig)(implic
 
     override def nextAction: OgameAction[T] = new SendFleetFromOtherMoon()
 
-    override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = sendFleet.sendDeployment(ogame)
+    override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = sendFleet.sendFleet(ogame)
   }
 }
 

@@ -69,7 +69,7 @@ class DeployAndReturnNoLargeCargoOgameAction[T[_]: Monad](
         selectShips = fleetSelector,
         selectResources = resourceSelector,
         fleetSpeed = FleetSpeed.Percent10
-      ).sendDeployment(ogame)
+      ).sendFleet(ogame)
         .map(_ => clock.now())
     } yield clock.now()
 }

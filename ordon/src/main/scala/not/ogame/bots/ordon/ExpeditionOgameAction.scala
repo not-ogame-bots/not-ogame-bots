@@ -5,8 +5,8 @@ import java.time.ZonedDateTime
 import cats.Monad
 import cats.implicits._
 import not.ogame.bots.FleetMissionType.Expedition
-import not.ogame.bots.SendFleetRequestShips.Ships
 import not.ogame.bots._
+import not.ogame.bots.ordon.utils.SendFleet
 
 import scala.util.Random
 
@@ -37,16 +37,12 @@ class ExpeditionOgameAction[T[_]: Monad](
 
   def sendFleet(ogame: OgameDriver[T]): T[ZonedDateTime] = {
     val targetCoordinates = Random.shuffle(targetList).head
-    ogame
-      .sendFleet(
-        SendFleetRequest(
-          startPlanet,
-          Ships(expeditionFleet),
-          targetCoordinates,
-          Expedition,
-          FleetResources.Given(Resources.Zero)
-        )
-      )
-      .map(_ => clock.now())
+    new SendFleet(
+      from = startPlanet,
+      to = PlayerPlanet(PlanetId.apply(""), targetCoordinates),
+      selectResources = _ => Resources.Zero,
+      selectShips = page => page.ships.map(e => e._1 -> Math.min(e._2, expeditionFleet.getOrElse(e._1, 0))),
+      missionType = Expedition
+    ).sendFleet(ogame).map(_ => clock.now())
   }
 }
