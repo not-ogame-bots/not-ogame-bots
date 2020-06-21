@@ -1,18 +1,12 @@
 package not.ogame.bots.facts
 
-import eu.timepit.refined.api.{Refined, Validate}
+import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
-import eu.timepit.refined.refineV
 import not.ogame.bots.Technology._
 import not.ogame.bots.{Resources, Technology}
 
 object TechnologyCosts {
   def technologyCost(technology: Technology, level: Int): Resources = {
-    technologyCost(technology, refineVUnsafe[Positive, Int](level))
-  }
-
-  @Deprecated
-  def technologyCost(technology: Technology, level: Int Refined Positive): Resources = {
     technology match {
       case Energy          => fromBaseCostPowerOf2(Resources(0, 800, 400), level)
       case Laser           => fromBaseCostPowerOf2(Resources(200, 100, 0), level)
@@ -33,19 +27,21 @@ object TechnologyCosts {
     }
   }
 
-  private def gravitonTechnologyCost(level: Int Refined Positive): Resources = {
-    if (level.value != 1) throw new IllegalStateException("Graviton Technology should not be developed to higher levels.")
+  @Deprecated
+  def technologyCost(technology: Technology, level: Int Refined Positive): Resources = {
+    technologyCost(technology, level.value)
+  }
+
+  private def gravitonTechnologyCost(level: Int): Resources = {
+    if (level != 1) throw new IllegalStateException("Graviton Technology should not be developed to higher levels.")
     Resources(0, 0, 0, 300_000)
   }
 
-  private def fromBaseCostPowerOf2(baseCost: Resources, level: Int Refined Positive): Resources = {
+  private def fromBaseCostPowerOf2(baseCost: Resources, level: Int): Resources = {
     Resources(
-      metal = (baseCost.metal * 2.0.pow(level.value - 1.0)).toInt,
-      crystal = (baseCost.crystal * 2.0.pow(level.value - 1.0)).toInt,
-      deuterium = (baseCost.deuterium * 2.0.pow(level.value - 1.0)).toInt
+      metal = (baseCost.metal * 2.0.pow(level - 1.0)).toInt,
+      crystal = (baseCost.crystal * 2.0.pow(level - 1.0)).toInt,
+      deuterium = (baseCost.deuterium * 2.0.pow(level - 1.0)).toInt
     )
   }
-
-  private def refineVUnsafe[P, V](v: V)(implicit ev: Validate[V, P]): Refined[V, P] =
-    refineV[P](v).fold(s => throw new IllegalArgumentException(s), identity)
 }
