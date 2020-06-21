@@ -18,7 +18,7 @@ object OrdonQuasarConfig extends OrdonConfig {
   def getInitialActions(implicit clock: LocalClock): IO[List[ScheduledAction[IO]]] = {
     val listOfActions = List(
       new AlertOgameAction[IO](),
-      new StartBuildingsOgameAction[IO]()
+      new StartOgameAction[IO]()
     )
     IO.pure(listOfActions.map(ScheduledAction(clock.now(), _)))
   }
