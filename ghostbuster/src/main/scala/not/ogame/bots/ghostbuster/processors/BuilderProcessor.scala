@@ -16,7 +16,7 @@ class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, taskExecuto
         .readPlanets()
         .flatMap(planets => Task.parSequence(planets.map(loopBuilder)))
         .void
-        .onError(e => Logger[Task].error(s"restarting building processor ${e.getMessage}"))
+        .onError(e => Logger[Task].error(e)(s"restarting building processor ${e.getMessage}"))
         .onErrorRestartIf(_ => true)
     } else {
       Task.never
@@ -35,7 +35,7 @@ class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, taskExecuto
             case Some(arrivalTime) if arrivalTime.isBefore(productionTime) =>
               Logger[Task].info(s"Waiting for first fleet to arrive til $productionTime") >>
                 taskExecutor.waitTo(arrivalTime)
-            case None =>
+            case _ =>
               Logger[Task].info(s"Waiting for resources to produce til $productionTime") >>
                 taskExecutor.waitTo(productionTime)
           }

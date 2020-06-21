@@ -92,7 +92,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, taskExecutor: Task
           SendFleetRequest(
             fromPlanet,
             SendFleetRequestShips.Ships(expeditionConfig.ships.map(s => s.shipType -> s.amount).toMap),
-            fromPlanet.coordinates.copy(position = 16, coordinatesType = CoordinatesType.Planet),
+            expeditionConfig.target,
             FleetMissionType.Expedition,
             FleetResources.Given(Resources.Zero)
           )
