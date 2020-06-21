@@ -89,9 +89,9 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
     if (suppliesPageData.currentResources.gtEqTo(requiredResourcesSingleShip)) {
       val canBuildAmount = suppliesPageData.currentResources.div(requiredResourcesSingleShip).min
       val buildAmount = Math.min(canBuildAmount, w.amount.value).toInt
-      ogameActionDriver.buildShips(planet.id, w.shipType, buildAmount) >> ogameActionDriver
-        .readSuppliesPage(planet.id)
-        .map(s => BuilderResult.building(s.currentShipyardProgress.get.finishTimestamp))
+      ogameActionDriver
+        .buildShipAndGetTime(planet.id, w.shipType, buildAmount)
+        .map(s => BuilderResult.building(s.finishTimestamp))
     } else {
       val secondsToWait =
         calculateWaitingTime(requiredResourcesSingleShip, suppliesPageData.currentProduction, suppliesPageData.currentResources)
@@ -114,9 +114,9 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
         val level = nextLevel(suppliesPageData, suppliesBuilding)
         val requiredResources = SuppliesBuildingCosts.buildingCost(suppliesBuilding, level)
         if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
-          ogameActionDriver.buildSuppliesBuilding(planet.id, suppliesBuilding) >> ogameActionDriver
-            .readSuppliesPage(planet.id)
-            .map(s => BuilderResult.building(s.currentBuildingProgress.get.finishTimestamp))
+          ogameActionDriver
+            .buildSupplyAndGetTime(planet.id, suppliesBuilding)
+            .map(s => BuilderResult.building(s.finishTimestamp))
         } else {
           val secondsToWait = calculateWaitingTime(requiredResources, suppliesPageData.currentProduction, suppliesPageData.currentResources)
           Logger[OgameAction]
@@ -152,9 +152,9 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
         val level = nextLevel(facilityPageData, facilityBuilding)
         val requiredResources = FacilityBuildingCosts.buildingCost(facilityBuilding, level)
         if (facilityPageData.currentResources.gtEqTo(requiredResources)) {
-          ogameActionDriver.buildFacilityBuilding(planet.id, facilityBuilding) >> ogameActionDriver
-            .readFacilityPage(planet.id)
-            .map(f => BuilderResult.building(f.currentBuildingProgress.get.finishTimestamp))
+          ogameActionDriver
+            .buildFacilityAndGetTime(planet.id, facilityBuilding)
+            .map(f => BuilderResult.building(f.finishTimestamp))
         } else {
           val secondsToWait = calculateWaitingTime(requiredResources, suppliesPageData.currentProduction, suppliesPageData.currentResources)
           Logger[OgameAction]

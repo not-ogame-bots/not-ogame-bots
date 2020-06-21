@@ -54,7 +54,7 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver
       case Some(fleet) if !fleet.isReturning =>
         Logger[OgameAction].info(s"Found non-returning fleet: ${pprint.apply(fleet)}") >> returnOrWait(fleet)
       case Some(fleet) if fleet.isReturning =>
-        Logger[OgameAction].info(s"Found returning fleet ${pprint.apply(fleet)}") >> fleet.arrivalTime.plus(3 seconds).pure[OgameAction]
+        Logger[OgameAction].info(s"Found returning fleet ${pprint.apply(fleet)}").as(fleet.arrivalTime.plus(3 seconds))
       case None =>
         Logger[OgameAction].info(s"Fleet is on planet $from. Sending fleet to $to")
         new ResourceSelector[OgameAction](deuteriumSelector = Selector.decreaseBy(config.remainDeuterAmount))

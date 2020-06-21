@@ -2,7 +2,18 @@ package not.ogame.bots.ghostbuster
 import cats.Monad
 import cats.effect.{ExitCase, Sync}
 import cats.free.Free
-import not.ogame.bots.{MyFleet, OgameDriver, SendFleetRequest}
+import not.ogame.bots.{
+  BuildingProgress,
+  FacilityBuilding,
+  MyFleet,
+  OgameDriver,
+  PlanetId,
+  SendFleetRequest,
+  ShipType,
+  SuppliesBuilding,
+  SuppliesPageData,
+  Technology
+}
 import not.ogame.bots.ghostbuster.ogame.{OgameAction, OgameOp}
 import cats.implicits._
 
@@ -41,6 +52,32 @@ package object executor {
           case other       => throw new IllegalStateException(s"Found more than one fleet: $other")
         }
       }
+    }
+    def buildSupplyAndGetTime(planetId: PlanetId, suppliesBuilding: SuppliesBuilding): F[BuildingProgress] = {
+      ogameDriver.buildSuppliesBuilding(planetId, suppliesBuilding) >>
+        ogameDriver
+          .readSuppliesPage(planetId)
+          .map(_.currentBuildingProgress.get)
+    }
+
+    def buildFacilityAndGetTime(planetId: PlanetId, facilityBuilding: FacilityBuilding): F[BuildingProgress] = {
+      ogameDriver.buildFacilityBuilding(planetId, facilityBuilding) >>
+        ogameDriver
+          .readFacilityPage(planetId)
+          .map(_.currentBuildingProgress.get)
+    }
+
+    def buildShipAndGetTime(planetId: PlanetId, shipType: ShipType, amount: Int): F[BuildingProgress] = {
+      ogameDriver.buildShips(planetId, shipType, amount) >>
+        ogameDriver
+          .readSuppliesPage(planetId)
+          .map(_.currentShipyardProgress.get)
+    }
+    def startResearchAndGetTime(planetId: PlanetId, technology: Technology): F[BuildingProgress] = {
+      ogameDriver.startResearch(planetId, technology) >>
+        ogameDriver
+          .readTechnologyPage(planetId)
+          .map(_.currentResearchProgress.get)
     }
   }
 }
