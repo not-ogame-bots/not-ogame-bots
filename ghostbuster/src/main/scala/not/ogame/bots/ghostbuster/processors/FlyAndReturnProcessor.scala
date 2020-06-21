@@ -65,7 +65,7 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, taskExecutor: TaskExecut
     }
   }
 
-  private def send(from: PlayerPlanet, to: PlayerPlanet, resources: Resources): Task[ZonedDateTime] = {
+  private def send(from: PlayerPlanet, to: PlayerPlanet, resources: Resources): Task[Unit] = {
     val fleetSpeed = Random.shuffle(List(FleetSpeed.Percent10, FleetSpeed.Percent20)).head
     taskExecutor
       .sendFleet(

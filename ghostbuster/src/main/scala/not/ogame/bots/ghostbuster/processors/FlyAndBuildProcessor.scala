@@ -32,7 +32,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
       _ <- possibleFsFleets match {
         case l @ _ :: _ =>
           Logger[Task].info("Too many fleets in the air. Waiting for the first one to reach its target.") >>
-            taskExecutor.waitTo(l.map(_.arrivalTime).min) >> lookOnPlanets(planets) //TODO look on single planet
+            taskExecutor.waitTo(l.map(_.arrivalTime).min) >> lookOnPlanets(planets)
         case Nil =>
           Logger[Task].warn(s"Couldn't find fs fleet either on planets or in the air. Waiting ${fsConfig.searchInterval}...") >>
             Task.sleep(fsConfig.searchInterval) >> lookOnPlanets(planets)
@@ -71,10 +71,8 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
     val targetPlanet = nextPlanet(currentPlanet, planets)
     for {
       _ <- buildAndContinue(currentPlanet, clock.now())
-      arrivalTime <- sendFleet(from = currentPlanet, to = targetPlanet)
-      _ <- Logger[Task].info(s"Waiting for fleet to arrive til $arrivalTime")
-      _ <- taskExecutor.waitTo(arrivalTime)
-      _ <- buildAndSend(currentPlanet = targetPlanet, planets)
+      _ <- sendFleet(from = currentPlanet, to = targetPlanet)
+      _ <- lookAtInTheAir(planets)
     } yield ()
   }
 
@@ -83,24 +81,26 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
     planets(idx)
   }
 
-  private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[ZonedDateTime] = {
+  private def sendFleet(from: PlayerPlanet, to: PlayerPlanet): Task[Unit] = {
     for {
       _ <- Logger[Task].info("Sending fleet...")
-      arrivalTime <- sendFleetImpl(from, to).flatTap(_ => Logger[Task].info("Fleet sent")).recoverWith {
-        case AvailableDeuterExceeded(requiredAmount) =>
-          taskExecutor
-            .readSupplyPage(from)
-            .flatMap { suppliesPageData =>
-              val missingDeuter = requiredAmount - suppliesPageData.currentResources.deuterium
-              val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium
-              val timeInSeconds = (timeToProduceInHours * 60 * 60).toInt
-              val maxWaitingTime = Math.min(timeInSeconds, 60 * 10)
-              Logger[Task].info(s"There was not enough deuter, fleet sending delayed by $maxWaitingTime seconds") >>
-                Task.sleep(maxWaitingTime seconds) >>
-                sendFleet(from, to)
-            }
-      }
-    } yield arrivalTime
+      _ <- sendFleetImpl(from, to)
+        .flatTap(_ => Logger[Task].info("Fleet sent"))
+        .recoverWith {
+          case AvailableDeuterExceeded(requiredAmount) =>
+            taskExecutor
+              .readSupplyPage(from)
+              .flatMap { suppliesPageData =>
+                val missingDeuter = requiredAmount - suppliesPageData.currentResources.deuterium
+                val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium
+                val timeInSeconds = (timeToProduceInHours * 60 * 60).toInt
+                val maxWaitingTime = Math.min(timeInSeconds, 60 * 10)
+                Logger[Task].info(s"There was not enough deuter, fleet sending delayed by $maxWaitingTime seconds") >>
+                  Task.sleep(maxWaitingTime seconds) >>
+                  sendFleet(from, to)
+              }
+        }
+    } yield ()
   }
 
   private def sendFleetImpl(from: PlayerPlanet, to: PlayerPlanet) = {
@@ -110,7 +110,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
       } else {
         Resources.Zero.pure[Task]
       }
-      arrivalTime <- taskExecutor
+      _ <- taskExecutor
         .sendFleet(
           SendFleetRequest(
             from,
@@ -125,7 +125,7 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
             fsConfig.fleetSpeed
           )
         )
-    } yield arrivalTime
+    } yield ()
   }
 
   private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: ZonedDateTime): Task[Unit] = {

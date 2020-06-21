@@ -25,7 +25,9 @@ trait TaskExecutor {
 
   def readPlanetsAndMoons(): Task[List[PlayerPlanet]]
 
-  def sendFleet(req: SendFleetRequest): Task[ZonedDateTime]
+  def sendFleet(req: SendFleetRequest): Task[Unit]
+
+  def sendAndTrackFleet(request: SendFleetRequest): Task[MyFleet]
 
   def getFleetOnPlanet(planet: PlayerPlanet): Task[PlanetFleet]
 

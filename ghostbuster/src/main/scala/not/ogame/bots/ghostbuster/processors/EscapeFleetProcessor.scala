@@ -76,7 +76,7 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, escapeConfig: EscapeConfi
     val missionType = FleetMissionType.Transport
     for {
       _ <- Logger[Task].info("Found some ships on attacking planet. Escaping...")
-      _ <- taskExecutor.sendFleet(
+      myFleet <- taskExecutor.sendAndTrackFleet(
         SendFleetRequest(
           planetUnderAttack,
           SendFleetRequestShips.AllShips,
@@ -89,14 +89,7 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, escapeConfig: EscapeConfi
       _ <- Logger[Task].info(s"Waiting to attack time: $attackTime")
       _ <- taskExecutor.waitTo(attackTime)
       _ <- Logger[Task].info("Looking for escaped fleet...")
-      myFleets <- taskExecutor.readMyFleets()
-      escapedFleet = myFleets.fleets.find(
-        f => f.from == planetUnderAttack.coordinates && f.to == escapeConfig.target && f.fleetMissionType == missionType
-      )
-      _ <- escapedFleet match {
-        case Some(value) => Logger[Task].info("Returning fleet...") >> taskExecutor.returnFleet(value.fleetId)
-        case None        => Logger[Task].warn("Couldn't find our escaped fleet :(")
-      }
+      _ <- Logger[Task].info("Returning fleet...") >> taskExecutor.returnFleet(myFleet.fleetId)
     } yield ()
   }
 }

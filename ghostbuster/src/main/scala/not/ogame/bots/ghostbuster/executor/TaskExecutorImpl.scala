@@ -72,12 +72,6 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware)(im
       .flatMap(r => request.response.put(Response.success(r)))
   }
 
-  private def isSameFleet(sendFleetRequest: SendFleetRequest, f: Fleet) = {
-    f.to == sendFleetRequest.targetCoordinates &&
-    f.fleetMissionType == sendFleetRequest.fleetMissionType &&
-    f.from == sendFleetRequest.from.coordinates
-  }
-
   override def waitTo(future: ZonedDateTime): Task[Unit] = {
     val sleepTime = processors.timeDiff(clock.now(), future)
     Logger[Task].debug(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til $future") >>
@@ -100,20 +94,26 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task] with NotificationAware)(im
     )
   }
 
-  override def sendFleet(req: SendFleetRequest): Task[ZonedDateTime] = {
+  override def sendFleet(req: SendFleetRequest): Task[Unit] = {
     exec(
       Logger[Task].debug("sendFleet") >>
-        ogameDriver.sendFleet(req).flatMap { _ =>
-          ogameDriver
-            .readAllFleets()
-            .map { fleets =>
-              fleets
-                .collect { case f if isSameFleet(req, f) => f }
-                .maxBy(_.arrivalTime)
-            }
-            .flatTap(_ => ogameDriver.readPlanets())
-            .map(f => f.arrivalTime)
+        ogameDriver.sendFleet(req)
+    )
+  }
+
+  override def sendAndTrackFleet(request: SendFleetRequest): Task[MyFleet] = {
+    exec(
+      for {
+        _ <- Logger[Task].debug("sendAndTrackFleet")
+        myFleetsBefore <- ogameDriver.readMyFleets()
+        _ <- ogameDriver.sendFleet(request)
+        myFleetsAfter <- ogameDriver.readMyFleets()
+      } yield {
+        myFleetsAfter.fleets.filterNot(f => myFleetsBefore.fleets.map(_.fleetId).contains(f.fleetId)) match {
+          case head :: Nil => head
+          case other       => throw new IllegalStateException(s"Found more than one fleet: $other")
         }
+      }
     )
   }
 
