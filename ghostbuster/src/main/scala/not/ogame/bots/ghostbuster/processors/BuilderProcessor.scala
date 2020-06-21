@@ -33,13 +33,11 @@ class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, ogameDriver
       .buildNextThingFromWishList(planet)
       .flatMap {
         case BuilderResult.Building(finishTime) =>
-          Logger[OgameAction].info(s"Waiting for building to finish til $finishTime").as(finishTime)
-        case BuilderResult.Waiting(productionTime) =>
           firstFleetArrivalTime(planet).flatMap {
-            case Some(arrivalTime) if arrivalTime.isBefore(productionTime) =>
-              Logger[OgameAction].info(s"Waiting for first fleet to arrive til $productionTime").as(arrivalTime)
+            case Some(arrivalTime) if arrivalTime.isBefore(finishTime) =>
+              Logger[OgameAction].info(s"Waiting for first fleet to arrive til $arrivalTime").as(arrivalTime)
             case _ =>
-              Logger[OgameAction].info(s"Waiting for resources to produce til $productionTime").as(productionTime)
+              Logger[OgameAction].info(s"Waiting for resources to produce til $finishTime").as(finishTime)
           }
 
         case BuilderResult.Idle => clock.now().plus(config.interval).pure[OgameAction]

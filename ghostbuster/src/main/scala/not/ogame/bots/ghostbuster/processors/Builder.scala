@@ -79,7 +79,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
               s"Wanted to build $technology $level but there were not enough resources on ${planet.coordinates} " +
                 s"- ${technologyPageData.currentResources}/$requiredResources"
             )
-            .map(_ => BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
+            .map(_ => BuilderResult.building(clock.now().plusSeconds(secondsToWait)))
         }
     }
   }
@@ -100,7 +100,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           s"Wanted to build $w but there were not enough resources on ${planet.coordinates} " +
             s"- ${suppliesPageData.currentResources}/$requiredResourcesSingleShip"
         )
-        .map(_ => BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
+        .map(_ => BuilderResult.building(clock.now().plusSeconds(secondsToWait)))
     }
   }
 
@@ -125,7 +125,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
                 s"- ${suppliesPageData.currentResources}/$requiredResources"
             )
             .map { _ =>
-              BuilderResult.waiting(clock.now().plusSeconds(secondsToWait))
+              BuilderResult.building(clock.now().plusSeconds(secondsToWait))
             }
         }
     }
@@ -162,7 +162,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
               s"Wanted to build $facilityBuilding $level but there were not enough resources on ${planet.coordinates}" +
                 s"- ${suppliesPageData.currentResources}/$requiredResources"
             )
-            .as(BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
+            .as(BuilderResult.building(clock.now().plusSeconds(secondsToWait)))
         }
     }
   }
@@ -187,7 +187,13 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         if (suppliesPageData.currentResources.energy < 0) {
-          buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
+          suppliesPageData.currentShipyardProgress match {
+            case Some(value) => BuilderResult.building(value.finishTimestamp).pure[OgameAction]
+            case None =>
+              ogameActionDriver.buildSolarSatellites(planet.id, 1) >> ogameActionDriver
+                .readSuppliesPage(planet.id)
+                .map(f => BuilderResult.building(f.currentShipyardProgress.get.finishTimestamp))
+          }
         } else { //TODO can we get rid of hardcoded ratio?
           val shouldBuildDeuter = suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value -
             suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer).value > 4 &&
@@ -245,10 +251,8 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
 sealed trait BuilderResult extends Product with Serializable
 object BuilderResult {
   case class Building(finishTime: ZonedDateTime) extends BuilderResult
-  case class Waiting(waitTo: ZonedDateTime) extends BuilderResult
   case object Idle extends BuilderResult
 
   def building(finishTime: ZonedDateTime): BuilderResult = Building(finishTime)
-  def waiting(waitTo: ZonedDateTime): BuilderResult = Waiting(waitTo)
   def idle(): BuilderResult = Idle
 }
