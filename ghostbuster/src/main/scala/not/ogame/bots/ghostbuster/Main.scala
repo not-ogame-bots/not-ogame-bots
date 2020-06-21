@@ -10,8 +10,11 @@ import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.actions.CollectResourcesAction
 import not.ogame.bots.ghostbuster.api.{CollectResourcesEndpoint, StatusEndpoint}
-import not.ogame.bots.ghostbuster.executor.{OgameNotificationDecorator, TaskExecutorImpl}
+import not.ogame.bots.ghostbuster.executor.impl.TaskExecutorImpl
 import not.ogame.bots.ghostbuster.infrastructure.{FCMService, FirebaseResource}
+import not.ogame.bots.ghostbuster.interpreter.OgameActionInterpreterImpl
+import not.ogame.bots.ghostbuster.notifications.OgameNotificationDecorator
+import not.ogame.bots.ghostbuster.ogame.OgameActionDriver
 import not.ogame.bots.ghostbuster.processors.{
   ActivityFakerProcessor,
   Builder,
@@ -61,25 +64,28 @@ object Main extends StrictLogging {
       selenium = SeleniumOgameDriverCreator.create[Task](driver, credentials)
       firebase <- FirebaseResource.create(SettingsDirectory)
       decoratedDriver = new OgameNotificationDecorator(selenium)
-      taskExecutor = new TaskExecutorImpl(decoratedDriver)
-      collectingEndpoint = new CollectResourcesEndpoint(new CollectResourcesAction(taskExecutor))
+      executor = new TaskExecutorImpl(decoratedDriver)
+      actionInterpreter = new OgameActionInterpreterImpl(decoratedDriver, executor)
+      safeDriver = new OgameActionDriver
+      collectingEndpoint = new CollectResourcesEndpoint(new CollectResourcesAction(safeDriver)(actionInterpreter))
       _ <- httpServer(List(httpStateExposer.getStatus, collectingEndpoint.collectEndpoint))
-    } yield (taskExecutor, firebase))
+    } yield (actionInterpreter, firebase, executor, safeDriver))
       .use {
-        case (taskExecutor, firebase) =>
+        case (interpreter, firebase, executor, safeDriver) =>
+          implicit val impInterpreter: OgameActionInterpreterImpl = interpreter
           val fcmService = new FCMService[Task](firebase)
-          val stateAgg = new StateAggregator(state, taskExecutor)
-          val hostileFleetReporter = new HostileFleetReporter(fcmService, taskExecutor)
-          val builder = new Builder(taskExecutor, botConfig.wishlist)
-          val fbp = new FlyAndBuildProcessor(taskExecutor, botConfig.fsConfig, builder)
-          val ep = new ExpeditionProcessor(botConfig.expeditionConfig, taskExecutor)
-          val activityFaker = new ActivityFakerProcessor(taskExecutor)
-          val bp = new BuilderProcessor(builder, botConfig.smartBuilder, taskExecutor)
-          val far = new FlyAndReturnProcessor(botConfig.flyAndReturn, taskExecutor)
-          val efp = new EscapeFleetProcessor(taskExecutor, botConfig.escapeConfig)
+          val stateAgg = new StateAggregator(state, interpreter)
+          val hostileFleetReporter = new HostileFleetReporter(fcmService, interpreter)
+          val builder = new Builder(safeDriver, botConfig.wishlist)
+          val fbp = new FlyAndBuildProcessor(safeDriver, botConfig.fsConfig, builder)
+          val ep = new ExpeditionProcessor(botConfig.expeditionConfig, safeDriver)
+          val activityFaker = new ActivityFakerProcessor(safeDriver)
+          val bp = new BuilderProcessor(builder, botConfig.smartBuilder, safeDriver)
+          val far = new FlyAndReturnProcessor(botConfig.flyAndReturn, safeDriver)
+          val efp = new EscapeFleetProcessor(safeDriver, botConfig.escapeConfig)
           Task.raceMany(
             List(
-              taskExecutor.run(),
+              executor.run(),
               fbp.run(),
               activityFaker.run(),
               ep.run(),

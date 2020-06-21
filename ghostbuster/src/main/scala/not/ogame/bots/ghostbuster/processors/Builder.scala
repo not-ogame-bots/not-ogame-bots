@@ -2,28 +2,31 @@ package not.ogame.bots.ghostbuster.processors
 
 import java.time.ZonedDateTime
 
+import not.ogame.bots.ghostbuster.executor._
 import cats.implicits._
 import eu.timepit.refined.numeric.Positive
 import io.chrisdavenport.log4cats.Logger
-import monix.eval.Task
 import not.ogame.bots.facts.{FacilityBuildingCosts, ShipCosts, SuppliesBuildingCosts, TechnologyCosts}
 import not.ogame.bots.ghostbuster.{FLogger, Wish}
 import not.ogame.bots.selenium.refineVUnsafe
 import not.ogame.bots._
+import not.ogame.bots.ghostbuster.ogame.OgameAction
 
-class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: LocalClock) extends FLogger {
-  def buildNextThingFromWishList(planet: PlayerPlanet): Task[BuilderResult] = {
+class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])(
+    implicit clock: LocalClock
+) extends FLogger {
+  def buildNextThingFromWishList(planet: PlayerPlanet): OgameAction[BuilderResult] = {
     val wishesForPlanet = wishlist.filter(_.planetId == planet.id)
     if (wishesForPlanet.nonEmpty) {
       for {
-        sp <- taskExecutor.readSupplyPage(planet)
-        fp <- taskExecutor.readFacilityPage(planet)
-        tp <- taskExecutor.readTechnologyPage(planet)
-        mfp <- taskExecutor.getFleetOnPlanet(planet)
-        time <- buildNextThingFromWishList(planet, sp, fp, tp, mfp.fleet, wishesForPlanet)
+        sp <- ogameActionDriver.readSuppliesPage(planet.id)
+        fp <- ogameActionDriver.readFacilityPage(planet.id)
+        tp <- ogameActionDriver.readTechnologyPage(planet.id)
+        mfp <- ogameActionDriver.readFleetPage(planet.id)
+        time <- buildNextThingFromWishList(planet, sp, fp, tp, mfp.ships, wishesForPlanet)
       } yield time
     } else {
-      Task.pure(BuilderResult.Idle)
+      BuilderResult.idle().pure[OgameAction]
     }
   }
 
@@ -34,7 +37,7 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: 
       technologyPageData: TechnologyPageData,
       fleet: Map[ShipType, Int],
       wishesForPlanet: List[Wish]
-  ) = {
+  ): OgameAction[BuilderResult] = {
     wishesForPlanet
       .collectFirst {
         case w: Wish.BuildSupply if suppliesPageData.getLevel(w.suppliesBuilding).value < w.level.value =>
@@ -55,26 +58,28 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: 
   private def startResearch(planet: PlayerPlanet, technology: Technology, technologyPageData: TechnologyPageData) = {
     technologyPageData.currentResearchProgress match {
       case Some(value) =>
-        Logger[Task]
+        Logger[OgameAction]
           .info(s"Wanted to build $technology but there were some other research ongoing")
-          .map(_ => BuilderResult.Building(value.finishTimestamp))
+          .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         val level = nextLevel(technologyPageData, technology)
         val requiredResources = TechnologyCosts.technologyCost(technology, level)
         if (technologyPageData.currentResources.gtEqTo(requiredResources)) {
-          taskExecutor.startResearch(planet, technology).map(BuilderResult.Building)
+          ogameActionDriver.startResearch(planet.id, technology) >> ogameActionDriver
+            .readTechnologyPage(planet.id)
+            .map(t => BuilderResult.building(t.currentResearchProgress.get.finishTimestamp))
         } else {
           val secondsToWait = calculateWaitingTime(
             requiredResources = requiredResources,
             production = technologyPageData.currentProduction,
             resources = technologyPageData.currentResources
           )
-          Logger[Task]
+          Logger[OgameAction]
             .info(
               s"Wanted to build $technology $level but there were not enough resources on ${planet.coordinates} " +
                 s"- ${technologyPageData.currentResources}/$requiredResources"
             )
-            .map(_ => BuilderResult.Waiting(clock.now().plusSeconds(secondsToWait)))
+            .map(_ => BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
         }
     }
   }
@@ -84,39 +89,43 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: 
     if (suppliesPageData.currentResources.gtEqTo(requiredResourcesSingleShip)) {
       val canBuildAmount = suppliesPageData.currentResources.div(requiredResourcesSingleShip).min
       val buildAmount = Math.min(canBuildAmount, w.amount.value).toInt
-      taskExecutor.buildShip(w.shipType, buildAmount, planet).map(BuilderResult.Building)
+      ogameActionDriver
+        .buildShipAndGetTime(planet.id, w.shipType, buildAmount)
+        .map(s => BuilderResult.building(s.finishTimestamp))
     } else {
       val secondsToWait =
         calculateWaitingTime(requiredResourcesSingleShip, suppliesPageData.currentProduction, suppliesPageData.currentResources)
-      Logger[Task]
+      Logger[OgameAction]
         .info(
           s"Wanted to build $w but there were not enough resources on ${planet.coordinates} " +
             s"- ${suppliesPageData.currentResources}/$requiredResourcesSingleShip"
         )
-        .map(_ => BuilderResult.Waiting(clock.now().plusSeconds(secondsToWait)))
+        .map(_ => BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
     }
   }
 
   private def buildSupplyBuildingOrNothing(suppliesBuilding: SuppliesBuilding, suppliesPageData: SuppliesPageData, planet: PlayerPlanet) = {
     suppliesPageData.currentBuildingProgress match {
       case Some(value) =>
-        Logger[Task]
+        Logger[OgameAction]
           .info(s"Wanted to build $suppliesBuilding but something was being built")
-          .map(_ => BuilderResult.Building(value.finishTimestamp))
+          .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         val level = nextLevel(suppliesPageData, suppliesBuilding)
         val requiredResources = SuppliesBuildingCosts.buildingCost(suppliesBuilding, level)
         if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
-          taskExecutor.buildSupplyBuilding(suppliesBuilding, level, planet).map(BuilderResult.Building)
+          ogameActionDriver
+            .buildSupplyAndGetTime(planet.id, suppliesBuilding)
+            .map(s => BuilderResult.building(s.finishTimestamp))
         } else {
           val secondsToWait = calculateWaitingTime(requiredResources, suppliesPageData.currentProduction, suppliesPageData.currentResources)
-          Logger[Task]
+          Logger[OgameAction]
             .info(
               s"Wanted to build $suppliesBuilding $level but there were not enough resources on ${planet.coordinates} " +
                 s"- ${suppliesPageData.currentResources}/$requiredResources"
             )
             .map { _ =>
-              BuilderResult.Waiting(clock.now().plusSeconds(secondsToWait))
+              BuilderResult.waiting(clock.now().plusSeconds(secondsToWait))
             }
         }
     }
@@ -136,22 +145,24 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: 
   ) = {
     suppliesPageData.currentShipyardProgress match {
       case Some(value) =>
-        Logger[Task]
+        Logger[OgameAction]
           .info(s"Wanted to build $facilityBuilding but there were some ships building")
-          .map(_ => BuilderResult.Building(value.finishTimestamp))
+          .as(BuilderResult.building(value.finishTimestamp))
       case None =>
         val level = nextLevel(facilityPageData, facilityBuilding)
         val requiredResources = FacilityBuildingCosts.buildingCost(facilityBuilding, level)
         if (facilityPageData.currentResources.gtEqTo(requiredResources)) {
-          taskExecutor.buildFacilityBuilding(facilityBuilding, level, planet).map(BuilderResult.Building)
+          ogameActionDriver
+            .buildFacilityAndGetTime(planet.id, facilityBuilding)
+            .map(f => BuilderResult.building(f.finishTimestamp))
         } else {
           val secondsToWait = calculateWaitingTime(requiredResources, suppliesPageData.currentProduction, suppliesPageData.currentResources)
-          Logger[Task]
+          Logger[OgameAction]
             .info(
               s"Wanted to build $facilityBuilding $level but there were not enough resources on ${planet.coordinates}" +
                 s"- ${suppliesPageData.currentResources}/$requiredResources"
             )
-            .map(_ => BuilderResult.Waiting(clock.now().plusSeconds(secondsToWait)))
+            .as(BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
         }
     }
   }
@@ -171,9 +182,9 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: 
   private def smartBuilder(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, w: Wish.SmartSupplyBuilder) = {
     suppliesPageData.currentBuildingProgress match {
       case Some(value) =>
-        Logger[Task]
+        Logger[OgameAction]
           .info(s"Wanted to run smart builder but sth was being built")
-          .map(_ => BuilderResult.Building(value.finishTimestamp))
+          .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         if (suppliesPageData.currentResources.energy < 0) {
           buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
@@ -191,7 +202,7 @@ class Builder(taskExecutor: TaskExecutor, wishlist: List[Wish])(implicit clock: 
           } else if (suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value < w.metalLevel.value) {
             buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.MetalMine)
           } else {
-            BuilderResult.Idle.pure[Task]
+            BuilderResult.idle().pure[OgameAction]
           }
         }
     }
@@ -236,4 +247,8 @@ object BuilderResult {
   case class Building(finishTime: ZonedDateTime) extends BuilderResult
   case class Waiting(waitTo: ZonedDateTime) extends BuilderResult
   case object Idle extends BuilderResult
+
+  def building(finishTime: ZonedDateTime): BuilderResult = Building(finishTime)
+  def waiting(waitTo: ZonedDateTime): BuilderResult = Waiting(waitTo)
+  def idle(): BuilderResult = Idle
 }

@@ -1,25 +1,8 @@
-package not.ogame.bots.ghostbuster.executor
+package not.ogame.bots.ghostbuster.notifications
 
 import java.time.ZonedDateTime
 
-import cats.effect.concurrent.MVar
-import monix.eval.Task
 import not.ogame.bots._
-
-case class Request[T](action: Task[T], response: MVar[Task, Response[T]])
-object Request {
-  def apply[T](action: Task[T]): Task[Request[T]] = {
-    MVar.empty[Task, Response[T]].map(new Request[T](action, _))
-  }
-}
-
-sealed trait Response[T]
-object Response {
-  case class Success[T](value: T) extends Response[T]
-  case class Failure[T](ex: Throwable) extends Response[T]
-
-  def success[T](t: T): Response[T] = Success(t)
-}
 
 sealed trait Notification
 object Notification {

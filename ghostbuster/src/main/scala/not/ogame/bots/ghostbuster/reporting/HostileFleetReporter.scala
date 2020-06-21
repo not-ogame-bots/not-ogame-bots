@@ -6,12 +6,13 @@ import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import monix.reactive.Consumer
 import not.ogame.bots.ghostbuster.FLogger
-import not.ogame.bots.ghostbuster.executor.Notification
+import not.ogame.bots.ghostbuster.executor.OgameActionExecutor
 import not.ogame.bots.ghostbuster.infrastructure.{FCMService, PushNotificationRequest}
-import not.ogame.bots.ghostbuster.processors.TaskExecutor
+import not.ogame.bots.ghostbuster.notifications.Notification
 import not.ogame.bots.{Fleet, FleetAttitude, FleetMissionType, LocalClock}
 
-class HostileFleetReporter(fcmService: FCMService[Task], taskExecutor: TaskExecutor)(implicit clock: LocalClock) extends FLogger {
+class HostileFleetReporter(fcmService: FCMService[Task], taskExecutor: OgameActionExecutor[Task])(implicit clock: LocalClock)
+    extends FLogger {
   private implicit val uEq: Eq[Fleet] = Eq.fromUniversalEquals
 
   def run(): Task[Unit] = {

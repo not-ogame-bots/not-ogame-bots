@@ -6,16 +6,23 @@ import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import monix.reactive.Consumer
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.executor.Notification
+import not.ogame.bots.ghostbuster.executor._
+import not.ogame.bots.ghostbuster.notifications.Notification
+import not.ogame.bots.ghostbuster.ogame.OgameAction
 import not.ogame.bots.ghostbuster.{EscapeConfig, FLogger}
+import cats.implicits._
 
-class EscapeFleetProcessor(taskExecutor: TaskExecutor, escapeConfig: EscapeConfig)(implicit clock: LocalClock) extends FLogger {
+class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: EscapeConfig)(
+    implicit executor: OgameActionExecutor[Task],
+    clock: LocalClock
+) extends FLogger {
   def run(): Task[Unit] = {
     (for {
-      planets <- taskExecutor.readPlanetsAndMoons()
-      fleets <- taskExecutor.readAllFleets()
+      planets <- ogameDriver.readPlanets().execute()
+      fleets <- ogameDriver.readAllFleetsRedirect().execute()
       _ <- loop(fleets, planets)
     } yield ())
+      .onError(e => Logger[Task].error(e)(s"restarting escape processor ${e.getMessage}"))
       .onErrorRestartIf(_ => true)
   }
 
@@ -25,13 +32,13 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, escapeConfig: EscapeConfi
         dateTime =>
           Task
             .race(
-              taskExecutor.waitTo(dateTime) >> Logger[Task].info("Reading fleets normally"),
-              taskExecutor.subscribeToNotifications
+              executor.waitTo(dateTime) >> Logger[Task].info("Reading fleets normally"),
+              executor.subscribeToNotifications
                 .collect { case n: Notification.ReadAllFleets => n.value }
                 .consumeWith(Consumer.head) <* Logger[Task].info("Used fleets from notification")
             )
             .flatMap {
-              case Left(_)      => taskExecutor.readAllFleets()
+              case Left(_)      => ogameDriver.readAllFleetsRedirect().execute()
               case Right(value) => Task.pure(value)
             }
       )
@@ -63,8 +70,8 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, escapeConfig: EscapeConfi
     for {
       _ <- Logger[Task].info(s"Hostile fleet is close enough, checking fleet on planet ${firstFleet.to}!")
       planetUnderAttack = planets.find(_.coordinates == firstFleet.to).get
-      ourFleet <- taskExecutor.getFleetOnPlanet(planetUnderAttack)
-      _ <- if (ourFleet.fleet.values.sum > 0) {
+      ourFleet <- ogameDriver.readFleetPage(planetUnderAttack.id).execute()
+      _ <- if (ourFleet.ships.values.sum > 0) {
         escapeFrom(planetUnderAttack, firstFleet.arrivalTime)
       } else {
         Logger[Task].info("There are no ships on given planet. Ignoring attack...")
@@ -76,20 +83,22 @@ class EscapeFleetProcessor(taskExecutor: TaskExecutor, escapeConfig: EscapeConfi
     val missionType = FleetMissionType.Transport
     for {
       _ <- Logger[Task].info("Found some ships on attacking planet. Escaping...")
-      myFleet <- taskExecutor.sendAndTrackFleet(
-        SendFleetRequest(
-          planetUnderAttack,
-          SendFleetRequestShips.AllShips,
-          escapeConfig.target,
-          missionType,
-          FleetResources.Max,
-          FleetSpeed.Percent10
+      myFleet <- ogameDriver
+        .sendAndTrackFleet(
+          SendFleetRequest(
+            planetUnderAttack,
+            SendFleetRequestShips.AllShips,
+            escapeConfig.target,
+            missionType,
+            FleetResources.Max,
+            FleetSpeed.Percent10
+          )
         )
-      )
+        .execute()
       _ <- Logger[Task].info(s"Waiting to attack time: $attackTime")
-      _ <- taskExecutor.waitTo(attackTime)
-      _ <- Logger[Task].info("Looking for escaped fleet...")
-      _ <- Logger[Task].info("Returning fleet...") >> taskExecutor.returnFleet(myFleet.fleetId)
+      _ <- executor.waitTo(attackTime)
+      _ <- Logger[Task].info("Returning fleet...")
+      _ <- ogameDriver.returnFleet(myFleet.fleetId).execute()
     } yield ()
   }
 }

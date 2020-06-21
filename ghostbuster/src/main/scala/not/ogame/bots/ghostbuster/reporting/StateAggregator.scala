@@ -6,10 +6,10 @@ import com.softwaremill.quicklens._
 import monix.eval.Task
 import monix.reactive.Consumer
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.executor.Notification
-import not.ogame.bots.ghostbuster.processors.TaskExecutor
+import not.ogame.bots.ghostbuster.executor.OgameActionExecutor
+import not.ogame.bots.ghostbuster.notifications.Notification
 
-class StateAggregator(state: Ref[Task, State], taskExecutor: TaskExecutor)(implicit clock: LocalClock) {
+class StateAggregator(state: Ref[Task, State], taskExecutor: OgameActionExecutor[Task])(implicit clock: LocalClock) {
   def run(): Task[Unit] = {
     taskExecutor.subscribeToNotifications.consumeWith(Consumer.foreachTask {
       case Notification.SuppliesPageDateRefreshed(value, playerPlanet) => onNewSuppliesPage(playerPlanet, value)

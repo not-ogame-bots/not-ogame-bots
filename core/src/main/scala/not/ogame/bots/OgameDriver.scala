@@ -41,7 +41,7 @@ trait OgameDriver[F[_]] {
 
   def readPlanets(): F[List[PlayerPlanet]]
 
-  def checkIsLoggedIn(): F[Boolean]
+  def checkLoginStatus(): F[Boolean]
 
   def readMyOffers(): F[List[MyOffer]]
 

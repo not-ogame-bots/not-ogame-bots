@@ -6,68 +6,77 @@ import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots._
+import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.{FLogger, FlyAndReturnConfig}
 
 import scala.util.Random
 import scala.concurrent.duration._
+import cats.implicits._
+import not.ogame.bots.ghostbuster.ogame.OgameAction
 
-class FlyAndReturnProcessor(config: FlyAndReturnConfig, taskExecutor: TaskExecutor)(implicit clock: LocalClock) extends FLogger {
+class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver[OgameAction])(
+    implicit executor: OgameActionExecutor[Task],
+    clock: LocalClock
+) extends FLogger {
   def run(): Task[Unit] = { //TODO add support for other way
     if (config.isOn) {
-      for {
-        planets <- taskExecutor.readPlanetsAndMoons()
+      (for {
+        planets <- ogameDriver.readPlanets().execute()
         from = planets.find(p => p.id == config.from).get
         to = planets.find(p => p.id == config.to).get
         _ <- loop(from, to)
-      } yield ()
+      } yield ())
+        .onError(e => Logger[Task].error(e)(s"restarting flyAndReturn processor ${e.getMessage}"))
+        .onErrorRestartIf(_ => true)
     } else {
       Task.never
     }
   }
 
   private def loop(from: PlayerPlanet, to: PlayerPlanet): Task[Unit] = {
-    for {
-      allMyFleets <- taskExecutor.readMyFleets()
+    (for {
+      allMyFleets <- ogameDriver.readMyFleets()
       thisMyFleet = allMyFleets.fleets.find(isThisMyFleet(_, from, to))
       nextStepTime <- processMyFleet(thisMyFleet, from, to)
-      _ <- Logger[Task].info(s"Waiting to next step til $nextStepTime")
-      _ <- taskExecutor.waitTo(nextStepTime)
-      _ <- loop(from, to)
-    } yield ()
+    } yield nextStepTime).execute().flatMap { nextStepTime =>
+      Logger[Task].info(s"Waiting to next step til $nextStepTime") >>
+        executor.waitTo(nextStepTime) >>
+        loop(from, to)
+    }
   }
 
   private def processMyFleet(
       thisMyFleet: Option[MyFleet],
       from: PlayerPlanet,
       to: PlayerPlanet
-  ): Task[ZonedDateTime] = {
+  ): OgameAction[ZonedDateTime] = {
     thisMyFleet match {
       case Some(fleet) if !fleet.isReturning =>
-        Logger[Task].info(s"Found non-returning fleet: ${pprint.apply(fleet)}") >> returnOrWait(fleet)
+        Logger[OgameAction].info(s"Found non-returning fleet: ${pprint.apply(fleet)}") >> returnOrWait(fleet)
       case Some(fleet) if fleet.isReturning =>
-        Logger[Task].info(s"Found returning fleet ${pprint.apply(fleet)}") >> Task.pure(fleet.arrivalTime.plus(3 seconds))
+        Logger[OgameAction].info(s"Found returning fleet ${pprint.apply(fleet)}").as(fleet.arrivalTime.plus(3 seconds))
       case None =>
-        Logger[Task].info(s"Fleet is on planet $from. Sending fleet to $to")
-        new ResourceSelector[Task](deuteriumSelector = Selector.decreaseBy(config.remainDeuterAmount))
-          .selectResources(taskExecutor, from)
+        Logger[OgameAction].info(s"Fleet is on planet $from. Sending fleet to $to")
+        new ResourceSelector[OgameAction](deuteriumSelector = Selector.decreaseBy(config.remainDeuterAmount))
+          .selectResources(ogameDriver, from)
           .flatMap { resources =>
-            send(from, to, resources) >> Task.pure(clock.now())
+            send(from, to, resources).as(clock.now())
           }
     }
   }
 
-  private def returnOrWait(fleet: MyFleet): Task[ZonedDateTime] = {
+  private def returnOrWait(fleet: MyFleet): OgameAction[ZonedDateTime] = {
     if (isCloseToArrival(fleet)) {
-      Logger[Task].info("Returning fleet!") >>
-        taskExecutor.returnFleet(fleet.fleetId)
+      Logger[OgameAction].info("Returning fleet!") >>
+        ogameDriver.returnFleet(fleet.fleetId).as(clock.now())
     } else {
-      Task.pure(chooseTimeWhenClickReturn(fleet))
+      chooseTimeWhenClickReturn(fleet).pure[OgameAction]
     }
   }
 
-  private def send(from: PlayerPlanet, to: PlayerPlanet, resources: Resources): Task[Unit] = {
+  private def send(from: PlayerPlanet, to: PlayerPlanet, resources: Resources): OgameAction[Unit] = {
     val fleetSpeed = Random.shuffle(List(FleetSpeed.Percent10, FleetSpeed.Percent20)).head
-    taskExecutor
+    ogameDriver
       .sendFleet(
         SendFleetRequest(
           from = from,

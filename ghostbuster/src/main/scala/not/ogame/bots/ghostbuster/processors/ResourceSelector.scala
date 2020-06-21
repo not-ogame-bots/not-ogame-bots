@@ -1,17 +1,17 @@
 package not.ogame.bots.ghostbuster.processors
 
 import cats.Monad
-import monix.eval.Task
-import not.ogame.bots.{PlayerPlanet, Resources}
+import not.ogame.bots.{OgameDriver, PlayerPlanet, Resources}
+import cats.implicits._
 
 class ResourceSelector[T[_]: Monad](
     metalSelector: Int => Int = Selector.all,
     crystalSelector: Int => Int = Selector.all,
     deuteriumSelector: Int => Int = Selector.all
 ) {
-  def selectResources(taskExecutor: TaskExecutor, playerPlanet: PlayerPlanet): Task[Resources] = {
-    taskExecutor
-      .readSupplyPage(playerPlanet)
+  def selectResources(ogameDriver: OgameDriver[T], playerPlanet: PlayerPlanet): T[Resources] = {
+    ogameDriver
+      .readSuppliesPage(playerPlanet.id)
       .map(_.currentResources)
       .map(
         it =>

@@ -1,15 +1,16 @@
 package not.ogame.bots.ghostbuster.actions
 
 import not.ogame.bots.ghostbuster.actions.CollectResourcesAction.Request
-import not.ogame.bots.ghostbuster.processors.TaskExecutor
-import not.ogame.bots.{FleetMissionType, FleetResources, PlanetId, SendFleetRequest, SendFleetRequestShips, ShipType}
+import not.ogame.bots.{FleetMissionType, FleetResources, OgameDriver, PlanetId, SendFleetRequest, SendFleetRequestShips, ShipType}
 import cats.implicits._
 import monix.eval.Task
+import not.ogame.bots.ghostbuster.executor._
+import not.ogame.bots.ghostbuster.ogame.OgameAction
 
-class CollectResourcesAction(taskExecutor: TaskExecutor) {
+class CollectResourcesAction(taskExecutor: OgameDriver[OgameAction])(implicit executor: OgameActionExecutor[Task]) {
   def run(request: Request): Task[Unit] = {
-    for {
-      planets <- taskExecutor.readPlanetsAndMoons()
+    (for {
+      planets <- taskExecutor.readPlanets()
       myFleetPage <- taskExecutor.readMyFleets()
       from = request.from.map(pId => planets.find(_.id == pId).get)
       to = planets.find(_.id == request.to).get
@@ -27,9 +28,9 @@ class CollectResourcesAction(taskExecutor: TaskExecutor) {
           )
         }.sequence
       } else {
-        Task.raiseError(new IllegalArgumentException(s"Not enough free fleet slots!! Requested ${from.size}, available $freeSlots"))
+        OgameAction.raiseError(new IllegalArgumentException(s"Not enough free fleet slots!! Requested ${from.size}, available $freeSlots"))
       }
-    } yield ()
+    } yield ()).execute()
   }
 }
 
