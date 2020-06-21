@@ -1,26 +1,25 @@
 package not.ogame.bots.facts
 
-import eu.timepit.refined.api.{Refined, Validate}
+import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
-import eu.timepit.refined.refineV
 import not.ogame.bots.{Resources, SuppliesBuilding}
 
 object SuppliesBuildingCosts {
   def buildingCost(buildingType: SuppliesBuilding, level: Int): Resources = {
-    buildingCost(buildingType, refineVUnsafe[Positive, Int](level))
+    buildingType match {
+      case SuppliesBuilding.MetalMine            => metalMineCost(level)
+      case SuppliesBuilding.CrystalMine          => crystalMineCost(level)
+      case SuppliesBuilding.DeuteriumSynthesizer => deuteriumSynthesiserCost(level)
+      case SuppliesBuilding.SolarPlant           => powerPlantCost(level)
+      case SuppliesBuilding.MetalStorage         => fromBaseCostPowerOf2(Resources(1000, 0, 0), level)
+      case SuppliesBuilding.CrystalStorage       => fromBaseCostPowerOf2(Resources(1000, 500, 0), level)
+      case SuppliesBuilding.DeuteriumStorage     => fromBaseCostPowerOf2(Resources(1000, 1000, 0), level)
+    }
   }
 
   @Deprecated
   def buildingCost(buildingType: SuppliesBuilding, level: Int Refined Positive): Resources = {
-    buildingType match {
-      case SuppliesBuilding.MetalMine            => metalMineCost(level.value)
-      case SuppliesBuilding.CrystalMine          => crystalMineCost(level.value)
-      case SuppliesBuilding.DeuteriumSynthesizer => deuteriumSynthesiserCost(level.value)
-      case SuppliesBuilding.SolarPlant           => powerPlantCost(level.value)
-      case SuppliesBuilding.MetalStorage         => fromBaseCostPowerOf2(Resources(1000, 0, 0), level.value)
-      case SuppliesBuilding.CrystalStorage       => fromBaseCostPowerOf2(Resources(1000, 500, 0), level.value)
-      case SuppliesBuilding.DeuteriumStorage     => fromBaseCostPowerOf2(Resources(1000, 1000, 0), level.value)
-    }
+    buildingCost(buildingType, level.value)
   }
 
   private def metalMineCost(level: Int): Resources = {
@@ -46,7 +45,4 @@ object SuppliesBuildingCosts {
       deuterium = (baseCost.deuterium * 2.0.pow(level - 1.0)).toInt
     )
   }
-
-  private def refineVUnsafe[P, V](v: V)(implicit ev: Validate[V, P]): Refined[V, P] =
-    refineV[P](v).fold(s => throw new IllegalArgumentException(s), identity)
 }
