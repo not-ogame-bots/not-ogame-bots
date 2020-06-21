@@ -30,7 +30,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
   private def lookForFleet(planets: List[PlayerPlanet]): Task[Unit] = {
     for {
       myFleets <- ogameDriver.readMyFleets().execute()
-      expeditions = myFleets.fleets.filter(isExpedition)
+      expeditions = myFleets.fleets.filter(_.fleetMissionType == FleetMissionType.Expedition)
       _ <- if (expeditions.size < expeditionConfig.maxNumberOfExpeditions) {
         Logger[Task].info(
           s"Only ${expeditions.size}/${expeditionConfig.maxNumberOfExpeditions} expeditions are in the air"
@@ -81,31 +81,26 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
     }
   }
 
-  private def isExpedition(fleet: MyFleet) = {
-    fleet.fleetMissionType == FleetMissionType.Expedition
-  }
-
   private def sendExpedition(fromPlanet: PlayerPlanet) = {
-    sendFleetImpl(fromPlanet).recoverWith {
-      case AvailableDeuterExceeded(requiredAmount) =>
-        Logger[OgameAction].info(s"There was not enough deuter($requiredAmount), expedition won't be send this time")
-    }
+    (for {
+      _ <- Logger[OgameAction].info("Sending fleet...")
+      _ <- ogameDriver.sendFleet(
+        SendFleetRequest(
+          fromPlanet,
+          SendFleetRequestShips.Ships(expeditionConfig.ships.map(s => s.shipType -> s.amount).toMap),
+          expeditionConfig.target,
+          FleetMissionType.Expedition,
+          FleetResources.Given(Resources.Zero)
+        )
+      )
+      _ <- Logger[OgameAction].info("Fleet sent")
+    } yield ())
+      .recoverWith {
+        case AvailableDeuterExceeded(requiredAmount) =>
+          Logger[OgameAction].info(s"There was not enough deuter($requiredAmount), expedition won't be send this time")
+      }
   }
 
-  private def sendFleetImpl(fromPlanet: PlayerPlanet) = {
-    Logger[OgameAction].info("Sending fleet...") >>
-      ogameDriver
-        .sendFleet(
-          SendFleetRequest(
-            fromPlanet,
-            SendFleetRequestShips.Ships(expeditionConfig.ships.map(s => s.shipType -> s.amount).toMap),
-            expeditionConfig.target,
-            FleetMissionType.Expedition,
-            FleetResources.Given(Resources.Zero)
-          )
-        )
-        .flatTap(_ => Logger[OgameAction].info("Fleet sent"))
-  }
   private def lookForFleetOnPlanets(planets: List[PlayerPlanet], allFleets: List[MyFleet]) = {
     Stream
       .emits(planets)
