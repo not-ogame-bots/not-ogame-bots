@@ -53,10 +53,13 @@ case class SuppliesPageData(
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
+    @Deprecated
     suppliesLevels: SuppliesBuildingLevels,
     currentBuildingProgress: Option[BuildingProgress],
     currentShipyardProgress: Option[BuildingProgress]
 ) {
+  val suppliesIntLevels: SuppliesBuildingIntLevels = SuppliesBuildingIntLevels(suppliesLevels.values.map(e => e._1 -> e._2.value))
+
   def buildingInProgress: Boolean = currentBuildingProgress.isDefined
 
   def shipInProgress: Boolean = currentShipyardProgress.isDefined
@@ -65,8 +68,13 @@ case class SuppliesPageData(
 
   def isIdle: Boolean = !isBusy
 
+  @Deprecated
   def getLevel(suppliesBuilding: SuppliesBuilding): Int Refined NonNegative = {
     suppliesLevels.values(suppliesBuilding)
+  }
+
+  def getIntLevel(suppliesBuilding: SuppliesBuilding): Int = {
+    suppliesLevels.values(suppliesBuilding).value
   }
 }
 
@@ -75,11 +83,19 @@ case class FacilityPageData(
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
+    @Deprecated
     facilityLevels: FacilitiesBuildingLevels,
     currentBuildingProgress: Option[BuildingProgress]
 ) {
+  val facilityIntLevels: FacilitiesBuildingIntLevels = FacilitiesBuildingIntLevels(facilityLevels.values.map(e => e._1 -> e._2.value))
+
+  @Deprecated
   def getLevel(facilityBuilding: FacilityBuilding): Int Refined NonNegative = {
     facilityLevels.values(facilityBuilding)
+  }
+
+  def getIntLevel(facilityBuilding: FacilityBuilding): Int = {
+    facilityLevels.values(facilityBuilding).value
   }
 }
 
@@ -97,11 +113,19 @@ case class TechnologyPageData(
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
+    @Deprecated
     technologyLevels: TechnologyLevels,
     currentResearchProgress: Option[BuildingProgress]
 ) {
+  val technologyIntLevels: TechnologyIntLevels = TechnologyIntLevels(technologyLevels.values.map(e => e._1 -> e._2.value))
+
+  @Deprecated
   def getLevel(technology: Technology): Int Refined NonNegative = {
     technologyLevels.values(technology)
+  }
+
+  def getIntLevel(technology: Technology): Int = {
+    technologyLevels.values(technology).value
   }
 }
 
@@ -144,11 +168,20 @@ object Resources {
   def Zero: Resources = Resources(0, 0, 0)
 }
 
+@Deprecated
 case class SuppliesBuildingLevels(values: Map[SuppliesBuilding, Int Refined NonNegative])
 
+case class SuppliesBuildingIntLevels(values: Map[SuppliesBuilding, Int])
+
+@Deprecated
 case class FacilitiesBuildingLevels(values: Map[FacilityBuilding, Int Refined NonNegative])
 
+case class FacilitiesBuildingIntLevels(values: Map[FacilityBuilding, Int])
+
+@Deprecated
 case class TechnologyLevels(values: Map[Technology, Int Refined NonNegative])
+
+case class TechnologyIntLevels(values: Map[Technology, Int])
 
 case class BuildingProgress(finishTimestamp: ZonedDateTime, name: String)
 
