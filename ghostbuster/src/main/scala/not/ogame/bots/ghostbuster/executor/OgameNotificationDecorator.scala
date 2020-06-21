@@ -10,7 +10,7 @@ import not.ogame.bots._
 import not.ogame.bots.ghostbuster.FLogger
 
 class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Scheduler)
-    extends OgameDriver[Task]
+    extends BaseOgameDriver[Task]
     with NotificationAware
     with FLogger {
   private val notifications = ConcurrentSubject.publish[Notification]
