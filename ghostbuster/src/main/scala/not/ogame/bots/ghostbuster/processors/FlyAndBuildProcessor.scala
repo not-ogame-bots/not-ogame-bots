@@ -7,16 +7,22 @@ import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.{FLogger, FsConfig, PlanetFleet}
+import not.ogame.bots.ghostbuster.executor._
+import not.ogame.bots.ghostbuster.ogame.OgameAction
+import not.ogame.bots.ghostbuster.{FLogger, FsConfig}
 
 import scala.concurrent.duration._
 
-class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, builder: Builder)(implicit clock: LocalClock) extends FLogger {
+class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsConfig, builder: Builder)(
+    implicit executor: OgameActionExecutor[Task],
+    clock: LocalClock
+) extends FLogger {
   def run(): Task[Unit] = {
     if (fsConfig.isOn) {
-      taskExecutor
-        .readPlanetsAndMoons()
+      ogameDriver
+        .readPlanets()
         .map(_.filter(p => fsConfig.eligiblePlanets.contains(p.id)))
+        .execute()
         .flatMap(lookOnPlanets)
         .onError(e => Logger[Task].error(s"restarting fly processor ${e.getMessage}"))
         .onErrorRestartIf(_ => true)
@@ -26,18 +32,23 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
   }
 
   private def lookAtInTheAir(planets: List[PlayerPlanet]): Task[Unit] = {
-    for {
-      fleets <- taskExecutor.readAllFleets()
+    (for {
+      fleets <- ogameDriver.readAllFleets()
       possibleFsFleets = fleets.filter(f => isFsFleet(planets, f))
-      _ <- possibleFsFleets match {
+      waitingTime <- possibleFsFleets match {
         case l @ _ :: _ =>
-          Logger[Task].info("Too many fleets in the air. Waiting for the first one to reach its target.") >>
-            taskExecutor.waitTo(l.map(_.arrivalTime).min) >> lookOnPlanets(planets)
+          Logger[OgameAction]
+            .info("Too many fleets in the air. Waiting for the first one to reach its target.")
+            .as(l.map(_.arrivalTime).min)
         case Nil =>
-          Logger[Task].warn(s"Couldn't find fs fleet either on planets or in the air. Waiting ${fsConfig.searchInterval}...") >>
-            Task.sleep(fsConfig.searchInterval) >> lookOnPlanets(planets)
+          Logger[OgameAction]
+            .warn(s"Couldn't find fs fleet either on planets or in the air. Waiting ${fsConfig.searchInterval}...")
+            .as(clock.now().plus(fsConfig.searchInterval))
       }
-    } yield ()
+    } yield waitingTime)
+      .execute()
+      .flatMap(waitingTime => executor.waitTo(waitingTime))
+      .flatMap(_ => lookOnPlanets(planets))
   }
 
   private def isFsFleet(planets: List[PlayerPlanet], f: Fleet) = {
@@ -49,22 +60,23 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
   private def lookOnPlanets(planets: List[PlayerPlanet]): Task[Unit] = {
     Stream
       .emits(planets)
-      .evalMap(taskExecutor.getFleetOnPlanet)
-      .collectFirst { case p if isFsFleet(p) => p }
+      .evalMap(p => ogameDriver.readFleetPage(p.id).map(p -> _))
+      .collectFirst { case (p, f) if isFsFleet(f.ships) => p }
       .compile
       .last
+      .execute()
       .flatMap {
         case Some(planet) =>
           Logger[Task].info(s"Planet with fs fleet ${pprint.apply(planet)}") >>
-            buildAndSend(planet.playerPlanet, planets)
+            buildAndSend(planet, planets)
         case None =>
           Logger[Task].warn("Couldn't find fs fleet on any planet, looking in the air...") >>
             lookAtInTheAir(planets)
       }
   }
 
-  private def isFsFleet(planetFleet: PlanetFleet): Boolean = {
-    fsConfig.ships.forall(fsShip => fsShip.amount <= planetFleet.fleet(fsShip.shipType)) //TODO display unmatched pairs
+  private def isFsFleet(fleet: Map[ShipType, Int]): Boolean = {
+    fsConfig.ships.forall(fsShip => fsShip.amount <= fleet(fsShip.shipType)) //TODO display unmatched pairs
   }
 
   private def buildAndSend(currentPlanet: PlayerPlanet, planets: List[PlayerPlanet]): Task[Unit] = {
@@ -85,11 +97,13 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
     for {
       _ <- Logger[Task].info("Sending fleet...")
       _ <- sendFleetImpl(from, to)
+        .execute()
         .flatTap(_ => Logger[Task].info("Fleet sent"))
         .recoverWith {
           case AvailableDeuterExceeded(requiredAmount) =>
-            taskExecutor
-              .readSupplyPage(from)
+            ogameDriver
+              .readSuppliesPage(from.id)
+              .execute()
               .flatMap { suppliesPageData =>
                 val missingDeuter = requiredAmount - suppliesPageData.currentResources.deuterium
                 val timeToProduceInHours = missingDeuter.toDouble / suppliesPageData.currentProduction.deuterium
@@ -106,11 +120,12 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
   private def sendFleetImpl(from: PlayerPlanet, to: PlayerPlanet) = {
     for {
       resources <- if (fsConfig.takeResources) {
-        new ResourceSelector[Task](deuteriumSelector = Selector.decreaseBy(fsConfig.remainDeuterAmount)).selectResources(taskExecutor, from)
+        new ResourceSelector[OgameAction](deuteriumSelector = Selector.decreaseBy(fsConfig.remainDeuterAmount))
+          .selectResources(ogameDriver, from)
       } else {
-        Resources.Zero.pure[Task]
+        Resources.Zero.pure[OgameAction]
       }
-      _ <- taskExecutor
+      _ <- ogameDriver
         .sendFleet(
           SendFleetRequest(
             from,
@@ -132,15 +147,16 @@ class FlyAndBuildProcessor(taskExecutor: TaskExecutor, fsConfig: FsConfig, build
     if (fsConfig.builder) {
       builder
         .buildNextThingFromWishList(planet)
+        .execute()
         .flatMap {
           case BuilderResult.Building(finishTime)
               if timeDiff(clock.now(), finishTime) < fsConfig.maxBuildingTime && timeDiff(startedBuildingAt, clock.now()) < fsConfig.maxWaitTime =>
             Logger[Task].info(s"Decided to wait for building to finish til $finishTime") >>
-              taskExecutor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
+              executor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
           case BuilderResult.Waiting(finishTime)
               if timeDiff(clock.now(), finishTime) < fsConfig.maxBuildingTime && timeDiff(startedBuildingAt, clock.now()) < fsConfig.maxWaitTime =>
             Logger[Task].info(s"Decided to wait for building to finish til $finishTime") >>
-              taskExecutor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
+              executor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
           case BuilderResult.Idle =>
             Task.unit
         }

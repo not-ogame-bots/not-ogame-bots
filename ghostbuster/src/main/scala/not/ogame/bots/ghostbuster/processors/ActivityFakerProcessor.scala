@@ -4,14 +4,17 @@ import cats.implicits._
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import monix.reactive.{Consumer, Observable}
+import not.ogame.bots.OgameDriver
 import not.ogame.bots.ghostbuster.FLogger
+import not.ogame.bots.ghostbuster.executor.{OgameActionExecutor, _}
+import not.ogame.bots.ghostbuster.ogame.OgameAction
 
 import scala.concurrent.duration._
 import scala.util.Random
 
-class ActivityFakerProcessor(taskExecutor: TaskExecutor) extends FLogger {
+class ActivityFakerProcessor(ogameActionDriver: OgameDriver[OgameAction])(implicit executor: OgameActionExecutor[Task]) extends FLogger {
   def run(): Task[Unit] = {
-    taskExecutor.subscribeToNotifications
+    executor.subscribeToNotifications
       .switchMap { _ =>
         Observable.intervalAtFixedRate(14 minutes, 14 minutes)
       }
@@ -20,11 +23,12 @@ class ActivityFakerProcessor(taskExecutor: TaskExecutor) extends FLogger {
 
   private def checkSomething = {
     Logger[Task].info("activity faker running...") >>
-      taskExecutor
-        .readPlanetsAndMoons()
+      ogameActionDriver
+        .readPlanets()
         .flatMap { planets =>
-          Random.shuffle(planets).take(planets.size / 2 + 1).map(it => taskExecutor.readSupplyPage(it).void).sequence
+          Random.shuffle(planets).take(planets.size / 2 + 1).map(it => ogameActionDriver.readSuppliesPage(it.id).void).sequence
         }
+        .execute()
         .void
   }
 }

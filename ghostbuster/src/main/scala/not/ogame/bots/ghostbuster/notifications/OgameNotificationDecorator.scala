@@ -1,4 +1,4 @@
-package not.ogame.bots.ghostbuster.executor
+package not.ogame.bots.ghostbuster.notifications
 
 import cats.implicits._
 import io.chrisdavenport.log4cats.Logger
@@ -95,8 +95,8 @@ class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Schedule
       .onError { case e => notify(Notification.Failure(e)) }
   }
 
-  override def checkIsLoggedIn(): Task[Boolean] = logStartEnd("checkIsLogged") {
-    driver.checkIsLoggedIn()
+  override def checkLoginStatus(): Task[Boolean] = logStartEnd("checkIsLogged") {
+    driver.checkLoginStatus()
   }
 
   private def notify(refreshed: Notification) = {
