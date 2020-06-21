@@ -149,7 +149,7 @@ case class FacilitiesBuildingLevels(values: Map[FacilityBuilding, Int Refined No
 
 case class TechnologyLevels(values: Map[Technology, Int Refined NonNegative])
 
-case class BuildingProgress(finishTimestamp: ZonedDateTime)
+case class BuildingProgress(finishTimestamp: ZonedDateTime, name: String)
 
 sealed trait SuppliesBuilding extends EnumEntry with Snakecase
 
