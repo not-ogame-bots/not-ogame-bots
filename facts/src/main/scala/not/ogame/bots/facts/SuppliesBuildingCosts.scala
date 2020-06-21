@@ -10,6 +10,7 @@ object SuppliesBuildingCosts {
     buildingCost(buildingType, refineVUnsafe[Positive, Int](level))
   }
 
+  @Deprecated
   def buildingCost(buildingType: SuppliesBuilding, level: Int Refined Positive): Resources = {
     buildingType match {
       case SuppliesBuilding.MetalMine            => metalMineCost(level.value)
