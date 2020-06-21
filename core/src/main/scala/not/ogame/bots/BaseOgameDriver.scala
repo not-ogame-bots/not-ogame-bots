@@ -17,7 +17,7 @@ abstract class BaseOgameDriver[F[_]] extends OgameDriver[F] {
 
   override def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit] = ???
 
-  override def buildSolarSatellite(planetId: PlanetId): F[Unit] = ???
+  override def buildSolarSatellites(planetId: PlanetId, count: Int): F[Unit] = ???
 
   override def readFleetPage(planetId: PlanetId): F[FleetPageData] = ???
 

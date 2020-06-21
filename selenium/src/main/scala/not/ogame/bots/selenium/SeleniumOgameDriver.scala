@@ -318,12 +318,12 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
     } yield ()
   }
 
-  override def buildSolarSatellite(planetId: PlanetId): F[Unit] = {
+  override def buildSolarSatellites(planetId: PlanetId, count: Int): F[Unit] = {
     for {
       _ <- webDriver.safeUrlF(urlProvider.getShipyardUrl(planetId))
       _ <- webDriver.find(By.id("technologies")).flatMap(_.find(By.className("solarSatellite"))).flatMap(_.clickF())
       _ <- webDriver.waitForElementF(By.id("build_amount"))
-      _ <- webDriver.find(By.id("build_amount")).flatMap(_.sendKeysF("1"))
+      _ <- webDriver.find(By.id("build_amount")).flatMap(_.sendKeysF(count.toString))
       _ <- webDriver.find(By.className("upgrade")).flatMap(_.clickF())
     } yield ()
   }
