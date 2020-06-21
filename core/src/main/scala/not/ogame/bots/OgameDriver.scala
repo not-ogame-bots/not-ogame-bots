@@ -2,7 +2,6 @@ package not.ogame.bots
 
 import java.time.ZonedDateTime
 
-import cats.effect.Resource
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import eu.timepit.refined.api.Refined
@@ -27,6 +26,8 @@ trait OgameDriver[F[_]] {
   def startResearch(planetId: PlanetId, technology: Technology): F[Unit]
 
   def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): F[Unit]
+
+  def buildSolarSatellite(planetId: PlanetId): F[Unit]
 
   def readFleetPage(planetId: PlanetId): F[FleetPageData]
 
