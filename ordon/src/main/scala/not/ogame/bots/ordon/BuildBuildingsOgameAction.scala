@@ -71,10 +71,10 @@ class BuildBuildingsOgameAction[T[_]: Monad](planet: PlayerPlanet, tasks: List[T
       technologyPage: TechnologyPageData
   ): TaskOnPlanet = {
     if (suppliesPage.currentResources.energy < 0) {
-      if (suppliesPage.getLevel(SolarPlant).value >= 16) {
+      if (suppliesPage.getIntLevel(SolarPlant) >= 16) {
         new SolarSatelliteBuildingTask()
       } else {
-        new SuppliesBuildingTask(SolarPlant, suppliesPage.getLevel(SolarPlant).value + 1)
+        new SuppliesBuildingTask(SolarPlant, suppliesPage.getIntLevel(SolarPlant) + 1)
       }
     } else {
       tasks.find(p => p.isValid(suppliesPage, facilityPage, technologyPage)).get
@@ -84,7 +84,7 @@ class BuildBuildingsOgameAction[T[_]: Monad](planet: PlayerPlanet, tasks: List[T
 
 class SuppliesBuildingTask(suppliesBuilding: SuppliesBuilding, level: Int)(implicit clock: LocalClock) extends TaskOnPlanet {
   override def isValid(suppliesPage: SuppliesPageData, facilityPage: FacilityPageData, technologyPage: TechnologyPageData): Boolean = {
-    suppliesPage.getLevel(suppliesBuilding).value < level
+    suppliesPage.getIntLevel(suppliesBuilding) < level
   }
 
   override def cost(): Resources = SuppliesBuildingCosts.buildingCost(suppliesBuilding, level)
@@ -107,7 +107,7 @@ class SuppliesBuildingTask(suppliesBuilding: SuppliesBuilding, level: Int)(impli
 
 class FacilityBuildingTask(facilityBuilding: FacilityBuilding, level: Int)(implicit clock: LocalClock) extends TaskOnPlanet {
   override def isValid(suppliesPage: SuppliesPageData, facilityPage: FacilityPageData, technologyPage: TechnologyPageData): Boolean = {
-    facilityPage.getLevel(facilityBuilding).value < level
+    facilityPage.getIntLevel(facilityBuilding) < level
   }
 
   override def cost(): Resources = FacilityBuildingCosts.buildingCost(facilityBuilding, level)
@@ -130,7 +130,7 @@ class FacilityBuildingTask(facilityBuilding: FacilityBuilding, level: Int)(impli
 
 class TechnologyBuildingTask(technology: Technology, level: Int)(implicit clock: LocalClock) extends TaskOnPlanet {
   override def isValid(suppliesPage: SuppliesPageData, facilityPage: FacilityPageData, technologyPage: TechnologyPageData): Boolean = {
-    technologyPage.getLevel(technology).value < level
+    technologyPage.getIntLevel(technology) < level
   }
 
   override def cost(): Resources = TechnologyCosts.technologyCost(technology, level)
