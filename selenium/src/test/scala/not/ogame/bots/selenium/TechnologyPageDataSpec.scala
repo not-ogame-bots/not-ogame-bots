@@ -1,9 +1,6 @@
 package not.ogame.bots.selenium
 
-import cats.effect.{ContextShift, IO, Resource, Sync}
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.auto._
-import eu.timepit.refined.numeric.NonNegative
+import cats.effect.{ContextShift, IO, Resource}
 import not.ogame.bots._
 import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
 
@@ -34,8 +31,8 @@ class TechnologyPageDataSpec extends CatsEffectSuite with CatsEffectFunFixtures 
   driverFixture.test("Should read planet list") { driver =>
     driver.readTechnologyPage(PlanetId("33653280")).map { page =>
       assertEquals(
-        page.technologyLevels.values,
-        Map[Technology, Int Refined NonNegative](
+        page.technologyIntLevels.values,
+        Map[Technology, Int](
           Technology.Armor -> 12,
           Technology.CombustionDrive -> 11,
           Technology.Plasma -> 0,
