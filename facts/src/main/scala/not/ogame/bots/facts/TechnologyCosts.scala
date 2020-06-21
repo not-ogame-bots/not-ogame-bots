@@ -11,6 +11,7 @@ object TechnologyCosts {
     technologyCost(technology, refineVUnsafe[Positive, Int](level))
   }
 
+  @Deprecated
   def technologyCost(technology: Technology, level: Int Refined Positive): Resources = {
     technology match {
       case Energy          => fromBaseCostPowerOf2(Resources(0, 800, 400), level)

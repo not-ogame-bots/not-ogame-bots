@@ -10,6 +10,7 @@ object FacilityBuildingCosts {
     buildingCost(facilityBuilding, refineVUnsafe[Positive, Int](level))
   }
 
+  @Deprecated
   def buildingCost(facilityBuilding: FacilityBuilding, level: Int Refined Positive): Resources = {
     facilityBuilding match {
       case FacilityBuilding.RoboticsFactory => fromBaseCostPowerOf2(Resources(400, 120, 200), level.value)
