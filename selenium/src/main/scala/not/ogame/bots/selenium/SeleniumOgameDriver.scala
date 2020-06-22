@@ -157,7 +157,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
   private def readCurrentShipyardProgress: F[Option[BuildingProgress]] =
     for {
       constructions <- webDriver.waitForElementsF(By.className("construction"))
-      buildingProgress <- getConstructionInProgress(constructions, "shipyardCountdown")
+      buildingProgress <- getConstructionInProgress(constructions, "shipyardCountdown2")
     } yield buildingProgress
 
   private def readCurrentResearchProgress: F[Option[BuildingProgress]] =
