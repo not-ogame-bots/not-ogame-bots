@@ -100,8 +100,19 @@ class StartOgameAction[T[_]: Monad](implicit clock: LocalClock) extends OgameAct
       new SuppliesBuildingTask(CrystalMine, 18),
       new SuppliesBuildingTask(MetalMine, 18),
       new SuppliesBuildingTask(DeuteriumSynthesizer, 15),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 16),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 17),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 18),
       new SuppliesBuildingTask(CrystalMine, 19),
-      new SuppliesBuildingTask(MetalMine, 19)
+      new SuppliesBuildingTask(CrystalMine, 20),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 19),
+      new SuppliesBuildingTask(CrystalMine, 21),
+      new SuppliesBuildingTask(MetalMine, 19),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 20),
+      new SuppliesBuildingTask(CrystalMine, 22),
+      new SuppliesBuildingTask(MetalMine, 20),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 21),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 22)
     )
   }
 }
