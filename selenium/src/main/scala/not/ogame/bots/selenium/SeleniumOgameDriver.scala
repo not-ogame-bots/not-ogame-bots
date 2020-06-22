@@ -20,6 +20,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
       _ <- webDriver.goto(urlProvider.universeListUrl)
       _ <- loginImpl(urlProvider.universeListUrl)
       _ <- selectUniverse()
+      _ <- timer.sleep(1 second) //TODO temporal workaround
       _ <- webDriver.closeF()
       _ <- webDriver.switchToAnyOpenTab()
       _ <- webDriver.waitForElementF(By.className("OGameClock"))
