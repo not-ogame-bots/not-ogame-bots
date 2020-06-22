@@ -21,7 +21,7 @@ class SendFleet(
       _ <- ogameDriver.sendFleet(
         SendFleetRequest(
           from = from,
-          ships = SendFleetRequestShips.Ships(selectShips(fleetPage)),
+          ships = SendFleetRequestShips.Ships(safeSelectShips(fleetPage, selectShips(fleetPage))),
           targetCoordinates = to.coordinates,
           fleetMissionType = missionType,
           resources = FleetResources.Given(selectResources(fleetPage)),
@@ -34,6 +34,10 @@ class SendFleet(
         .get
       // There is an issue in ogame that fleet just after arrival is still on fleet list as returning. To avoid that 3 second delay was added.
     } yield thisFleet.arrivalTime.plusSeconds(3)
+
+  private def safeSelectShips(page: FleetPageData, ships: Map[ShipType, Int]): Map[ShipType, Int] = {
+    ships.map(e => e._1 -> Math.min(e._2, page.ships(e._1))).filter(e => e._2 > 0)
+  }
 }
 
 trait SelectResources extends (FleetPageData => Resources)
