@@ -83,7 +83,7 @@ case class FacilityPageData(
     currentResources: Resources,
     currentProduction: Resources,
     currentCapacity: Resources,
-    val facilityIntLevels: FacilitiesBuildingIntLevels,
+    facilityIntLevels: FacilitiesBuildingIntLevels,
     currentBuildingProgress: Option[BuildingProgress]
 ) {
   @Deprecated
