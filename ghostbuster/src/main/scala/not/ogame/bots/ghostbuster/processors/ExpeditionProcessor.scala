@@ -46,10 +46,9 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
         Logger[OgameAction]
           .info(s"Only ${expeditions.size}/${expeditionConfig.maxNumberOfExpeditions} expeditions are in the air")
           .flatMap { _ =>
-            val returningExpeditionFleets = expeditions.filter(_.isReturning)
-            val flyingSmallCargoCount = returningExpeditionFleets.map(_.ships(SmallCargoShip)).sum
-            val flyingLargeCargoCount = returningExpeditionFleets.map(_.ships(LargeCargoShip)).sum
-            val flyingExplorerCount = returningExpeditionFleets.map(_.ships(Explorer)).sum
+            val flyingSmallCargoCount = expeditions.map(_.ships(SmallCargoShip)).sum
+            val flyingLargeCargoCount = expeditions.map(_.ships(LargeCargoShip)).sum
+            val flyingExplorerCount = expeditions.map(_.ships(Explorer)).sum
             val smallCargoToSend = (fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount) / expeditionConfig.maxNumberOfExpeditions + 1
             val largeCargoToSend = (fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / expeditionConfig.maxNumberOfExpeditions + 1
             val explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount) / expeditionConfig.maxNumberOfExpeditions + 1
