@@ -12,54 +12,51 @@ import not.ogame.bots.ordon.utils.SendFleet
 import scala.util.Random
 
 class BalancingExpeditionOgameAction[T[_]: Monad](
-    maxNumberOfExpeditions: Int,
     startPlanet: PlayerPlanet,
     targetList: List[Coordinates]
 )(implicit clock: LocalClock)
     extends SimpleOgameAction[T] {
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = {
     ogame
-      .readAllFleets()
-      .flatMap(processFleet(ogame, _))
+      .readMyFleets()
+      .flatMap(processFleets(ogame, _))
   }
 
-  def processFleet(ogame: OgameDriver[T], fleets: List[Fleet]): T[ZonedDateTime] = {
-    if (fleets.count(returningExpedition) >= maxNumberOfExpeditions) {
-      fleets.filter(_.fleetMissionType == Expedition).map(_.arrivalTime).min.pure[T]
+  def processFleets(ogame: OgameDriver[T], page: MyFleetPageData): T[ZonedDateTime] = {
+    if (page.fleetSlots.currentExpeditions == page.fleetSlots.maxExpeditions) {
+      page.fleets.filter(_.fleetMissionType == Expedition).map(_.arrivalTime).min.plusSeconds(3).pure[T]
     } else {
-      sendFleet(ogame)
+      sendFleet(ogame, page.fleetSlots.maxExpeditions)
     }
   }
 
-  def returningExpedition(fleet: Fleet): Boolean = {
-    fleet.fleetMissionType == Expedition && fleet.isReturning
-  }
-
-  def sendFleet(ogame: OgameDriver[T]): T[ZonedDateTime] =
+  private def sendFleet(ogame: OgameDriver[T], maxNumberOfExpeditions: Int): T[ZonedDateTime] =
     for {
       myFleets <- ogame.readMyFleets()
       fleetOnPlanet <- ogame.readFleetPage(startPlanet.id)
-      returningExpeditionFleets = myFleets.fleets.filter(f => f.isReturning && f.fleetMissionType == Expedition)
+      returningExpeditionFleets = myFleets.fleets.filter(f => f.fleetMissionType == Expedition)
       flyingSmallCargoCount = returningExpeditionFleets.map(_.ships(SmallCargoShip)).sum
       flyingLargeCargoCount = returningExpeditionFleets.map(_.ships(LargeCargoShip)).sum
       flyingExplorerCount = returningExpeditionFleets.map(_.ships(Explorer)).sum
-      smallCargoToSend = (fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount) / maxNumberOfExpeditions + 1
-      largeCargoToSend = (fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / maxNumberOfExpeditions + 1
-      explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount) / maxNumberOfExpeditions
+      smallCargoToSend = (fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount - 40) / maxNumberOfExpeditions + 1
+      largeCargoToSend = (fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / maxNumberOfExpeditions
+      explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount - 7) / maxNumberOfExpeditions
       topBattleShip = getTopBattleShip(fleetOnPlanet)
+      shipsToSend = Map(
+        SmallCargoShip -> smallCargoToSend,
+        LargeCargoShip -> largeCargoToSend,
+        Explorer -> explorerToSend,
+        EspionageProbe -> 1,
+        topBattleShip -> 1
+      )
       targetCoordinates = Random.shuffle(targetList).head
       _ <- new SendFleet(
         from = startPlanet,
         to = PlayerPlanet(PlanetId.apply(""), targetCoordinates),
         selectResources = _ => Resources.Zero,
-        selectShips = _ =>
-          Map(
-            SmallCargoShip -> smallCargoToSend,
-            LargeCargoShip -> largeCargoToSend,
-            Explorer -> explorerToSend,
-            EspionageProbe -> 1,
-            topBattleShip -> 1
-          ),
+        selectShips = _ => {
+          shipsToSend
+        },
         missionType = Expedition
       ).sendFleet(ogame)
     } yield clock.now()
