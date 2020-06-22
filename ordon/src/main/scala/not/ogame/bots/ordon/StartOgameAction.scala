@@ -3,22 +3,44 @@ package not.ogame.bots.ordon
 import cats.Monad
 import cats.implicits._
 import not.ogame.bots.FacilityBuilding.{RoboticsFactory, Shipyard}
+import not.ogame.bots.ShipType._
 import not.ogame.bots.SuppliesBuilding.{CrystalMine, DeuteriumSynthesizer, MetalMine}
-import not.ogame.bots.{Coordinates, LocalClock, OgameDriver, PlayerPlanet}
+import not.ogame.bots._
+import not.ogame.bots.ordon.utils.{FleetSelector, Selector}
 
 class StartOgameAction[T[_]: Monad](implicit clock: LocalClock) extends OgameAction[T] {
   override def process(ogame: OgameDriver[T]): T[List[ScheduledAction[T]]] =
     for {
       planets <- ogame.readPlanets()
       buildActions = planets.map(planet => new BuildBuildingsOgameAction[T](planet, taskQueue()))
-    } yield (buildActions ++ List(expeditionAction(planets))).map(action => ScheduledAction(clock.now(), action))
+      otherActions = List(expeditionAction(planets), flyAround(planets))
+    } yield {
+      (buildActions ++ otherActions).map(action => ScheduledAction(clock.now(), action))
+    }
 
   private def expeditionAction(planets: List[PlayerPlanet]): OgameAction[T] = {
     new BalancingExpeditionOgameAction[T](
-      maxNumberOfExpeditions = 4,
       planets.head,
-      //      Map(SmallCargoShip -> 11, LargeCargoShip -> 11, Cruiser -> 1, LightFighter -> 1, EspionageProbe -> 1, Explorer -> 2),
       List(Coordinates(1, 155, 16))
+    )
+  }
+
+  private def flyAround(planets: List[PlayerPlanet]): OgameAction[T] = {
+    val leaveExpeditionShips = new FleetSelector(
+      Map(
+        SmallCargoShip -> Selector.skip,
+        LargeCargoShip -> Selector.skip,
+        Battleship -> Selector.decreaseBy(3),
+        Destroyer -> Selector.skip,
+        Explorer -> Selector.skip,
+        EspionageProbe -> Selector.decreaseBy(50)
+      )
+    )
+    new FlyAroundOgameAction[T](
+      speed = FleetSpeed.Percent10,
+      targets = planets.take(2),
+      fleetSelector = p => if (p == planets.head) leaveExpeditionShips else new FleetSelector(),
+      resourceSelector = _ => { _ => Resources(0, 0, 5_000) }
     )
   }
 
