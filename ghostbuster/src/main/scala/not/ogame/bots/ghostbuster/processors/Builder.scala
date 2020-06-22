@@ -212,13 +212,27 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
     }
   }
 
+  private val SolarSatelliteCost = Resources(0, 2000, 500)
+
   private def buildSolarSatellite(planet: PlayerPlanet, suppliesPageData: SuppliesPageData) = {
     suppliesPageData.currentShipyardProgress match {
       case Some(value) => BuilderResult.building(value.finishTimestamp).pure[OgameAction]
       case None =>
-        ogameActionDriver.buildSolarSatellites(planet.id, 1) >> ogameActionDriver
-          .readSuppliesPage(planet.id)
-          .map(f => BuilderResult.building(f.currentShipyardProgress.get.finishTimestamp))
+        if (suppliesPageData.currentResources.gtEqTo(SolarSatelliteCost)) {
+          ogameActionDriver.buildSolarSatellites(planet.id, 1) >>
+            ogameActionDriver
+              .readSuppliesPage(planet.id)
+              .map(f => BuilderResult.building(f.currentShipyardProgress.get.finishTimestamp))
+        } else {
+          val secondsToWait =
+            calculateWaitingTime(SolarSatelliteCost, suppliesPageData.currentProduction, suppliesPageData.currentResources)
+          Logger[OgameAction]
+            .info(
+              s"Wanted to build solar satellite but there were not enough resources on ${planet.coordinates}" +
+                s"- ${suppliesPageData.currentResources}/$SolarSatelliteCost"
+            )
+            .as(BuilderResult.building(clock.now().plusSeconds(secondsToWait)))
+        }
     }
   }
 
