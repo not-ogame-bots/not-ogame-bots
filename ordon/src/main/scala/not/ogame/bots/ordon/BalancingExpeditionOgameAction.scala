@@ -26,29 +26,14 @@ class BalancingExpeditionOgameAction[T[_]: Monad](
     if (page.fleetSlots.currentExpeditions == page.fleetSlots.maxExpeditions) {
       page.fleets.filter(_.fleetMissionType == Expedition).map(_.arrivalTime).min.plusSeconds(3).pure[T]
     } else {
-      sendFleet(ogame, page.fleetSlots.maxExpeditions)
+      sendFleet(ogame, page)
     }
   }
 
-  private def sendFleet(ogame: OgameDriver[T], maxNumberOfExpeditions: Int): T[ZonedDateTime] =
+  private def sendFleet(ogame: OgameDriver[T], myFleets: MyFleetPageData): T[ZonedDateTime] =
     for {
-      myFleets <- ogame.readMyFleets()
       fleetOnPlanet <- ogame.readFleetPage(startPlanet.id)
-      returningExpeditionFleets = myFleets.fleets.filter(f => f.fleetMissionType == Expedition)
-      flyingSmallCargoCount = returningExpeditionFleets.map(_.ships(SmallCargoShip)).sum
-      flyingLargeCargoCount = returningExpeditionFleets.map(_.ships(LargeCargoShip)).sum
-      flyingExplorerCount = returningExpeditionFleets.map(_.ships(Explorer)).sum
-      smallCargoToSend = (fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount - 40) / maxNumberOfExpeditions + 1
-      largeCargoToSend = (fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / maxNumberOfExpeditions
-      explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount - 7) / maxNumberOfExpeditions
-      topBattleShip = getTopBattleShip(fleetOnPlanet)
-      shipsToSend = Map(
-        SmallCargoShip -> smallCargoToSend,
-        LargeCargoShip -> largeCargoToSend,
-        Explorer -> explorerToSend,
-        EspionageProbe -> 1,
-        topBattleShip -> 1
-      )
+      shipsToSend = selectFleet(myFleets, fleetOnPlanet)
       targetCoordinates = Random.shuffle(targetList).head
       _ <- new SendFleet(
         from = startPlanet,
@@ -60,6 +45,28 @@ class BalancingExpeditionOgameAction[T[_]: Monad](
         missionType = Expedition
       ).sendFleet(ogame)
     } yield clock.now()
+
+  private def selectFleet(myFleets: MyFleetPageData, fleetOnPlanet: FleetPageData): Map[ShipType, Int] = {
+    val returningExpeditionFleets = myFleets.fleets.filter(f => f.fleetMissionType == Expedition)
+    val flyingSmallCargoCount = returningExpeditionFleets.map(_.ships(SmallCargoShip)).sum
+    val flyingLargeCargoCount = returningExpeditionFleets.map(_.ships(LargeCargoShip)).sum
+    val flyingExplorerCount = returningExpeditionFleets.map(_.ships(Explorer)).sum
+    val maxLargeCargo = 100;
+    val largeCargoToSend =
+      Math.max(maxLargeCargo, (fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / myFleets.fleetSlots.maxExpeditions + 1)
+    val maxSmallCargo = (maxLargeCargo - largeCargoToSend) / 5
+    val smallCargoToSend =
+      Math.max(maxSmallCargo, (fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount) / myFleets.fleetSlots.maxExpeditions + 1)
+    val explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount - 7) / myFleets.fleetSlots.maxExpeditions
+    val topBattleShip = getTopBattleShip(fleetOnPlanet)
+    Map(
+      SmallCargoShip -> smallCargoToSend,
+      LargeCargoShip -> largeCargoToSend,
+      Explorer -> explorerToSend,
+      EspionageProbe -> 1,
+      topBattleShip -> 1
+    )
+  }
 
   private def getTopBattleShip(fleetOnPlanet: FleetPageData): ShipType = {
     if (fleetOnPlanet.ships(Destroyer) > 0) {
