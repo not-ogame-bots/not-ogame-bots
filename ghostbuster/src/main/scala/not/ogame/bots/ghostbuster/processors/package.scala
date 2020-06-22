@@ -27,4 +27,12 @@ package object processors {
       second
     }
   }
+
+  def max(first: ZonedDateTime, second: ZonedDateTime): ZonedDateTime = {
+    if (first.isBefore(second)) {
+      second
+    } else {
+      first
+    }
+  }
 }

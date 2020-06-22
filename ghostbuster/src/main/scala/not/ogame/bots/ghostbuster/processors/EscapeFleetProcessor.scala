@@ -51,18 +51,18 @@ class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: 
       val firstFleet = hostileFleets.minBy(_.arrivalTime)
       val remainingTime = timeDiff(clock.now(), firstFleet.arrivalTime)
       if (remainingTime < escapeConfig.minEscapeTime) {
-        Logger[Task].info("Hostile fleet is too close, we are doomed!").map(_ => clock.now().plus(escapeConfig.interval))
+        Logger[Task].info("Hostile fleet is too close, we are doomed!").as(clock.now().plus(escapeConfig.interval))
       } else if (remainingTime < escapeConfig.escapeTimeThreshold) {
-        checkAndEscape(firstFleet, planets).map(_ => clock.now())
+        checkAndEscape(firstFleet, planets).as(clock.now())
       } else {
         val nextInterval = clock.now().plus(escapeConfig.interval)
         val minTimeToWait = min(firstFleet.arrivalTime.minus(escapeConfig.escapeTimeThreshold), nextInterval)
         Logger[Task]
           .info(s"Hostile fleet detected but is quite far (${remainingTime.toSeconds} seconds). Waiting... $minTimeToWait")
-          .map(_ => minTimeToWait)
+          .as(minTimeToWait)
       }
     } else {
-      Logger[Task].info("No hostile fleets detected. Sleeping...").map(_ => clock.now().plus(escapeConfig.interval))
+      Logger[Task].info("No hostile fleets detected. Sleeping...").as(clock.now().plus(escapeConfig.interval))
     }
   }
 

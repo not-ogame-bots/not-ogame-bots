@@ -120,6 +120,10 @@ class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Schedule
   override def startResearch(planetId: PlanetId, technology: Technology): Task[Unit] = {
     driver.startResearch(planetId, technology).flatTap(_ => notify(Notification.ResearchStarted(planetId, technology)))
   }
+
+  override def buildSolarSatellites(planetId: PlanetId, count: Int): Task[Unit] = {
+    driver.buildSolarSatellites(planetId, count) //TODO add notify
+  }
 }
 
 trait NotificationAware {

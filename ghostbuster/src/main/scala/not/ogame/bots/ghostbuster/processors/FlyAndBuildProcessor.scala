@@ -153,7 +153,7 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
               if timeDiff(clock.now(), finishTime) < fsConfig.maxBuildingTime && timeDiff(startedBuildingAt, clock.now()) < fsConfig.maxWaitTime =>
             Logger[Task].info(s"Decided to wait for building to finish til $finishTime") >>
               executor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
-          case BuilderResult.Idle =>
+          case _ =>
             Task.unit
         }
     } else {

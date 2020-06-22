@@ -54,10 +54,9 @@ case class FsConfig(
     maxBuildingTime: FiniteDuration
 )
 case class ExpeditionConfig(
-    ships: List[FleetShip],
     isOn: Boolean,
     maxNumberOfExpeditions: Int,
-    eligiblePlanets: List[PlanetId],
+    startingPlanetId: PlanetId,
     collectingPlanet: PlanetId,
     collectingOn: Boolean,
     target: Coordinates

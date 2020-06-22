@@ -75,9 +75,11 @@ class OgameActionInterpreterImpl(ogameDriver: OgameDriver[Task] with Notificatio
   override def execute[A](action: OgameAction[A]): Task[A] = taskExecutor.exec(action.foldMap(compiler))
 
   override def waitTo(time: ZonedDateTime): Task[Unit] = {
-    val sleepTime = processors.timeDiff(clock.now(), time)
-    Logger[Task].debug(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til $time") >>
-      Task.sleep(sleepTime.plus(2 seconds)) // additional 1 seconds to make things go smooth
+    Task.eval(clock.now()).flatMap { now =>
+      val sleepTime = processors.timeDiff(now, processors.max(now, time))
+      Logger[Task].debug(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til $time") >>
+        Task.sleep(sleepTime.plus(2 seconds)) // additional 2 seconds to make things go smooth
+    }
   }
 
   override def subscribeToNotifications: Observable[Notification] = ogameDriver.subscribeToNotifications

@@ -1,13 +1,15 @@
 package not.ogame.bots.ghostbuster.processors
 
+import java.time.ZonedDateTime
+
 import cats.implicits._
-import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
+import not.ogame.bots.ShipType._
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.ogame.OgameAction
-import not.ogame.bots.ghostbuster.{ExpeditionConfig, FLogger, FleetShip}
+import not.ogame.bots.ghostbuster.{ExpeditionConfig, FLogger}
 
 class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: OgameDriver[OgameAction])(
     implicit executor: OgameActionExecutor[Task],
@@ -18,8 +20,8 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
       ogameDriver
         .readPlanets()
         .execute()
-        .map(planets => planets.filter(p => expeditionConfig.eligiblePlanets.contains(p.id)))
-        .flatMap(lookForFleet)
+        .map(planets => planets.filter(p => expeditionConfig.startingPlanetId.contains(p.id)).head)
+        .flatMap(processAndWait)
         .onError(e => Logger[Task].error(e)(s"restarting expedition processor ${e.getMessage}"))
         .onErrorRestartIf(_ => true)
     } else {
@@ -27,34 +29,73 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
     }
   }
 
-  private def lookForFleet(planets: List[PlayerPlanet]): Task[Unit] = {
+  private def processAndWait(playerPlanet: PlayerPlanet): Task[Unit] = {
     for {
-      myFleets <- ogameDriver.readMyFleets().execute()
-      expeditions = myFleets.fleets.filter(_.fleetMissionType == FleetMissionType.Expedition)
-      _ <- if (expeditions.size < expeditionConfig.maxNumberOfExpeditions) {
-        Logger[Task].info(
-          s"Only ${expeditions.size}/${expeditionConfig.maxNumberOfExpeditions} expeditions are in the air"
-        ) >>
-          lookForFleetOnPlanets(planets, myFleets.fleets) >> lookForFleet(planets)
-      } else {
-        val collectingDebris = collectDebris(planets, expeditions)
-        val min = expeditions.map(_.arrivalTime).min
-        for {
-          _ <- collectingDebris.execute()
-          _ <- Logger[Task].info(s"All expeditions are in the air, waiting for first to reach its target - $min")
-          _ <- executor.waitTo(min)
-          _ <- lookForFleet(planets)
-        } yield ()
-      }
+      time <- lookForFleet(playerPlanet).execute()
+      _ <- executor.waitTo(time)
+      _ <- processAndWait(playerPlanet)
     } yield ()
   }
 
+  private def lookForFleet(planet: PlayerPlanet): OgameAction[ZonedDateTime] = {
+    for {
+      myFleets <- ogameDriver.readMyFleets()
+      fleetOnPlanet <- ogameDriver.readFleetPage(planet.id)
+      expeditions = myFleets.fleets.filter(_.fleetMissionType == FleetMissionType.Expedition)
+      time <- if (expeditions.size < expeditionConfig.maxNumberOfExpeditions) {
+        Logger[OgameAction]
+          .info(s"Only ${expeditions.size}/${expeditionConfig.maxNumberOfExpeditions} expeditions are in the air")
+          .flatMap { _ =>
+            val returningExpeditionFleets = expeditions.filter(_.isReturning)
+            val flyingSmallCargoCount = returningExpeditionFleets.map(_.ships(SmallCargoShip)).sum
+            val flyingLargeCargoCount = returningExpeditionFleets.map(_.ships(LargeCargoShip)).sum
+            val flyingExplorerCount = returningExpeditionFleets.map(_.ships(Explorer)).sum
+            val smallCargoToSend = (fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount) / expeditionConfig.maxNumberOfExpeditions + 1
+            val largeCargoToSend = (fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / expeditionConfig.maxNumberOfExpeditions + 1
+            val explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount) / expeditionConfig.maxNumberOfExpeditions + 1
+            val topBattleShip = getTopBattleShip(fleetOnPlanet)
+            sendExpedition(
+              request = SendFleetRequest(
+                planet,
+                SendFleetRequestShips.Ships(
+                  Map(
+                    SmallCargoShip -> smallCargoToSend,
+                    LargeCargoShip -> largeCargoToSend,
+                    Explorer -> explorerToSend,
+                    topBattleShip -> 1,
+                    EspionageProbe -> 1
+                  )
+                ),
+                expeditionConfig.target,
+                FleetMissionType.Expedition,
+                FleetResources.Given(Resources.Zero)
+              )
+            ).as(clock.now())
+          }
+      } else {
+        val min = expeditions.map(_.arrivalTime).min
+        for {
+          _ <- collectDebris(List(planet), expeditions) //TODO fixme
+          _ <- Logger[OgameAction].info(s"All expeditions are in the air, waiting for first to reach its target - $min")
+        } yield min
+      }
+    } yield time
+  }
+
+  private def getTopBattleShip(fleetOnPlanet: FleetPageData): ShipType = {
+    if (fleetOnPlanet.ships(Destroyer) > 0) {
+      Destroyer
+    } else if (fleetOnPlanet.ships(Battleship) > 0) {
+      Battleship
+    } else if (fleetOnPlanet.ships(Cruiser) > 0) {
+      Cruiser
+    } else {
+      LightFighter
+    }
+  }
+
   private def collectDebris(planets: List[PlayerPlanet], expeditions: List[MyFleet]) = {
-    val shouldCollectDebris = expeditionConfig.collectingOn && (expeditions.filter(_.isReturning) match {
-      case l if l.nonEmpty =>
-        !expeditionConfig.ships.forall { case FleetShip(shipType, amount) => amount <= l.maxBy(_.arrivalTime).ships(shipType) }
-      case Nil => false
-    })
+    val shouldCollectDebris = expeditionConfig.collectingOn && false //TODO fixme
     if (shouldCollectDebris) {
       val debrisCollectingPlanet = planets.filter(_.id == expeditionConfig.collectingPlanet).head
       ogameDriver
@@ -81,56 +122,15 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
     }
   }
 
-  private def sendExpedition(fromPlanet: PlayerPlanet) = {
+  private def sendExpedition(request: SendFleetRequest) = {
     (for {
       _ <- Logger[OgameAction].info("Sending fleet...")
-      _ <- ogameDriver.sendFleet(
-        SendFleetRequest(
-          fromPlanet,
-          SendFleetRequestShips.Ships(expeditionConfig.ships.map(s => s.shipType -> s.amount).toMap),
-          expeditionConfig.target,
-          FleetMissionType.Expedition,
-          FleetResources.Given(Resources.Zero)
-        )
-      )
+      _ <- ogameDriver.sendFleet(request)
       _ <- Logger[OgameAction].info("Fleet sent")
     } yield ())
       .recoverWith {
         case AvailableDeuterExceeded(requiredAmount) =>
           Logger[OgameAction].info(s"There was not enough deuter($requiredAmount), expedition won't be send this time")
       }
-  }
-
-  private def lookForFleetOnPlanets(planets: List[PlayerPlanet], allFleets: List[MyFleet]) = {
-    Stream
-      .emits(planets)
-      .evalMap(p => ogameDriver.readFleetPage(p.id).map(p -> _))
-      .collectFirst { case (planet, fleet) if isExpeditionFleet(fleet.ships) => planet }
-      .evalMap(sendExpedition)
-      .compile
-      .last
-      .execute()
-      .flatMap {
-        case Some(_) => ().pure[Task]
-        case None    => waitToEarliestFleet(allFleets)
-      }
-  }
-
-  private def waitToEarliestFleet(allFleets: List[MyFleet]) = {
-    val tenMinutesFromNow = clock.now().plusMinutes(10)
-    val minAnyFleetArrivalTime = minOr(allFleets.map(_.arrivalTime))(tenMinutesFromNow)
-    val waitTo = List(minAnyFleetArrivalTime, tenMinutesFromNow).min
-    Logger[Task].info(s"Could find expedition fleet on any planet. Waiting til $waitTo....") >> executor.waitTo(waitTo)
-  }
-
-  private def minOr[R: Ordering](l: List[R])(or: => R): R = {
-    l match {
-      case l if l.nonEmpty => l.min
-      case _               => or
-    }
-  }
-
-  private def isExpeditionFleet(fleet: Map[ShipType, Int]): Boolean = {
-    expeditionConfig.ships.forall(ship => ship.amount <= fleet(ship.shipType))
   }
 }
