@@ -1,5 +1,6 @@
 package not.ogame.bots.ghostbuster.executor.impl
 
+import java.time.ZonedDateTime
 import java.util.UUID
 
 import cats.effect.concurrent.MVar
@@ -9,7 +10,7 @@ import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.FLogger
+import not.ogame.bots.ghostbuster.{FLogger, processors}
 import not.ogame.bots.ghostbuster.interpreter.TaskExecutor
 
 import scala.concurrent.duration._
@@ -69,17 +70,23 @@ class TaskExecutorImpl(ogameDriver: OgameDriver[Task])(implicit clock: LocalCloc
   }
 
   def exec[T](action: Task[T]): Task[T] = {
-    val uuid = UUID.randomUUID()
-    Request[T](Logger[Task].debug(s"transaction start: $uuid") >> action <* Logger[Task].debug(s"transaction end: $uuid"))
-      .flatMap { r =>
-        requests.put(r) >>
-          r.response.take
-            .flatMap {
-              case Response.Success(value) =>
-                Task.pure(value)
-              case Response.Failure(ex) =>
-                Task.raiseError[T](ex)
-            }
+    Task
+      .eval(UUID.randomUUID())
+      .flatMap(uuid => Request[T](withLogAndTime(action, uuid)))
+      .flatTap(r => requests.put(r))
+      .flatMap(r => r.response.take)
+      .flatMap {
+        case Response.Success(value) =>
+          Task.pure(value)
+        case Response.Failure(ex) =>
+          Task.raiseError[T](ex)
       }
+  }
+
+  private def withLogAndTime[T](action: Task[T], uuid: UUID) = {
+    Task.eval(clock.now()).flatMap { startTime =>
+      Logger[Task].debug(s"transaction start: $uuid") >> action <* Logger[Task]
+        .debug(s"transaction end: $uuid ${processors.timeDiff(startTime, clock.now())}")
+    }
   }
 }
