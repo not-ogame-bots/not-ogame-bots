@@ -9,6 +9,6 @@ object WebDriverResource {
   def firefox[F[_]: Sync](options: FirefoxOptions = new FirefoxOptions()): Resource[F, WebDriver] =
     Resource.make(Sync[F].delay(new FirefoxDriver(options)))(r => Sync[F].delay(r.close()))
 
-  def chrome[F[_]: Sync](options: ChromeOptions): Resource[F, WebDriver] =
+  def chrome[F[_]: Sync](options: ChromeOptions = new ChromeOptions()): Resource[F, WebDriver] =
     Resource.make(Sync[F].delay(new ChromeDriver(options)))(r => Sync[F].delay(r.close()))
 }
