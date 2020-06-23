@@ -53,10 +53,10 @@ class BalancingExpeditionOgameAction[T[_]: Monad](
     val flyingExplorerCount = returningExpeditionFleets.map(_.ships(Explorer)).sum
     val maxLargeCargo = 100;
     val largeCargoToSend =
-      Math.max(maxLargeCargo, (fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / myFleets.fleetSlots.maxExpeditions + 1)
+      Math.min(maxLargeCargo, (fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / myFleets.fleetSlots.maxExpeditions + 1)
     val maxSmallCargo = (maxLargeCargo - largeCargoToSend) / 5
     val smallCargoToSend =
-      Math.max(maxSmallCargo, (fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount) / myFleets.fleetSlots.maxExpeditions + 1)
+      Math.min(maxSmallCargo, (fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount) / myFleets.fleetSlots.maxExpeditions + 1)
     val explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount - 7) / myFleets.fleetSlots.maxExpeditions
     val topBattleShip = getTopBattleShip(fleetOnPlanet)
     Map(
