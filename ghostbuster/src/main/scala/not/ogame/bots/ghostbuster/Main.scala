@@ -46,7 +46,7 @@ object Main extends StrictLogging {
     Thread.setDefaultUncaughtExceptionHandler { (t, e) =>
       logger.error(s"Uncaught exception in thread: $t", e)
     }
-    System.setProperty("webdriver.chrome.driver", "selenium/chromedriver-v83")
+    System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
     val botConfig = ConfigSource.resources("quasar.conf").loadOrThrow[BotConfig]
     val credentials = ConfigSource.file(s"${SettingsDirectory}/quasar-credentials.conf").loadOrThrow[Credentials]
     logger.info(pprint.apply(botConfig).render)
@@ -60,7 +60,7 @@ object Main extends StrictLogging {
   private def app(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = {
     val httpStateExposer = new StatusEndpoint(state)
     (for {
-      driver <- WebDriverResource.chrome[Task]()
+      driver <- WebDriverResource.firefox[Task]()
       selenium = SeleniumOgameDriverCreator.create[Task](driver, credentials)
       firebase <- FirebaseResource.create(SettingsDirectory)
       decoratedDriver = new OgameNotificationDecorator(selenium)
