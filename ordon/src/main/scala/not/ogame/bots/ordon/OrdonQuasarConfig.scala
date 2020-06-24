@@ -1,7 +1,6 @@
 package not.ogame.bots.ordon
 
 import cats.effect.IO
-import cats.implicits._
 import not.ogame.bots._
 
 object OrdonQuasarConfig extends OrdonConfig {

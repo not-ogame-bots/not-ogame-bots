@@ -3,7 +3,6 @@ package not.ogame.bots.ghostbuster
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
-import eu.timepit.refined.pureconfig._
 import monix.eval.Task
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global

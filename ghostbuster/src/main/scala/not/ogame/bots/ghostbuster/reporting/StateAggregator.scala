@@ -36,7 +36,7 @@ class StateAggregator(state: Ref[Task, State], taskExecutor: OgameActionExecutor
         .modify(_.currentCapacity)
         .setTo(Some(suppliesPageData.currentCapacity))
         .modify(_.suppliesLevels)
-        .setTo(Some(suppliesPageData.suppliesLevels))
+        .setTo(Some(suppliesPageData.suppliesIntLevels))
       val updatedState = s
         .modify(_.planets)
         .using(_ ++ Map(planet -> newPlanetState))
@@ -61,7 +61,7 @@ class StateAggregator(state: Ref[Task, State], taskExecutor: OgameActionExecutor
         .modify(_.currentCapacity)
         .setTo(Some(facilityPageData.currentCapacity))
         .modify(_.facilitiesBuildingLevels)
-        .setTo(Some(facilityPageData.facilityLevels))
+        .setTo(Some(facilityPageData.facilityIntLevels))
       val updatedState = s
         .modify(_.planets)
         .using(_ ++ Map(planet -> newPlanetState))

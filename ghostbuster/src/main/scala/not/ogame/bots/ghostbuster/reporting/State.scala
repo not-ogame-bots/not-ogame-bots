@@ -18,8 +18,8 @@ case class PlanetState(
     currentResources: Option[Resources],
     currentProduction: Option[Resources],
     currentCapacity: Option[Resources],
-    suppliesLevels: Option[SuppliesBuildingLevels],
-    facilitiesBuildingLevels: Option[FacilitiesBuildingLevels],
+    suppliesLevels: Option[SuppliesBuildingIntLevels],
+    facilitiesBuildingLevels: Option[FacilitiesBuildingIntLevels],
     currentBuildingProgress: Option[BuildingProgress],
     currentShipyardProgress: Option[BuildingProgress],
     fleet: Option[Map[ShipType, Int]]

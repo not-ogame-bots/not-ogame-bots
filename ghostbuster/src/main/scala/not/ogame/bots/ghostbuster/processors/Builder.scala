@@ -2,15 +2,13 @@ package not.ogame.bots.ghostbuster.processors
 
 import java.time.ZonedDateTime
 
-import not.ogame.bots.ghostbuster.executor._
 import cats.implicits._
-import eu.timepit.refined.numeric.Positive
 import io.chrisdavenport.log4cats.Logger
-import not.ogame.bots.facts.{FacilityBuildingCosts, ShipCosts, SuppliesBuildingCosts, TechnologyCosts}
-import not.ogame.bots.ghostbuster.{FLogger, Wish}
-import not.ogame.bots.selenium.refineVUnsafe
 import not.ogame.bots._
+import not.ogame.bots.facts.{FacilityBuildingCosts, ShipCosts, SuppliesBuildingCosts, TechnologyCosts}
+import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.ogame.OgameAction
+import not.ogame.bots.ghostbuster.{FLogger, Wish}
 
 class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])(
     implicit clock: LocalClock
@@ -40,15 +38,15 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
   ): OgameAction[BuilderResult] = {
     wishesForPlanet
       .collectFirst {
-        case w: Wish.BuildSupply if suppliesPageData.getLevel(w.suppliesBuilding).value < w.level.value =>
+        case w: Wish.BuildSupply if suppliesPageData.getIntLevel(w.suppliesBuilding) < w.level =>
           buildSupplyBuildingOrNothing(w.suppliesBuilding, suppliesPageData, planet)
-        case w: Wish.BuildFacility if facilityPageData.getLevel(w.facilityBuilding).value < w.level.value =>
+        case w: Wish.BuildFacility if facilityPageData.getIntLevel(w.facilityBuilding) < w.level =>
           buildFacilityBuildingOrNothing(w.facilityBuilding, facilityPageData, suppliesPageData, planet)
         case w: Wish.SmartSupplyBuilder if isSmartBuilderApplicable(planet, suppliesPageData, w) =>
           smartBuilder(planet, suppliesPageData, w)
-        case w: Wish.BuildShip if fleet(w.shipType) <= w.amount.value =>
+        case w: Wish.BuildShip if fleet(w.shipType) <= w.amount =>
           buildShips(planet, w, suppliesPageData)
-        case w: Wish.Research if technologyPageData.getLevel(w.technology).value < w.level.value =>
+        case w: Wish.Research if technologyPageData.getIntLevel(w.technology) < w.level =>
           startResearch(planet, w.technology, technologyPageData)
       }
       .sequence
@@ -62,7 +60,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           .info(s"Wanted to build $technology but there were some other research ongoing")
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
-        val level = nextLevel(technologyPageData, technology)
+        val level = technologyPageData.getIntLevel(technology) + 1
         val requiredResources = TechnologyCosts.technologyCost(technology, level)
         if (technologyPageData.currentResources.gtEqTo(requiredResources)) {
           ogameActionDriver.startResearch(planet.id, technology) >> ogameActionDriver
@@ -88,7 +86,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
     val requiredResourcesSingleShip = ShipCosts.shipCost(w.shipType)
     if (suppliesPageData.currentResources.gtEqTo(requiredResourcesSingleShip)) {
       val canBuildAmount = suppliesPageData.currentResources.div(requiredResourcesSingleShip).min
-      val buildAmount = Math.min(canBuildAmount, w.amount.value).toInt
+      val buildAmount = Math.min(canBuildAmount, w.amount).toInt
       ogameActionDriver
         .buildShipAndGetTime(planet.id, w.shipType, buildAmount)
         .map(s => BuilderResult.building(s.finishTimestamp))
@@ -111,7 +109,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           .info(s"Wanted to build $suppliesBuilding but something was being built")
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
-        val level = nextLevel(suppliesPageData, suppliesBuilding)
+        val level = suppliesPageData.getIntLevel(suppliesBuilding) + 1
         val requiredResources = SuppliesBuildingCosts.buildingCost(suppliesBuilding, level)
         if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
           ogameActionDriver
@@ -149,7 +147,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           .info(s"Wanted to build $facilityBuilding but there were some ships building")
           .as(BuilderResult.building(value.finishTimestamp))
       case None =>
-        val level = nextLevel(facilityPageData, facilityBuilding)
+        val level = facilityPageData.getIntLevel(facilityBuilding) + 1
         val requiredResources = FacilityBuildingCosts.buildingCost(facilityBuilding, level)
         if (facilityPageData.currentResources.gtEqTo(requiredResources)) {
           ogameActionDriver
@@ -167,18 +165,6 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
     }
   }
 
-  private def nextLevel(suppliesPage: SuppliesPageData, building: SuppliesBuilding) = {
-    refineVUnsafe[Positive, Int](suppliesPage.suppliesLevels.values(building).value + 1)
-  }
-
-  private def nextLevel(technologyPageData: TechnologyPageData, technology: Technology) = {
-    refineVUnsafe[Positive, Int](technologyPageData.technologyLevels.values(technology).value + 1)
-  }
-
-  private def nextLevel(facilityPageData: FacilityPageData, building: FacilityBuilding) = {
-    refineVUnsafe[Positive, Int](facilityPageData.facilityLevels.values(building).value + 1)
-  }
-
   private def smartBuilder(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, w: Wish.SmartSupplyBuilder) = {
     suppliesPageData.currentBuildingProgress match {
       case Some(value) =>
@@ -187,23 +173,22 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         if (suppliesPageData.currentResources.energy < 0) {
-          if (suppliesPageData.getLevel(SuppliesBuilding.SolarPlant).value >= 17) {
+          if (suppliesPageData.getIntLevel(SuppliesBuilding.SolarPlant) >= 17) {
             buildSolarSatellite(planet, suppliesPageData)
           } else {
             buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
           }
         } else { //TODO can we get rid of hardcoded ratio?
-          val shouldBuildDeuter = suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value -
-            suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer).value > 4 &&
-            suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer).value < w.deuterLevel.value
-          val shouldBuildCrystal = suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value -
-            suppliesPageData.getLevel(SuppliesBuilding.CrystalMine).value > 2 &&
-            suppliesPageData.getLevel(SuppliesBuilding.CrystalMine).value < w.crystalLevel.value
+          val deuterLevel = suppliesPageData.getIntLevel(SuppliesBuilding.DeuteriumSynthesizer)
+          val crystalLevel = suppliesPageData.getIntLevel(SuppliesBuilding.CrystalMine)
+          val metalLevel = suppliesPageData.getIntLevel(SuppliesBuilding.MetalMine)
+          val shouldBuildDeuter = metalLevel - deuterLevel > 4 && deuterLevel < w.deuterLevel
+          val shouldBuildCrystal = metalLevel - crystalLevel > 2 && crystalLevel < w.crystalLevel
           if (shouldBuildCrystal) {
             buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.CrystalMine)
           } else if (shouldBuildDeuter) {
             buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
-          } else if (suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value < w.metalLevel.value) {
+          } else if (metalLevel < w.metalLevel) {
             buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.MetalMine)
           } else {
             BuilderResult.idle().pure[OgameAction]
@@ -237,7 +222,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
   }
 
   private def buildBuildingOrStorage(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, building: SuppliesBuilding) = {
-    val level = nextLevel(suppliesPageData, building)
+    val level = suppliesPageData.getIntLevel(building) + 1
     val requiredResources = SuppliesBuildingCosts.buildingCost(building, level)
     if (suppliesPageData.currentCapacity.gtEqTo(requiredResources)) {
       buildSupplyBuildingOrNothing(building, suppliesPageData, planet)
@@ -263,9 +248,9 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
 
   private def isSmartBuilderApplicable(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, w: Wish.SmartSupplyBuilder) = {
     val correctPlanet = w.planetId == planet.id
-    val metalMineUnderLevel = w.metalLevel.value > suppliesPageData.getLevel(SuppliesBuilding.MetalMine).value
-    val crystalMineUnderLevel = w.crystalLevel.value > suppliesPageData.getLevel(SuppliesBuilding.CrystalMine).value
-    val deuterMineUnderLevel = w.deuterLevel.value > suppliesPageData.getLevel(SuppliesBuilding.DeuteriumSynthesizer).value
+    val metalMineUnderLevel = w.metalLevel > suppliesPageData.getIntLevel(SuppliesBuilding.MetalMine)
+    val crystalMineUnderLevel = w.crystalLevel > suppliesPageData.getIntLevel(SuppliesBuilding.CrystalMine)
+    val deuterMineUnderLevel = w.deuterLevel > suppliesPageData.getIntLevel(SuppliesBuilding.DeuteriumSynthesizer)
     correctPlanet && (metalMineUnderLevel || crystalMineUnderLevel || deuterMineUnderLevel)
   }
 }

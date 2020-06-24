@@ -1,7 +1,5 @@
 package not.ogame.bots.facts
 
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.Positive
 import not.ogame.bots.{Resources, SuppliesBuilding}
 
 object SuppliesBuildingCosts {
@@ -15,11 +13,6 @@ object SuppliesBuildingCosts {
       case SuppliesBuilding.CrystalStorage       => fromBaseCostPowerOf2(Resources(1000, 500, 0), level)
       case SuppliesBuilding.DeuteriumStorage     => fromBaseCostPowerOf2(Resources(1000, 1000, 0), level)
     }
-  }
-
-  @Deprecated
-  def buildingCost(buildingType: SuppliesBuilding, level: Int Refined Positive): Resources = {
-    buildingCost(buildingType, level.value)
   }
 
   private def metalMineCost(level: Int): Resources = {

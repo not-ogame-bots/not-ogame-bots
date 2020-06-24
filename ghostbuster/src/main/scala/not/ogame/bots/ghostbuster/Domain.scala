@@ -1,7 +1,5 @@
 package not.ogame.bots.ghostbuster
 
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.Positive
 import not.ogame.bots._
 
 import scala.concurrent.duration.FiniteDuration
@@ -10,20 +8,20 @@ sealed trait Wish {
   def planetId: PlanetId
 }
 object Wish {
-  case class BuildSupply(suppliesBuilding: SuppliesBuilding, level: Int Refined Positive, planetId: PlanetId) extends Wish
+  case class BuildSupply(suppliesBuilding: SuppliesBuilding, level: Int, planetId: PlanetId) extends Wish
 
-  case class BuildFacility(facilityBuilding: FacilityBuilding, level: Int Refined Positive, planetId: PlanetId) extends Wish
+  case class BuildFacility(facilityBuilding: FacilityBuilding, level: Int, planetId: PlanetId) extends Wish
 
-  case class BuildShip(shipType: ShipType, planetId: PlanetId, amount: Int Refined Positive) extends Wish
+  case class BuildShip(shipType: ShipType, planetId: PlanetId, amount: Int) extends Wish
 
   case class SmartSupplyBuilder(
-      metalLevel: Int Refined Positive,
-      crystalLevel: Int Refined Positive,
-      deuterLevel: Int Refined Positive,
+      metalLevel: Int,
+      crystalLevel: Int,
+      deuterLevel: Int,
       planetId: PlanetId
   ) extends Wish
 
-  case class Research(technology: Technology, level: Int Refined Positive, planetId: PlanetId) extends Wish
+  case class Research(technology: Technology, level: Int, planetId: PlanetId) extends Wish
 }
 
 case class BotConfig(

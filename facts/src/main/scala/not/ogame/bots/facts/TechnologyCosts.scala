@@ -1,7 +1,5 @@
 package not.ogame.bots.facts
 
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.Positive
 import not.ogame.bots.Technology._
 import not.ogame.bots.{Resources, Technology}
 
@@ -25,11 +23,6 @@ object TechnologyCosts {
       case Shielding       => fromBaseCostPowerOf2(Resources(200, 600, 0), level)
       case Armor           => fromBaseCostPowerOf2(Resources(1_000, 0, 0), level)
     }
-  }
-
-  @Deprecated
-  def technologyCost(technology: Technology, level: Int Refined Positive): Resources = {
-    technologyCost(technology, level.value)
   }
 
   private def gravitonTechnologyCost(level: Int): Resources = {

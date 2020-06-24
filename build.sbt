@@ -2,7 +2,6 @@ import com.typesafe.sbt.packager.docker.ExecCmd
 import sbt.Keys.libraryDependencies
 
 val seleniumVersion = "3.141.59"
-val refinedVersion = "0.9.14"
 val pureConfigVersion = "0.12.3"
 val enumeratumVersion = "1.6.1"
 val http4sVersion = "0.21.4"
@@ -31,8 +30,6 @@ lazy val core: Project = (project in file("core"))
       "org.typelevel" %% "cats-effect" % "2.1.3",
       "co.fs2" %% "fs2-core" % "2.2.1",
       "com.beachape" %% "enumeratum" % enumeratumVersion,
-      "eu.timepit" %% "refined" % refinedVersion,
-      "eu.timepit" %% "refined-cats" % refinedVersion,
       "com.softwaremill.common" %% "tagging" % "2.2.1"
     )
   )
@@ -94,7 +91,6 @@ lazy val ghostbuster: Project = (project in file("ghostbuster"))
     libraryDependencies ++= Seq(
       "com.github.pureconfig" %% "pureconfig" % pureConfigVersion,
       "com.github.pureconfig" %% "pureconfig-enumeratum" % pureConfigVersion,
-      "eu.timepit" %% "refined-pureconfig" % refinedVersion,
       "com.softwaremill.quicklens" %% "quicklens" % "1.5.0",
       "com.lihaoyi" %% "pprint" % "0.5.6",
       "io.monix" %% "monix" % "3.2.1",
@@ -119,7 +115,6 @@ lazy val ordon: Project = (project in file("ordon"))
     libraryDependencies ++= Seq(
       "com.github.pureconfig" %% "pureconfig" % pureConfigVersion,
       "com.github.pureconfig" %% "pureconfig-enumeratum" % pureConfigVersion,
-      "eu.timepit" %% "refined-pureconfig" % refinedVersion,
       "com.softwaremill.quicklens" %% "quicklens" % "1.5.0",
       "org.scalameta" %% "munit" % "0.7.7" % Test
     ),
