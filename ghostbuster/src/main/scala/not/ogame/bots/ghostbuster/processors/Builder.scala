@@ -79,7 +79,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
               s"Wanted to build $technology $level but there were not enough resources on ${planet.coordinates} " +
                 s"- ${technologyPageData.currentResources}/$requiredResources"
             )
-            .map(_ => BuilderResult.building(clock.now().plusSeconds(secondsToWait)))
+            .map(_ => BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
         }
     }
   }
@@ -100,7 +100,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           s"Wanted to build $w but there were not enough resources on ${planet.coordinates} " +
             s"- ${suppliesPageData.currentResources}/$requiredResourcesSingleShip"
         )
-        .map(_ => BuilderResult.building(clock.now().plusSeconds(secondsToWait)))
+        .map(_ => BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
     }
   }
 
@@ -125,7 +125,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
                 s"- ${suppliesPageData.currentResources}/$requiredResources"
             )
             .map { _ =>
-              BuilderResult.building(clock.now().plusSeconds(secondsToWait))
+              BuilderResult.waiting(clock.now().plusSeconds(secondsToWait))
             }
         }
     }
@@ -162,7 +162,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
               s"Wanted to build $facilityBuilding $level but there were not enough resources on ${planet.coordinates}" +
                 s"- ${suppliesPageData.currentResources}/$requiredResources"
             )
-            .as(BuilderResult.building(clock.now().plusSeconds(secondsToWait)))
+            .as(BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
         }
     }
   }
@@ -273,8 +273,10 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
 sealed trait BuilderResult extends Product with Serializable
 object BuilderResult {
   case class Building(finishTime: ZonedDateTime) extends BuilderResult
+  case class Waiting(waitingTime: ZonedDateTime) extends BuilderResult
   case object Idle extends BuilderResult
 
   def building(finishTime: ZonedDateTime): BuilderResult = Building(finishTime)
+  def waiting(waitingTime: ZonedDateTime): BuilderResult = Waiting(waitingTime)
   def idle(): BuilderResult = Idle
 }
