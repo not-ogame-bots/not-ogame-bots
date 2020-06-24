@@ -6,6 +6,7 @@ import org.openqa.selenium.{By, WebDriver}
 
 class FleetDispatchComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) {
   def readSlots(): FleetSlots = {
+    webDriver.waitForElement(By.id("slots"))
     val advices = webDriver.findElement(By.id("slots")).findElementsS(By.className("advice"))
     val fleets = advices.head.getText.split("/").map(_.filter(_.isDigit).toInt)
     val expeditions = advices(1).getText.split("/").map(_.filter(_.isDigit).toInt)
