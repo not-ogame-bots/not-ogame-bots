@@ -49,9 +49,11 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
             val flyingSmallCargoCount = expeditions.map(_.ships(SmallCargoShip)).sum
             val flyingLargeCargoCount = expeditions.map(_.ships(LargeCargoShip)).sum
             val flyingExplorerCount = expeditions.map(_.ships(Explorer)).sum
-            val smallCargoToSend = (fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount) / expeditionConfig.maxNumberOfExpeditions + 1
-            val largeCargoToSend = (fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / expeditionConfig.maxNumberOfExpeditions + 1
-            val explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount) / expeditionConfig.maxNumberOfExpeditions + 1
+            val smallCargoToSend =
+              Math.min(fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount / expeditionConfig.maxNumberOfExpeditions, 299)
+            val largeCargoToSend =
+              Math.min((fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / expeditionConfig.maxNumberOfExpeditions, 250)
+            val explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount) / expeditionConfig.maxNumberOfExpeditions
             val topBattleShip = getTopBattleShip(fleetOnPlanet)
             sendExpedition(
               request = SendFleetRequest(
