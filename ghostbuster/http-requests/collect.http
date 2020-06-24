@@ -1,0 +1,19 @@
+# curl -X POST localhost:8080/collect -H "Content-type: application/json" -d '{"from":["33660481","33663703","33666179"],"to":"33667779", "ships":{"large_cargo_ship":120}}'
+POST localhost:8080/collect
+Content-Type: application/json
+
+{
+  "from": [
+    "33660481",
+    "33663703",
+    "33666179"
+  ],
+  "to": "33667779",
+  "ships": {
+    "large_cargo_ship": 120
+  },
+  "mission-type": "transport"
+}
+
+###
+

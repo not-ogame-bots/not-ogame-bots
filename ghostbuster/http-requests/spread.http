@@ -1,0 +1,24 @@
+# spread
+POST localhost:8080/spread
+Content-Type: application/json
+
+{
+  "to": [
+    "33660481",
+    "33663703",
+    "33666179"
+  ],
+  "from": "33667779",
+  "ships": {
+    "large_cargo_ship": 120
+  },
+  "resources": {
+    "metal": 1000000,
+    "crystal": 1000000,
+    "deuterium": 1000000
+  },
+  "mission-type": "transport"
+}
+
+###
+

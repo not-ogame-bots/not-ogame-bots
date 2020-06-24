@@ -7,8 +7,8 @@ import monix.eval.Task
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.actions.CollectResourcesAction
-import not.ogame.bots.ghostbuster.api.{CollectResourcesEndpoint, StatusEndpoint}
+import not.ogame.bots.ghostbuster.actions.{CollectResourcesAction, SpreadResourcesAction}
+import not.ogame.bots.ghostbuster.api.{CollectResourcesEndpoint, SpreadResourcesEndpoint, StatusEndpoint}
 import not.ogame.bots.ghostbuster.executor.impl.TaskExecutorImpl
 import not.ogame.bots.ghostbuster.infrastructure.{FCMService, FirebaseResource}
 import not.ogame.bots.ghostbuster.interpreter.OgameActionInterpreterImpl
@@ -67,7 +67,8 @@ object Main extends StrictLogging {
       actionInterpreter = new OgameActionInterpreterImpl(decoratedDriver, executor)
       safeDriver = new OgameActionDriver
       collectingEndpoint = new CollectResourcesEndpoint(new CollectResourcesAction(safeDriver)(actionInterpreter))
-      _ <- httpServer(List(httpStateExposer.getStatus, collectingEndpoint.collectEndpoint))
+      spreadingEndpoint = new SpreadResourcesEndpoint(new SpreadResourcesAction(safeDriver)(actionInterpreter))
+      _ <- httpServer(List(httpStateExposer.getStatus, collectingEndpoint.collectEndpoint, spreadingEndpoint.spreadEndpoint))
     } yield (actionInterpreter, firebase, executor, safeDriver))
       .use {
         case (interpreter, firebase, executor, safeDriver) =>
