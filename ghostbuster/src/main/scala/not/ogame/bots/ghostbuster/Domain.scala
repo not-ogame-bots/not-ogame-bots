@@ -71,5 +71,6 @@ case class FlyAndReturnConfig(
     isOn: Boolean,
     safeBuffer: FiniteDuration,
     randomUpperLimit: FiniteDuration,
-    remainDeuterAmount: Int
+    remainDeuterAmount: Int,
+    speeds: List[FleetSpeed]
 )

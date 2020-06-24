@@ -75,7 +75,7 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver
   }
 
   private def send(from: PlayerPlanet, to: PlayerPlanet, resources: Resources): OgameAction[Unit] = {
-    val fleetSpeed = Random.shuffle(List(FleetSpeed.Percent10, FleetSpeed.Percent20)).head
+    val fleetSpeed = Random.shuffle(config.speeds).head
     ogameDriver
       .sendFleet(
         SendFleetRequest(
