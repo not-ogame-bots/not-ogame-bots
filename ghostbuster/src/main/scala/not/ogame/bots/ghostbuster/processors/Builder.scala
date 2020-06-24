@@ -48,6 +48,8 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           buildShips(planet, w, suppliesPageData)
         case w: Wish.Research if technologyPageData.getIntLevel(w.technology) < w.level =>
           startResearch(planet, w.technology, technologyPageData)
+        case w: Wish.DeuterBuilder if suppliesPageData.getIntLevel(SuppliesBuilding.DeuteriumSynthesizer) < w.level =>
+          onlyDeuterBuilder(planet, suppliesPageData)
       }
       .sequence
       .map(_.getOrElse(BuilderResult.Idle))
@@ -192,6 +194,25 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
             buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.MetalMine)
           } else {
             BuilderResult.idle().pure[OgameAction]
+          }
+        }
+    }
+  }
+
+  private def onlyDeuterBuilder(planet: PlayerPlanet, suppliesPageData: SuppliesPageData) = {
+    suppliesPageData.currentBuildingProgress match {
+      case Some(value) =>
+        Logger[OgameAction]
+          .info(s"Wanted to run deuter builder but sth was being built")
+          .map(_ => BuilderResult.building(value.finishTimestamp))
+      case None =>
+        if (suppliesPageData.currentResources.energy < 0) {
+          buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
+        } else {
+          if (suppliesPageData.currentCapacity.deuterium - suppliesPageData.currentResources.deuterium < 1000) {
+            buildSupplyBuildingOrNothing(SuppliesBuilding.DeuteriumStorage, suppliesPageData, planet)
+          } else {
+            buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
           }
         }
     }

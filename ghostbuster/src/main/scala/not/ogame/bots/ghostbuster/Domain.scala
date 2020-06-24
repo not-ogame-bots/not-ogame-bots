@@ -22,6 +22,8 @@ object Wish {
   ) extends Wish
 
   case class Research(technology: Technology, level: Int, planetId: PlanetId) extends Wish
+
+  case class DeuterBuilder(level: Int, planetId: PlanetId) extends Wish
 }
 
 case class BotConfig(

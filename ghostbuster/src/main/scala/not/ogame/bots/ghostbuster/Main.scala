@@ -134,6 +134,7 @@ object Main extends StrictLogging {
     case "build_ship"     => implicitly[ConfigReader[Wish.BuildShip]].from(objCur)
     case "smart_builder"  => implicitly[ConfigReader[Wish.SmartSupplyBuilder]].from(objCur)
     case "research"       => implicitly[ConfigReader[Wish.Research]].from(objCur)
+    case "deuter_builder" => implicitly[ConfigReader[Wish.DeuterBuilder]].from(objCur)
     case t =>
       objCur.failed(CannotConvert(objCur.value.toString, "Wish", s"unknown type: $t"))
   }
