@@ -114,9 +114,10 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
         val level = suppliesPageData.getIntLevel(suppliesBuilding) + 1
         val requiredResources = SuppliesBuildingCosts.buildingCost(suppliesBuilding, level)
         if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
-          ogameActionDriver
-            .buildSupplyAndGetTime(planet.id, suppliesBuilding)
-            .map(s => BuilderResult.building(s.finishTimestamp))
+          Logger[OgameAction].info(s"Building $suppliesBuilding $level") >>
+            ogameActionDriver
+              .buildSupplyAndGetTime(planet.id, suppliesBuilding)
+              .map(s => BuilderResult.building(s.finishTimestamp))
         } else {
           val secondsToWait = calculateWaitingTime(requiredResources, suppliesPageData.currentProduction, suppliesPageData.currentResources)
           Logger[OgameAction]
@@ -152,9 +153,10 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
         val level = facilityPageData.getIntLevel(facilityBuilding) + 1
         val requiredResources = FacilityBuildingCosts.buildingCost(facilityBuilding, level)
         if (facilityPageData.currentResources.gtEqTo(requiredResources)) {
-          ogameActionDriver
-            .buildFacilityAndGetTime(planet.id, facilityBuilding)
-            .map(f => BuilderResult.building(f.finishTimestamp))
+          Logger[OgameAction].info(s"Building $facilityBuilding $level") >>
+            ogameActionDriver
+              .buildFacilityAndGetTime(planet.id, facilityBuilding)
+              .map(f => BuilderResult.building(f.finishTimestamp))
         } else {
           val secondsToWait = calculateWaitingTime(requiredResources, suppliesPageData.currentProduction, suppliesPageData.currentResources)
           Logger[OgameAction]
@@ -225,7 +227,8 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
       case Some(value) => BuilderResult.building(value.finishTimestamp).pure[OgameAction]
       case None =>
         if (suppliesPageData.currentResources.gtEqTo(SolarSatelliteCost)) {
-          ogameActionDriver.buildSolarSatellites(planet.id, 1) >>
+          Logger[OgameAction].info(s"Building solar satellite 1") >>
+            ogameActionDriver.buildSolarSatellites(planet.id, 1) >>
             ogameActionDriver
               .readSuppliesPage(planet.id)
               .map(f => f.currentShipyardProgress.map(p => BuilderResult.building(p.finishTimestamp)).getOrElse(BuilderResult.Idle))
