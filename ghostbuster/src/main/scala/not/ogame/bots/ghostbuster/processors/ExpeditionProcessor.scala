@@ -11,16 +11,16 @@ import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.ogame.OgameAction
 import not.ogame.bots.ghostbuster.{ExpeditionConfig, FLogger}
 
-class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: OgameDriver[OgameAction])(
+class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[OgameAction])(
     implicit executor: OgameActionExecutor[Task],
     clock: LocalClock
 ) extends FLogger {
   def run(): Task[Unit] = {
-    if (expeditionConfig.isOn) {
+    if (config.isOn) {
       ogameDriver
         .readPlanets()
         .execute()
-        .map(planets => planets.filter(p => expeditionConfig.startingPlanetId.contains(p.id)).head)
+        .map(planets => planets.filter(p => config.startingPlanetId.contains(p.id)).head)
         .flatMap(processAndWait)
         .onError(e => Logger[Task].error(e)(s"restarting expedition processor ${e.getMessage}"))
         .onErrorRestartIf(_ => true)
@@ -42,18 +42,24 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
       myFleets <- ogameDriver.readMyFleets()
       fleetOnPlanet <- ogameDriver.readFleetPage(planet.id)
       expeditions = myFleets.fleets.filter(_.fleetMissionType == FleetMissionType.Expedition)
-      time <- if (expeditions.size < expeditionConfig.maxNumberOfExpeditions) {
+      time <- if (expeditions.size < config.maxNumberOfExpeditions) {
         Logger[OgameAction]
-          .info(s"Only ${expeditions.size}/${expeditionConfig.maxNumberOfExpeditions} expeditions are in the air")
+          .info(s"Only ${expeditions.size}/${config.maxNumberOfExpeditions} expeditions are in the air")
           .flatMap { _ =>
             val flyingSmallCargoCount = expeditions.map(_.ships(SmallCargoShip)).sum
             val flyingLargeCargoCount = expeditions.map(_.ships(LargeCargoShip)).sum
             val flyingExplorerCount = expeditions.map(_.ships(Explorer)).sum
             val smallCargoToSend =
-              Math.min(fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount / expeditionConfig.maxNumberOfExpeditions, 299)
+              Math.min(
+                fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount / config.maxNumberOfExpeditions,
+                config.maxSC
+              )
             val largeCargoToSend =
-              Math.min((fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / expeditionConfig.maxNumberOfExpeditions, 250)
-            val explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount) / expeditionConfig.maxNumberOfExpeditions
+              Math.min(
+                (fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / config.maxNumberOfExpeditions,
+                config.maxLC
+              )
+            val explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount) / config.maxNumberOfExpeditions
             val topBattleShip = getTopBattleShip(fleetOnPlanet)
             sendExpedition(
               request = SendFleetRequest(
@@ -67,7 +73,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
                     EspionageProbe -> 1
                   )
                 ),
-                expeditionConfig.target,
+                config.target,
                 FleetMissionType.Expedition,
                 FleetResources.Given(Resources.Zero)
               )
@@ -96,9 +102,9 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
   }
 
   private def collectDebris(planets: List[PlayerPlanet], expeditions: List[MyFleet]) = {
-    val shouldCollectDebris = expeditionConfig.collectingOn && false //TODO fixme
+    val shouldCollectDebris = config.collectingOn && false //TODO fixme
     if (shouldCollectDebris) {
-      val debrisCollectingPlanet = planets.filter(_.id == expeditionConfig.collectingPlanet).head
+      val debrisCollectingPlanet = planets.filter(_.id == config.collectingPlanet).head
       ogameDriver
         .readFleetPage(debrisCollectingPlanet.id)
         .flatMap { pf =>
@@ -109,7 +115,7 @@ class ExpeditionProcessor(expeditionConfig: ExpeditionConfig, ogameDriver: Ogame
                   SendFleetRequest(
                     debrisCollectingPlanet,
                     SendFleetRequestShips.Ships(Map(ShipType.Explorer -> 300)),
-                    expeditionConfig.target.copy(coordinatesType = CoordinatesType.Debris),
+                    config.target.copy(coordinatesType = CoordinatesType.Debris),
                     FleetMissionType.Recycle,
                     FleetResources.Given(Resources.Zero)
                   )
