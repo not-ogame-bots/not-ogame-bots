@@ -2,6 +2,7 @@ package not.ogame.bots.ghostbuster.processors
 
 import java.time.ZonedDateTime
 
+import cats.implicits._
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import monix.reactive.Consumer
@@ -10,20 +11,17 @@ import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.notifications.Notification
 import not.ogame.bots.ghostbuster.ogame.OgameAction
 import not.ogame.bots.ghostbuster.{EscapeConfig, FLogger}
-import cats.implicits._
 
 class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: EscapeConfig)(
     implicit executor: OgameActionExecutor[Task],
     clock: LocalClock
 ) extends FLogger {
   def run(): Task[Unit] = {
-    (for {
+    for {
       planets <- ogameDriver.readPlanets().execute()
       fleets <- ogameDriver.readAllFleetsRedirect().execute()
       _ <- loop(fleets, planets)
-    } yield ())
-      .onError(e => Logger[Task].error(e)(s"restarting escape processor ${e.getMessage}"))
-      .onErrorRestartIf(_ => true)
+    } yield ()
   }
 
   private def loop(fleets: List[Fleet], planets: List[PlayerPlanet]): Task[Unit] = {

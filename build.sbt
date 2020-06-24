@@ -13,7 +13,6 @@ val jsonDependencies = Seq(
   "io.circe" %% "circe-generic" % circeVersion,
   "io.circe" %% "circe-generic-extras" % circeVersion,
   "io.circe" %% "circe-parser" % circeVersion,
-  "io.circe" %% "circe-refined" % circeVersion,
   "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion
 )
 
@@ -102,6 +101,7 @@ lazy val ghostbuster: Project = (project in file("ghostbuster"))
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
       "com.google.firebase" % "firebase-admin" % "6.8.1",
       "org.typelevel" %% "cats-free" % "2.1.1",
+      "com.github.cb372" %% "cats-retry" % "1.1.1",
       "org.scalameta" %% "munit" % "0.7.7" % Test
     ) ++ jsonDependencies,
     testFrameworks += new TestFramework("munit.Framework")

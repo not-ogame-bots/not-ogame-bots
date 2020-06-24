@@ -24,8 +24,6 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
         .map(_.filter(p => fsConfig.eligiblePlanets.contains(p.id)))
         .execute()
         .flatMap(lookOnPlanets)
-        .onError(e => Logger[Task].error(e)(s"restarting flyAndBuild processor ${e.getMessage}"))
-        .onErrorRestartIf(_ => true)
     } else {
       Task.never
     }

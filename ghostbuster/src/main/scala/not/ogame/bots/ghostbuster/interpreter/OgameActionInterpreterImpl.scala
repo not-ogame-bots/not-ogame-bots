@@ -78,7 +78,7 @@ class OgameActionInterpreterImpl(ogameDriver: OgameDriver[Task] with Notificatio
     Task.eval(clock.now()).flatMap { now =>
       val sleepTime = processors.timeDiff(now, processors.max(now, time))
       Logger[Task].debug(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til $time") >>
-        Task.sleep(sleepTime.plus(500 millis))
+        Task.sleep(sleepTime.plus(1 second))
     }
   }
 

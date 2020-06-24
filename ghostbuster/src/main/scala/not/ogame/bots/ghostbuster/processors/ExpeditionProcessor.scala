@@ -22,8 +22,6 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
         .execute()
         .map(planets => planets.filter(p => config.startingPlanetId.contains(p.id)).head)
         .flatMap(processAndWait)
-        .onError(e => Logger[Task].error(e)(s"restarting expedition processor ${e.getMessage}"))
-        .onErrorRestartIf(_ => true)
     } else {
       Task.never
     }

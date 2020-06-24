@@ -228,7 +228,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           ogameActionDriver.buildSolarSatellites(planet.id, 1) >>
             ogameActionDriver
               .readSuppliesPage(planet.id)
-              .map(f => BuilderResult.building(f.currentShipyardProgress.get.finishTimestamp))
+              .map(f => f.currentShipyardProgress.map(p => BuilderResult.building(p.finishTimestamp)).getOrElse(BuilderResult.Idle))
         } else {
           val secondsToWait =
             calculateWaitingTime(SolarSatelliteCost, suppliesPageData.currentProduction, suppliesPageData.currentResources)

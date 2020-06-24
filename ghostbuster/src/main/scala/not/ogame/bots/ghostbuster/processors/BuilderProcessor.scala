@@ -21,8 +21,6 @@ class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, ogameDriver
         .execute()
         .flatMap(planets => Task.parSequence(planets.map(loopBuilder)))
         .void
-        .onError(e => Logger[Task].error(e)(s"restarting building processor ${e.getMessage}"))
-        .onErrorRestartIf(_ => true)
     } else {
       Task.never
     }

@@ -32,8 +32,10 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import pureconfig.module.enumeratum._
 import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
+import retry.RetryPolicies
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.http4s._
+import retry.syntax.all._
 
 import scala.concurrent.duration._
 
@@ -83,17 +85,18 @@ object Main extends StrictLogging {
           val bp = new BuilderProcessor(builder, botConfig.smartBuilder, safeDriver)
           val far = new FlyAndReturnProcessor(botConfig.flyAndReturn, safeDriver)
           val efp = new EscapeFleetProcessor(safeDriver, botConfig.escapeConfig)
+
           Task.raceMany(
             List(
               executor.run(),
-              fbp.run(),
+              withRetry(fbp.run())("flyAndBuild"),
               activityFaker.run(),
-              ep.run(),
-              bp.run(),
-              far.run(),
+              withRetry(ep.run())("expedition"),
+              withRetry(bp.run())("builder"),
+              withRetry(far.run())("flyAndReturn"),
               stateAgg.run(),
               hostileFleetReporter.run(),
-              efp.run()
+              withRetry(efp.run())("escapeFleet")
             )
           )
       }
@@ -101,6 +104,16 @@ object Main extends StrictLogging {
         logger.error(e.getMessage, e)
         true
       }
+  }
+
+  private def withRetry[T](task: Task[T])(flowName: String) = {
+    val policy = RetryPolicies.capDelay[Task](5 minutes, RetryPolicies.exponentialBackoff[Task](2 seconds))
+    task.retryingOnAllErrors(
+      policy,
+      onError = { (e, details) =>
+        logger.error(s"Restarting: $flowName. Retry details :$details", e).pure[Task]
+      }
+    )
   }
 
   private def httpServer(endpoints: List[ServerEndpoint[_, _, _, Nothing, Task]]) = {

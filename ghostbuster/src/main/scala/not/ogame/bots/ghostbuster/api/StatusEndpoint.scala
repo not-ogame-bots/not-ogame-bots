@@ -2,7 +2,6 @@ package not.ogame.bots.ghostbuster.api
 
 import cats.effect.concurrent.Ref
 import cats.implicits._
-import io.circe.refined._
 import monix.eval.Task
 import not.ogame.bots.ghostbuster.reporting.State
 import sttp.tapir.server.ServerEndpoint

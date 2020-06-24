@@ -2,17 +2,17 @@ package not.ogame.bots.ghostbuster.processors
 
 import java.time.ZonedDateTime
 
+import cats.implicits._
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.executor._
+import not.ogame.bots.ghostbuster.ogame.OgameAction
 import not.ogame.bots.ghostbuster.{FLogger, FlyAndReturnConfig}
 
-import scala.util.Random
 import scala.concurrent.duration._
-import cats.implicits._
-import not.ogame.bots.ghostbuster.ogame.OgameAction
+import scala.util.Random
 
 class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver[OgameAction])(
     implicit executor: OgameActionExecutor[Task],
@@ -20,14 +20,12 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver
 ) extends FLogger {
   def run(): Task[Unit] = { //TODO add support for other way
     if (config.isOn) {
-      (for {
+      for {
         planets <- ogameDriver.readPlanets().execute()
         from = planets.find(p => p.id == config.from).get
         to = planets.find(p => p.id == config.to).get
         _ <- loop(from, to)
-      } yield ())
-        .onError(e => Logger[Task].error(e)(s"restarting flyAndReturn processor ${e.getMessage}"))
-        .onErrorRestartIf(_ => true)
+      } yield ()
     } else {
       Task.never
     }

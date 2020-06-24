@@ -1,6 +1,5 @@
 package not.ogame.bots.ghostbuster.executor.impl
 
-import java.time.ZonedDateTime
 import java.util.UUID
 
 import cats.effect.concurrent.MVar
@@ -10,8 +9,8 @@ import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import not.ogame.bots._
-import not.ogame.bots.ghostbuster.{FLogger, processors}
 import not.ogame.bots.ghostbuster.interpreter.TaskExecutor
+import not.ogame.bots.ghostbuster.{FLogger, processors}
 
 import scala.concurrent.duration._
 
