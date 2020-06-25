@@ -7,15 +7,16 @@ import cats.implicits._
 import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots.ShipType.LargeCargoShip
 import not.ogame.bots._
-import not.ogame.bots.ordon.utils.{ResourceSelector, _}
+import not.ogame.bots.ordon.utils._
 
 import scala.util.Random
 
-class DeployAndReturnNoLargeCargoOgameAction[T[_]: Monad](
+class DeployAndReturnNoLargeCargoAndPutOffersOgameAction[T[_]: Monad](
     planet: PlayerPlanet,
     moon: PlayerPlanet,
-    safeBufferInMinutes: Int = 15,
-    randomUpperLimitInSeconds: Int = 240
+    expectedOffers: List[MyOffer] = List(),
+    safeBufferInMinutes: Int = 30,
+    randomUpperLimitInSeconds: Int = 120
 )(implicit clock: LocalClock)
     extends SimpleOgameAction[T] {
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] =
@@ -59,11 +60,14 @@ class DeployAndReturnNoLargeCargoOgameAction[T[_]: Monad](
 
   private def send(ogame: OgameDriver[T]): T[ZonedDateTime] =
     for {
+      _ <- new PutOffersToMarket().putOffersToMarket[T](ogame, planet, expectedOffers)
+      fleetSelector = new FleetSelector(filters = Map(LargeCargoShip -> Selector.skip))
+      resourceSelector = new ResourceSelector(deuteriumSelector = Selector.decreaseBy(300_000))
       _ <- new SendFleet(
         from = planet,
         to = moon,
-        selectShips = new FleetSelector(filters = Map(LargeCargoShip -> Selector.skip)),
-        selectResources = new ResourceSelector(deuteriumSelector = Selector.decreaseBy(300_000)),
+        selectShips = fleetSelector,
+        selectResources = resourceSelector,
         fleetSpeed = FleetSpeed.Percent10
       ).sendFleet(ogame)
         .map(_ => clock.now())

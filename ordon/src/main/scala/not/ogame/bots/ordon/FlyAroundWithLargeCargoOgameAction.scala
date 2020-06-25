@@ -28,10 +28,10 @@ class FlyAroundWithLargeCargoOgameAction[T[_]: Monad](
     selectResources = new ResourceSelector(deuteriumSelector = Selector.decreaseBy(300_000)),
     selectShips = new FleetSelector(
       filters = Map(
-        Destroyer -> Selector.decreaseBy(6),
+        Destroyer -> Selector.decreaseBy(3),
         EspionageProbe -> Selector.decreaseBy(50),
         Explorer -> Selector.skip,
-        LargeCargoShip -> Selector.decreaseBy(410)
+        LargeCargoShip -> Selector.decreaseBy(400)
       )
     ),
     fleetSpeed = FleetSpeed.Percent100

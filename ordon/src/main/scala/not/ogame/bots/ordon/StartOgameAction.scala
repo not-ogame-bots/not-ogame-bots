@@ -13,7 +13,10 @@ class StartOgameAction[T[_]: Monad](implicit clock: LocalClock) extends OgameAct
     for {
       planets <- ogame.readPlanets()
       buildActions = planets.map(planet => new BuildBuildingsOgameAction[T](planet, taskQueue()))
-      otherActions = List(expeditionAction(planets), flyAround(planets))
+      otherActions = List(
+        expeditionAction(planets) //,
+        //        flyAround(planets)
+      )
     } yield {
       (buildActions ++ otherActions).map(action => ScheduledAction(clock.now(), action))
     }
@@ -30,17 +33,17 @@ class StartOgameAction[T[_]: Monad](implicit clock: LocalClock) extends OgameAct
       Map(
         SmallCargoShip -> Selector.skip,
         LargeCargoShip -> Selector.skip,
-        Battleship -> Selector.decreaseBy(3),
-        Destroyer -> Selector.skip,
+        Destroyer -> Selector.decreaseBy(3),
+        ColonyShip -> Selector.skip,
         Explorer -> Selector.skip,
         EspionageProbe -> Selector.decreaseBy(50)
       )
     )
     new FlyAroundOgameAction[T](
-      speed = FleetSpeed.Percent10,
+      speed = FleetSpeed.Percent30,
       targets = planets.take(2),
       fleetSelector = p => if (p == planets.head) leaveExpeditionShips else new FleetSelector(),
-      resourceSelector = _ => { _ => Resources(0, 0, 5_000) }
+      resourceSelector = _ => { _ => Resources(0, 0, 15_000) }
     )
   }
 
@@ -112,7 +115,17 @@ class StartOgameAction[T[_]: Monad](implicit clock: LocalClock) extends OgameAct
       new SuppliesBuildingTask(CrystalMine, 22),
       new SuppliesBuildingTask(MetalMine, 20),
       new SuppliesBuildingTask(DeuteriumSynthesizer, 21),
-      new SuppliesBuildingTask(DeuteriumSynthesizer, 22)
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 22),
+      new SuppliesBuildingTask(CrystalMine, 23),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 23),
+      new SuppliesBuildingTask(CrystalMine, 24),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 24),
+      new SuppliesBuildingTask(CrystalMine, 25),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 25),
+      new SuppliesBuildingTask(CrystalMine, 26),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 26),
+      new SuppliesBuildingTask(CrystalMine, 27),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 27)
     )
   }
 }

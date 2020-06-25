@@ -72,7 +72,7 @@ class BuildBuildingsOgameAction[T[_]: Monad](planet: PlayerPlanet, tasks: List[T
   ): TaskOnPlanet = {
     if (suppliesPage.currentResources.energy < 0) {
       if (suppliesPage.getIntLevel(SolarPlant) >= 16) {
-        new SolarSatelliteBuildingTask()
+        new SolarSatelliteBuildingTask(suppliesPage.currentResources.energy / 35 + 1)
       } else {
         new SuppliesBuildingTask(SolarPlant, suppliesPage.getIntLevel(SolarPlant) + 1)
       }
@@ -80,6 +80,8 @@ class BuildBuildingsOgameAction[T[_]: Monad](planet: PlayerPlanet, tasks: List[T
       tasks.find(p => p.isValid(suppliesPage, facilityPage, technologyPage)).get
     }
   }
+
+  override def toString: String = super.toString + planet.coordinates
 }
 
 class SuppliesBuildingTask(suppliesBuilding: SuppliesBuilding, level: Int)(implicit clock: LocalClock) extends TaskOnPlanet {
@@ -151,20 +153,25 @@ class TechnologyBuildingTask(technology: Technology, level: Int)(implicit clock:
   }
 }
 
-class SolarSatelliteBuildingTask extends TaskOnPlanet {
+class SolarSatelliteBuildingTask(count: Int) extends TaskOnPlanet {
   override def isBusy(
       suppliesPage: SuppliesPageData,
       facilityPage: FacilityPageData,
       technologyPage: TechnologyPageData
-  ): Option[ZonedDateTime] = suppliesPage.currentShipyardProgress.map(_.finishTimestamp)
+  ): Option[ZonedDateTime] = {
+    suppliesPage.currentBuildingProgress
+      .map(_.finishTimestamp)
+      .flatMap(one => suppliesPage.currentShipyardProgress.map(_.finishTimestamp).map(other => List(one, other).max))
+      .orElse(suppliesPage.currentShipyardProgress.map(_.finishTimestamp))
+  }
 
   override def isValid(suppliesPage: SuppliesPageData, facilityPage: FacilityPageData, technologyPage: TechnologyPageData): Boolean = ???
 
-  override def cost(): Resources = Resources(0, 2_000, 500)
+  override def cost(): Resources = Resources(0, 2_000 * count, 500 * count)
 
   override def construct[T[_]: Monad](ogameDriver: OgameDriver[T], planet: PlayerPlanet): T[ZonedDateTime] =
     for {
-      _ <- ogameDriver.buildSolarSatellites(planet.id, 1)
+      _ <- ogameDriver.buildSolarSatellites(planet.id, count)
       page <- ogameDriver.readSuppliesPage(planet.id)
       resumeOn = page.currentShipyardProgress.get.finishTimestamp
     } yield resumeOn
