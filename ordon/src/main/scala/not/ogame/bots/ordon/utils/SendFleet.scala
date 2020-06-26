@@ -6,6 +6,7 @@ import cats.Monad
 import cats.implicits._
 import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots._
+import not.ogame.bots.ordon.core.OrdonOgameDriver
 
 class SendFleet(
     from: PlayerPlanet,
@@ -15,6 +16,18 @@ class SendFleet(
     fleetSpeed: FleetSpeed = FleetSpeed.Percent100,
     missionType: FleetMissionType = Deployment
 ) {
+  def getSendFleetRequest(ogame: OrdonOgameDriver): SendFleetRequest = {
+    val fleetPage = ogame.readFleetPage(from.id)
+    SendFleetRequest(
+      from = from,
+      ships = SendFleetRequestShips.Ships(safeSelectShips(fleetPage, selectShips(fleetPage))),
+      targetCoordinates = to.coordinates,
+      fleetMissionType = missionType,
+      resources = FleetResources.Given(selectResources(fleetPage)),
+      speed = fleetSpeed
+    )
+  }
+
   def sendFleet[T[_]: Monad](ogameDriver: OgameDriver[T]): T[ZonedDateTime] =
     for {
       fleetPage <- ogameDriver.readFleetPage(from.id)

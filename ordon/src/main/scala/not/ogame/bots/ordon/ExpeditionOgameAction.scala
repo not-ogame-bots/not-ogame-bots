@@ -11,7 +11,6 @@ import not.ogame.bots.ordon.utils.SendFleet
 import scala.util.Random
 
 class ExpeditionOgameAction[T[_]: Monad](
-    maxNumberOfExpeditions: Int,
     startPlanet: PlayerPlanet,
     expeditionFleet: Map[ShipType, Int],
     targetList: List[Coordinates]
@@ -19,20 +18,16 @@ class ExpeditionOgameAction[T[_]: Monad](
     extends SimpleOgameAction[T] {
   override def processSimple(ogame: OgameDriver[T]): T[ZonedDateTime] = {
     ogame
-      .readAllFleets()
+      .readMyFleets()
       .flatMap(processFleet(ogame, _))
   }
 
-  def processFleet(ogame: OgameDriver[T], fleets: List[Fleet]): T[ZonedDateTime] = {
-    if (fleets.count(returningExpedition) >= maxNumberOfExpeditions) {
-      fleets.filter(_.fleetMissionType == Expedition).map(_.arrivalTime).min.pure[T]
+  def processFleet(ogame: OgameDriver[T], page: MyFleetPageData): T[ZonedDateTime] = {
+    if (page.fleetSlots.currentExpeditions >= page.fleetSlots.maxExpeditions) {
+      page.fleets.filter(_.fleetMissionType == Expedition).map(_.arrivalTime).min.pure[T]
     } else {
       sendFleet(ogame)
     }
-  }
-
-  def returningExpedition(fleet: Fleet): Boolean = {
-    fleet.fleetMissionType == Expedition && fleet.isReturning
   }
 
   def sendFleet(ogame: OgameDriver[T]): T[ZonedDateTime] = {
