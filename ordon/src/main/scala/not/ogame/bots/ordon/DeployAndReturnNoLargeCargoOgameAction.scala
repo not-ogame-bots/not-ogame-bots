@@ -14,7 +14,7 @@ import scala.util.Random
 class DeployAndReturnNoLargeCargoOgameAction[T[_]: Monad](
     planet: PlayerPlanet,
     moon: PlayerPlanet,
-    safeBufferInMinutes: Int = 15,
+    safeBufferInMinutes: Int = 10,
     randomUpperLimitInSeconds: Int = 240
 )(implicit clock: LocalClock)
     extends SimpleOgameAction[T] {

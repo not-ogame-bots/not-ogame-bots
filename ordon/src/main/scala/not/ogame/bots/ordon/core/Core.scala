@@ -12,13 +12,15 @@ class Core(ordonOgameDriver: OrdonOgameDriver, initialActions: List[OrdonAction]
   }
 
   def run(): Unit = {
+    println("Starting core run")
+    registerEvent(TimeBasedOrdonEvent(ZonedDateTime.now()))
     runInternal(initialActions)
   }
 
   @scala.annotation.tailrec
   private def runInternal(actions: List[OrdonAction]): Unit = {
     val firstEvent = popEarliestEvent()
-    waitTo(firstEvent)
+    waitTo(firstEvent, actions)
     val newActions = actions.flatMap(action => {
       action.process(firstEvent, ordonOgameDriver, this)
     })
@@ -31,9 +33,13 @@ class Core(ordonOgameDriver: OrdonOgameDriver, initialActions: List[OrdonAction]
     firstEvent
   }
 
-  private def waitTo(firstEvent: OrdonEvent): Unit = {
-    val millis = Duration.between(ZonedDateTime.now(), firstEvent.triggerOn).toMillis
+  private def waitTo(firstEvent: OrdonEvent, actions: List[OrdonAction]): Unit = {
+    val now = ZonedDateTime.now()
+    val millis = Duration.between(now, firstEvent.triggerOn).toMillis
     if (millis > 0) {
+      println(s"Time now is: $now")
+      println(s"Waiting  to: ${firstEvent.triggerOn}")
+      actions.foreach(action => println(action))
       Thread.sleep(millis)
     }
   }

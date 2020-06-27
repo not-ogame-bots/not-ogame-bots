@@ -1,24 +1,41 @@
-//package not.ogame.bots.ordon.core
-//
-//import cats.Id
-//import not.ogame.bots.CoordinatesType.Moon
-//import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
-//import not.ogame.bots.ordon.OrdonQuasarConfig
-//import not.ogame.bots.ordon.action.ExpeditionOrdonAction
-//import cats.effect.{IO, Sync}
-//import cats.implicits._
-//import not.ogame.bots.selenium.{OgameUrlProvider, SeleniumOgameDriver, WebDriverResource}
-//import not.ogame.bots.{Coordinates, OgameDriver, PlanetId, PlayerPlanet}
-//
-//object Boot {
-//  def main(args: Array[String]): Unit = {
-//    WebDriverResource.firefox[Id]()
-//    Sync[Id].
-//    val credentials = OrdonQuasarConfig.getCredentials
-//    val expeditionAction = new ExpeditionOrdonAction(moon, Map(Destroyer -> 1, EspionageProbe -> 1, LargeCargoShip -> 400, ExStop using Start actionplorer -> 20))
-//    new SeleniumOgameDriver[Id](credentials, new OgameUrlProvider(credentials))() {}
-//    while (true) {}
-//  }
-//
-//  private val moon = PlayerPlanet(PlanetId.apply("33632870"), Coordinates(1, 155, 10, Moon))
-//}
+package not.ogame.bots.ordon.core
+
+import cats.effect.{ExitCode, IO, IOApp}
+import cats.implicits._
+import not.ogame.bots._
+import not.ogame.bots.ordon.OrdonQuasarConfig
+import not.ogame.bots.selenium.{OgameUrlProvider, SeleniumOgameDriver, WebDriverResource}
+
+object Boot extends IOApp {
+  private implicit val clock: LocalClock = new RealLocalClock()
+
+  override def run(args: List[String]): IO[ExitCode] = {
+    System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
+    System.setProperty("webdriver.chrome.driver", "selenium/chromedriver-v83")
+    runBot()
+  }
+
+  private def runBot(): IO[ExitCode] = {
+    val credentials = OrdonQuasarConfig.getCredentials
+    WebDriverResource
+      .firefox[IO]()
+      .map(driver => {
+        implicit val d = driver
+        new SeleniumOgameDriver[IO](credentials, new OgameUrlProvider(credentials))
+      })
+      .use { ogame =>
+        ogame.login() >> runForEver(ogame)
+      }
+      .as(ExitCode.Success)
+      .handleErrorWith(e => {
+        e.printStackTrace()
+        runBot()
+      })
+  }
+
+  private def runForEver(ogame: SeleniumOgameDriver[IO]): IO[Unit] = {
+    IO.delay({
+      new Core(new OrdonOgameDriver(ogame), OrdonQuasarConfig.getInitialActionsV2()).run()
+    })
+  }
+}
