@@ -59,7 +59,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
     technologyPageData.currentResearchProgress match {
       case Some(value) =>
         Logger[OgameAction]
-          .info(s"Wanted to build $technology but there were some other research ongoing")
+          .info(s"${showCoordinates(planet)} Wanted to build $technology but there were some other research ongoing")
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         val level = technologyPageData.getIntLevel(technology) + 1
@@ -76,12 +76,16 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           )
           Logger[OgameAction]
             .info(
-              s"Wanted to build $technology $level but there were not enough resources on ${planet.coordinates} " +
+              s"${showCoordinates(planet)} Wanted to build $technology $level but there were not enough resources on ${planet.coordinates} " +
                 s"- ${technologyPageData.currentResources}/$requiredResources"
             )
             .map(_ => BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
         }
     }
+  }
+
+  private def showCoordinates(planet: PlayerPlanet) = {
+    s"${planet.coordinates.galaxy}:${planet.coordinates.system}:${planet.coordinates.position}"
   }
 
   private def buildShips(planet: PlayerPlanet, w: Wish.BuildShip, suppliesPageData: SuppliesPageData) = { //TODO check not building and shipyard is not upgrading
@@ -97,7 +101,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
         calculateWaitingTime(requiredResourcesSingleShip, suppliesPageData.currentProduction, suppliesPageData.currentResources)
       Logger[OgameAction]
         .info(
-          s"Wanted to build $w but there were not enough resources on ${planet.coordinates} " +
+          s"${showCoordinates(planet)} Wanted to build $w but there were not enough resources on" +
             s"- ${suppliesPageData.currentResources}/$requiredResourcesSingleShip"
         )
         .map(_ => BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
@@ -108,13 +112,13 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
     suppliesPageData.currentBuildingProgress match {
       case Some(value) =>
         Logger[OgameAction]
-          .info(s"Wanted to build $suppliesBuilding but something was being built")
+          .info(s"${showCoordinates(planet)} Wanted to build $suppliesBuilding but something was being built")
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         val level = suppliesPageData.getIntLevel(suppliesBuilding) + 1
         val requiredResources = SuppliesBuildingCosts.buildingCost(suppliesBuilding, level)
         if (suppliesPageData.currentResources.gtEqTo(requiredResources)) {
-          Logger[OgameAction].info(s"Building $suppliesBuilding $level") >>
+          Logger[OgameAction].info(s"${showCoordinates(planet)} Building $suppliesBuilding $level") >>
             ogameActionDriver
               .buildSupplyAndGetTime(planet.id, suppliesBuilding)
               .map(s => BuilderResult.building(s.finishTimestamp))
@@ -122,7 +126,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           val secondsToWait = calculateWaitingTime(requiredResources, suppliesPageData.currentProduction, suppliesPageData.currentResources)
           Logger[OgameAction]
             .info(
-              s"Wanted to build $suppliesBuilding $level but there were not enough resources on ${planet.coordinates} " +
+              s"${showCoordinates(planet)} Wanted to build $suppliesBuilding $level but there were not enough resources on ${planet.coordinates} " +
                 s"- ${suppliesPageData.currentResources}/$requiredResources"
             )
             .map { _ =>
@@ -144,16 +148,16 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
       suppliesPageData: SuppliesPageData,
       planet: PlayerPlanet
   ) = {
-    suppliesPageData.currentShipyardProgress match {
+    suppliesPageData.currentShipyardProgress.orElse(suppliesPageData.currentBuildingProgress) match {
       case Some(value) =>
         Logger[OgameAction]
-          .info(s"Wanted to build $facilityBuilding but there were some ships building")
+          .info(s"${showCoordinates(planet)} Wanted to build $facilityBuilding but there were some ships building")
           .as(BuilderResult.building(value.finishTimestamp))
       case None =>
         val level = facilityPageData.getIntLevel(facilityBuilding) + 1
         val requiredResources = FacilityBuildingCosts.buildingCost(facilityBuilding, level)
         if (facilityPageData.currentResources.gtEqTo(requiredResources)) {
-          Logger[OgameAction].info(s"Building $facilityBuilding $level") >>
+          Logger[OgameAction].info(s"${showCoordinates(planet)} Building $facilityBuilding $level") >>
             ogameActionDriver
               .buildFacilityAndGetTime(planet.id, facilityBuilding)
               .map(f => BuilderResult.building(f.finishTimestamp))
@@ -161,7 +165,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           val secondsToWait = calculateWaitingTime(requiredResources, suppliesPageData.currentProduction, suppliesPageData.currentResources)
           Logger[OgameAction]
             .info(
-              s"Wanted to build $facilityBuilding $level but there were not enough resources on ${planet.coordinates}" +
+              s"${showCoordinates(planet)} Wanted to build $facilityBuilding $level but there were not enough resources" +
                 s"- ${suppliesPageData.currentResources}/$requiredResources"
             )
             .as(BuilderResult.waiting(clock.now().plusSeconds(secondsToWait)))
@@ -173,11 +177,11 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
     suppliesPageData.currentBuildingProgress match {
       case Some(value) =>
         Logger[OgameAction]
-          .info(s"Wanted to run smart builder but sth was being built")
+          .info(s"${showCoordinates(planet)} Wanted to run smart builder but sth was being built")
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         if (suppliesPageData.currentResources.energy < 0) {
-          if (suppliesPageData.getIntLevel(SuppliesBuilding.SolarPlant) >= 17) {
+          if (suppliesPageData.getIntLevel(SuppliesBuilding.SolarPlant) >= 30) {
             buildSolarSatellite(planet, suppliesPageData)
           } else {
             buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
@@ -205,7 +209,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
     suppliesPageData.currentBuildingProgress match {
       case Some(value) =>
         Logger[OgameAction]
-          .info(s"Wanted to run deuter builder but sth was being built")
+          .info(s"${showCoordinates(planet)} Wanted to run deuter builder but sth was being built")
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         if (suppliesPageData.currentResources.energy < 0) {
@@ -227,7 +231,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
       case Some(value) => BuilderResult.building(value.finishTimestamp).pure[OgameAction]
       case None =>
         if (suppliesPageData.currentResources.gtEqTo(SolarSatelliteCost)) {
-          Logger[OgameAction].info(s"Building solar satellite 1") >>
+          Logger[OgameAction].info(s"${showCoordinates(planet)} Building solar satellite 1") >>
             ogameActionDriver.buildSolarSatellites(planet.id, 1) >>
             ogameActionDriver
               .readSuppliesPage(planet.id)
@@ -237,7 +241,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
             calculateWaitingTime(SolarSatelliteCost, suppliesPageData.currentProduction, suppliesPageData.currentResources)
           Logger[OgameAction]
             .info(
-              s"Wanted to build solar satellite but there were not enough resources on ${planet.coordinates}" +
+              s"${showCoordinates(planet)} Wanted to build solar satellite but there were not enough resources on" +
                 s"- ${suppliesPageData.currentResources}/$SolarSatelliteCost"
             )
             .as(BuilderResult.building(clock.now().plusSeconds(secondsToWait)))
