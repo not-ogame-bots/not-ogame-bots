@@ -396,18 +396,34 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
   }
 
   override def readMyFleets(): F[MyFleetPageData] = {
-    Sync[F].delay({
-      webDriver.get(urlProvider.readMyFleetsUrl)
-      if (webDriver.getCurrentUrl.contains("movement")) {
-        new MyFleetsComponentReader(webDriver).readMyFleets()
-      } else if (webDriver.getCurrentUrl.contains("fleetdispatch")) {
-        //When there are no fleets movement page redirects to fleetdispatch
-        val slots = new FleetDispatchComponentReader(webDriver).readSlots()
-        MyFleetPageData(List.empty, MyFleetSlots(slots.currentFleets, slots.maxFleets, slots.currentExpeditions, slots.maxExpeditions))
-      } else {
-        throw new RuntimeException(s"Couldn't proceed to movement page")
-      }
-    })
+    tryReadingMyFleets()
+  }
+
+  private def tryReadingMyFleets(attempts: Int = 10): F[MyFleetPageData] = {
+    if (attempts > 0) {
+      Sync[F]
+        .delay({
+          webDriver.get(urlProvider.readMyFleetsUrl)
+          if (webDriver.getCurrentUrl.contains("movement")) {
+            new MyFleetsComponentReader(webDriver).readMyFleets()
+          } else if (webDriver.getCurrentUrl.contains("fleetdispatch")) {
+            //When there are no fleets movement page redirects to fleetdispatch
+            val slots = new FleetDispatchComponentReader(webDriver).readSlots()
+            MyFleetPageData(List.empty, MyFleetSlots(slots.currentFleets, slots.maxFleets, slots.currentExpeditions, slots.maxExpeditions))
+          } else {
+            throw new RuntimeException(s"Couldn't proceed to movement page")
+          }
+        })
+        .handleErrorWith { err =>
+          if (webDriver.getCurrentUrl.contains("movement")) {
+            tryReadingMyFleets(attempts - 1)
+          } else {
+            Sync[F].raiseError(err)
+          }
+        }
+    } else {
+      Sync[F].raiseError(new RuntimeException("Couldn't read my fleets"))
+    }
   }
 
   override def sendFleet(sendFleetRequest: SendFleetRequest): F[Unit] = {
