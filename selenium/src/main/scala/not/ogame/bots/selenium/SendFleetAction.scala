@@ -36,7 +36,6 @@ class SendFleetAction(webDriver: WebDriver) {
     waitUntilVisible(By.id("fleet2"))
     selectSpeed(request.speed)
     fillTarget(request.targetCoordinates)
-    verifyDeuteriumAmount
   }
 
   private def verifyDeuteriumAmount = {
@@ -64,6 +63,7 @@ class SendFleetAction(webDriver: WebDriver) {
     position.clear()
     position.sendKeys(targetCoordinates.position.toString)
     webDriver.findElement(By.id(buttonCoordinatesType(targetCoordinates.coordinatesType))).click()
+    verifyDeuteriumAmount
     waitUntilIsOn(By.id("continueToFleet3"))
     webDriver.findElement(By.id("continueToFleet3")).click()
   }
