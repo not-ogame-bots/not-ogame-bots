@@ -64,11 +64,11 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
                 planet,
                 SendFleetRequestShips.Ships(
                   Map(
-                    SmallCargoShip -> smallCargoToSend,
-                    LargeCargoShip -> largeCargoToSend,
-                    Explorer -> explorerToSend,
+                    SmallCargoShip -> Math.min(smallCargoToSend, fleetOnPlanet.ships(ShipType.SmallCargoShip)),
+                    LargeCargoShip -> Math.min(largeCargoToSend, fleetOnPlanet.ships(ShipType.LargeCargoShip)),
+                    Explorer -> Math.min(explorerToSend, fleetOnPlanet.ships(ShipType.Explorer)),
                     topBattleShip -> 1,
-                    EspionageProbe -> 1
+                    EspionageProbe -> Math.min(1, fleetOnPlanet.ships(ShipType.EspionageProbe))
                   )
                 ),
                 config.target,
