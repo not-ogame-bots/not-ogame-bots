@@ -2,10 +2,17 @@ package not.ogame.bots.ghostbuster
 
 import java.time.ZonedDateTime
 
+import com.typesafe.scalalogging.StrictLogging
+import monix.eval.Task
+import retry.RetryPolicies
+import retry.syntax.all._
+import cats.implicits._
+
+import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.DurationConverters._
 
-package object processors {
+package object processors extends StrictLogging {
   implicit class RichZonedDateTime(zdt: ZonedDateTime) {
     def plus(fd: FiniteDuration): ZonedDateTime = {
       zdt.plusSeconds(fd.toSeconds)
@@ -34,5 +41,15 @@ package object processors {
     } else {
       first
     }
+  }
+
+  def withRetry[T](task: Task[T])(flowName: String) = {
+    val policy = RetryPolicies.capDelay[Task](5 minutes, RetryPolicies.exponentialBackoff[Task](2 seconds))
+    task.retryingOnAllErrors(
+      policy,
+      onError = { (e, details) =>
+        logger.error(s"Restarting: $flowName. Retry details :$details", e).pure[Task]
+      }
+    )
   }
 }

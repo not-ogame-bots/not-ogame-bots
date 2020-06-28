@@ -31,7 +31,7 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
     for {
       time <- lookForFleet(playerPlanet).execute()
       _ <- executor.waitTo(time)
-      _ <- processAndWait(playerPlanet)
+      _ <- withRetry(processAndWait(playerPlanet))("expedition")
     } yield ()
   }
 

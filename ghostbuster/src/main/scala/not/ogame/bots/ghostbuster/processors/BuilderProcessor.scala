@@ -44,7 +44,7 @@ class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, ogameDriver
           Logger[OgameAction].info("Builder is idle waiting to next interval").as(clock.now().plus(config.interval))
       }
       .execute()
-      .flatMap(waitTime => executor.waitTo(waitTime) >> loopBuilder(planet))
+      .flatMap(waitTime => executor.waitTo(waitTime) >> withRetry(loopBuilder(planet))("builder"))
   }
 
   private def firstFleetArrivalTime(planet: PlayerPlanet) = {

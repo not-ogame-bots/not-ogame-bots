@@ -40,7 +40,7 @@ class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: 
               case Right(value) => Task.pure(value)
             }
       )
-      .flatMap(newFleets => loop(newFleets, planets))
+      .flatMap(newFleets => withRetry(loop(newFleets, planets))("escape"))
   }
 
   private def processFleets(planets: List[PlayerPlanet], fleets: List[Fleet]) = {

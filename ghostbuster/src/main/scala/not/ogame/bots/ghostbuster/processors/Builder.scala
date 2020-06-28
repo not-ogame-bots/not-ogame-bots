@@ -190,16 +190,28 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           val deuterLevel = suppliesPageData.getIntLevel(SuppliesBuilding.DeuteriumSynthesizer)
           val crystalLevel = suppliesPageData.getIntLevel(SuppliesBuilding.CrystalMine)
           val metalLevel = suppliesPageData.getIntLevel(SuppliesBuilding.MetalMine)
-          val shouldBuildDeuter = metalLevel - deuterLevel > 4 && deuterLevel < w.deuterLevel
-          val shouldBuildCrystal = metalLevel - crystalLevel > 2 && crystalLevel < w.crystalLevel
-          if (shouldBuildCrystal) {
-            buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.CrystalMine)
-          } else if (shouldBuildDeuter) {
-            buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
-          } else if (metalLevel < w.metalLevel) {
-            buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.MetalMine)
+          if (metalLevel < 20) {
+            val shouldBuildDeuter = metalLevel - deuterLevel > 4 && deuterLevel < w.deuterLevel
+            val shouldBuildCrystal = metalLevel - crystalLevel > 2 && crystalLevel < w.crystalLevel
+            if (shouldBuildCrystal) {
+              buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.CrystalMine)
+            } else if (shouldBuildDeuter) {
+              buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
+            } else if (metalLevel < w.metalLevel) {
+              buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.MetalMine)
+            } else {
+              BuilderResult.idle().pure[OgameAction]
+            }
           } else {
-            BuilderResult.idle().pure[OgameAction]
+            val shouldBuildDeuter = crystalLevel - deuterLevel > 1 && deuterLevel < w.deuterLevel
+            val shouldBuildCrystal = crystalLevel < w.crystalLevel
+            if (shouldBuildDeuter) {
+              buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
+            } else if (shouldBuildCrystal) {
+              buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.CrystalMine)
+            } else {
+              BuilderResult.idle().pure[OgameAction]
+            }
           }
         }
     }

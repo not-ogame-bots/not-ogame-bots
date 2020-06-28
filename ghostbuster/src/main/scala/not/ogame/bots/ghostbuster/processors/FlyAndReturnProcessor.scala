@@ -39,7 +39,7 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver
     } yield nextStepTime).execute().flatMap { nextStepTime =>
       Logger[Task].info(s"Waiting to next step til $nextStepTime") >>
         executor.waitTo(nextStepTime) >>
-        loop(from, to)
+        withRetry(loop(from, to))("flyAndReturn")
     }
   }
 

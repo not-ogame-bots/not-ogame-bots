@@ -35,7 +35,6 @@ import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
 import retry.RetryPolicies
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.http4s._
-import retry.syntax.all._
 
 import scala.concurrent.duration._
 
@@ -89,14 +88,14 @@ object Main extends StrictLogging {
           Task.raceMany(
             List(
               executor.run(),
-              withRetry(fbp.run())("flyAndBuild"),
+              fbp.run(),
               activityFaker.run(),
-              withRetry(ep.run())("expedition"),
-              withRetry(bp.run())("builder"),
-              withRetry(far.run())("flyAndReturn"),
+              ep.run(),
+              bp.run(),
+              far.run(),
               stateAgg.run(),
               hostileFleetReporter.run(),
-              withRetry(efp.run())("escapeFleet")
+              efp.run()
             )
           )
       }
@@ -104,16 +103,6 @@ object Main extends StrictLogging {
         logger.error(e.getMessage, e)
         true
       }
-  }
-
-  private def withRetry[T](task: Task[T])(flowName: String) = {
-    val policy = RetryPolicies.capDelay[Task](5 minutes, RetryPolicies.exponentialBackoff[Task](2 seconds))
-    task.retryingOnAllErrors(
-      policy,
-      onError = { (e, details) =>
-        logger.error(s"Restarting: $flowName. Retry details :$details", e).pure[Task]
-      }
-    )
   }
 
   private def httpServer(endpoints: List[ServerEndpoint[_, _, _, Nothing, Task]]) = {
