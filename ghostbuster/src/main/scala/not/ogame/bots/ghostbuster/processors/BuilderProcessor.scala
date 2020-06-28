@@ -37,10 +37,11 @@ class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, ogameDriver
             case Some(arrivalTime) if arrivalTime.isBefore(waitingTime) =>
               Logger[OgameAction].info(s"Waiting for first fleet to arrive til $arrivalTime").as(arrivalTime)
             case _ =>
-              val limitedWaitingTime = max(waitingTime, clock.now().plus(config.interval))
+              val limitedWaitingTime = min(waitingTime, clock.now().plus(config.interval))
               Logger[OgameAction].info(s"Waiting for resources to produce til $limitedWaitingTime").as(limitedWaitingTime)
           }
-        case BuilderResult.Idle => clock.now().plus(config.interval).pure[OgameAction]
+        case BuilderResult.Idle =>
+          Logger[OgameAction].info("Builder is idle waiting to next interval").as(clock.now().plus(config.interval))
       }
       .execute()
       .flatMap(waitTime => executor.waitTo(waitTime) >> loopBuilder(planet))
@@ -49,7 +50,7 @@ class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, ogameDriver
   private def firstFleetArrivalTime(planet: PlayerPlanet) = {
     ogameDriver
       .readAllFleetsRedirect()
-      .map(_.filter(f => f.to == planet.coordinates))
+      .map(_.filter(f => f.to == planet.coordinates && !f.isReturning))
       .map {
         case l if l.nonEmpty => l.map(_.arrivalTime).min.some
         case Nil             => Option.empty[ZonedDateTime]
