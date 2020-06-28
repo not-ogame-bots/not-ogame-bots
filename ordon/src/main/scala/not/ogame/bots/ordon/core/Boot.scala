@@ -35,7 +35,7 @@ object Boot extends IOApp {
 
   private def runForEver(ogame: SeleniumOgameDriver[IO]): IO[Unit] = {
     IO.delay({
-      new Core(new OrdonOgameDriver(ogame), OrdonQuasarConfig.getInitialActionsV2()).run()
+      new Core(new OrdonOgameDriver(ogame), OrdonQuasarConfig.initialActionsV2()).run()
     })
   }
 }

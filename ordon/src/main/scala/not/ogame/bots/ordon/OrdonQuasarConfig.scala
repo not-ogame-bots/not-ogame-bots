@@ -7,7 +7,8 @@ import not.ogame.bots.FacilityBuilding.{NaniteFactory, ResearchLab, RoboticsFact
 import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
 import not.ogame.bots.SuppliesBuilding._
 import not.ogame.bots._
-import not.ogame.bots.ordon.action.ExpeditionOrdonAction
+import not.ogame.bots.ordon.action._
+import not.ogame.bots.ordon.core.OrdonAction
 
 object OrdonQuasarConfig extends OrdonConfig {
   def getCredentials: Credentials = {
@@ -20,9 +21,14 @@ object OrdonQuasarConfig extends OrdonConfig {
     Credentials(credentials.head, credentials(1), credentials(2), credentials(3))
   }
 
-  def getInitialActionsV2(): List[ExpeditionOrdonAction] = {
-    val expeditionAction = new ExpeditionOrdonAction(moon, expeditionFleet)
-    List(expeditionAction)
+  def initialActionsV2(): List[OrdonAction] = {
+    List(
+      new AlertOrdonAction(),
+      new KeepActiveOrdonAction(List(planet, moon, planet2, planet3, planet4, planet5)),
+      new ExpeditionMoveResourcesAndFleetOrdonAction(planet, moon),
+      new DeployAndReturnOrdonAction(planet, moon),
+      new ExpeditionOrdonAction(moon, expeditionFleet)
+    )
   }
 
   def getInitialActions(implicit clock: LocalClock): IO[List[ScheduledAction[IO]]] = {
@@ -35,50 +41,39 @@ object OrdonQuasarConfig extends OrdonConfig {
       //      new BuildBuildingsOgameAction[IO](planet2, taskQueue(clock)),
       //      new BuildBuildingsOgameAction[IO](planet3, taskQueue(clock)),
       //      new BuildBuildingsOgameAction[IO](planet4, taskQueue(clock)),
-      new BuildBuildingsOgameAction[IO](
-        planet5,
-        List(
-          new FacilityBuildingTask(RoboticsFactory, 10),
-          new FacilityBuildingTask(NaniteFactory, 3),
-          new FacilityBuildingTask(Shipyard, 12),
-          new SuppliesBuildingTask(CrystalStorage, 10),
-          new SuppliesBuildingTask(CrystalMine, 21),
-          new SuppliesBuildingTask(CrystalMine, 22),
-          new SuppliesBuildingTask(CrystalMine, 23),
-          new SuppliesBuildingTask(CrystalMine, 24),
-          new SuppliesBuildingTask(CrystalMine, 25),
-          new SuppliesBuildingTask(CrystalMine, 26)
-        )
-      ),
-      new BuildBuildingsOgameAction[IO](
-        planet6,
-        List(
-          new FacilityBuildingTask(RoboticsFactory, 10),
-          new FacilityBuildingTask(NaniteFactory, 3),
-          new FacilityBuildingTask(Shipyard, 12),
-          new SuppliesBuildingTask(CrystalStorage, 10),
-          new SuppliesBuildingTask(CrystalMine, 15),
-          new SuppliesBuildingTask(CrystalMine, 16),
-          new SuppliesBuildingTask(CrystalMine, 17),
-          new SuppliesBuildingTask(CrystalMine, 18),
-          new SuppliesBuildingTask(CrystalMine, 19),
-          new SuppliesBuildingTask(CrystalMine, 20),
-          new SuppliesBuildingTask(CrystalMine, 21),
-          new SuppliesBuildingTask(CrystalMine, 22),
-          new SuppliesBuildingTask(CrystalMine, 23),
-          new SuppliesBuildingTask(CrystalMine, 24),
-          new SuppliesBuildingTask(CrystalMine, 25),
-          new SuppliesBuildingTask(CrystalMine, 26)
-        )
-      ),
-      new ExpeditionOgameAction[IO](
-        moon,
-        expeditionFleet,
-        List(Coordinates(1, 155, 16))
-      )
+      new BuildBuildingsOgameAction[IO](planet5, newPlanetBuildingList),
+      new BuildBuildingsOgameAction[IO](planet6, newPlanetBuildingList),
+      new ExpeditionOgameAction[IO](moon, expeditionFleet, List(Coordinates(1, 155, 16)))
     )
     //    val coloniseAction = ScheduledAction(clock.now().withHour(3).withMinute(0).withSecond(0), new ColoniseAction[IO])
     IO.pure(listOfActions.map(ScheduledAction(clock.now(), _)))
+  }
+
+  private def newPlanetBuildingList(implicit clock: LocalClock): List[TaskOnPlanet] = {
+    List(
+      new FacilityBuildingTask(RoboticsFactory, 10),
+      new FacilityBuildingTask(NaniteFactory, 3),
+      new FacilityBuildingTask(Shipyard, 12),
+      new SuppliesBuildingTask(CrystalStorage, 10),
+      new SuppliesBuildingTask(CrystalMine, 21),
+      new SuppliesBuildingTask(CrystalMine, 22),
+      new SuppliesBuildingTask(CrystalMine, 23),
+      new SuppliesBuildingTask(CrystalMine, 24),
+      new SuppliesBuildingTask(CrystalMine, 25),
+      new SuppliesBuildingTask(CrystalMine, 26),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 10),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 15),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 17),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 19),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 20),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 21),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 22),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 23),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 24),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 25),
+      new SuppliesBuildingTask(DeuteriumSynthesizer, 26),
+      new SuppliesBuildingTask(MetalMine, 20)
+    )
   }
 
   private def taskQueue(implicit clock: LocalClock): List[TaskOnPlanet] = {
