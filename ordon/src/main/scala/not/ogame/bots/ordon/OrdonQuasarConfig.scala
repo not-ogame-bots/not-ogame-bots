@@ -24,9 +24,10 @@ object OrdonQuasarConfig extends OrdonConfig {
   def initialActionsV2(): List[OrdonAction] = {
     List(
       new AlertOrdonAction(),
-      new KeepActiveOrdonAction(List(planet, moon, planet2, planet3, planet4, planet5)),
-      new ExpeditionMoveResourcesAndFleetOrdonAction(planet, moon),
-      new DeployAndReturnOrdonAction(planet, moon),
+      new KeepActiveOrdonAction(List(planet10, moon, planet7, planet7_154, planet13, planet3)),
+      new ExpeditionMoveResourcesAndFleetOrdonAction(planet10, moon, expeditionFleet),
+      new DeployAndReturnOrdonAction(planet10, moon),
+      new TransportToOrdonAction(List(planet3, planet6, planet7, planet7_154, planet13), planet10),
       new ExpeditionOrdonAction(moon, expeditionFleet)
     )
   }
@@ -34,15 +35,15 @@ object OrdonQuasarConfig extends OrdonConfig {
   def getInitialActions(implicit clock: LocalClock): IO[List[ScheduledAction[IO]]] = {
     val listOfActions = List(
       new AlertOgameAction[IO](),
-      new KeepActiveOgameAction[IO](List(planet, moon, planet2, planet3, planet4)),
-      new FlyAroundWithLargeCargoOgameAction[IO](planet, moon),
-      new DeployAndReturnNoLargeCargoOgameAction[IO](planet, moon),
+      new KeepActiveOgameAction[IO](List(planet10, moon, planet7, planet7_154, planet13)),
+      //      new FlyAroundWithLargeCargoOgameAction[IO](planet, moon),
+      //      new DeployAndReturnNoLargeCargoOgameAction[IO](planet, moon),
       //      new BuildBuildingsOgameAction[IO](planet, taskQueue(clock)),
       //      new BuildBuildingsOgameAction[IO](planet2, taskQueue(clock)),
       //      new BuildBuildingsOgameAction[IO](planet3, taskQueue(clock)),
       //      new BuildBuildingsOgameAction[IO](planet4, taskQueue(clock)),
-      new BuildBuildingsOgameAction[IO](planet5, newPlanetBuildingList),
-      new BuildBuildingsOgameAction[IO](planet6, newPlanetBuildingList),
+      //      new BuildBuildingsOgameAction[IO](planet5, newPlanetBuildingList),
+      //      new BuildBuildingsOgameAction[IO](planet6, newPlanetBuildingList),
       new ExpeditionOgameAction[IO](moon, expeditionFleet, List(Coordinates(1, 155, 16)))
     )
     //    val coloniseAction = ScheduledAction(clock.now().withHour(3).withMinute(0).withSecond(0), new ColoniseAction[IO])
@@ -103,12 +104,12 @@ object OrdonQuasarConfig extends OrdonConfig {
     )
   }
 
-  private val expeditionFleet: Map[ShipType, Int] = Map(Destroyer -> 1, EspionageProbe -> 1, LargeCargoShip -> 400, Explorer -> 50)
-  private val planet = PlayerPlanet(PlanetId.apply("33620959"), Coordinates(1, 155, 10))
+  private val expeditionFleet: Map[ShipType, Int] = Map(Destroyer -> 1, EspionageProbe -> 1, LargeCargoShip -> 620, Explorer -> 150)
+  private val planet10 = PlayerPlanet(PlanetId.apply("33620959"), Coordinates(1, 155, 10))
   private val moon = PlayerPlanet(PlanetId.apply("33632870"), Coordinates(1, 155, 10, Moon))
-  private val planet2 = PlayerPlanet(PlanetId.apply("33623552"), Coordinates(1, 155, 7))
-  private val planet3 = PlayerPlanet(PlanetId.apply("33624816"), Coordinates(1, 154, 7))
-  private val planet4 = PlayerPlanet(PlanetId.apply("33629451"), Coordinates(1, 155, 13))
-  private val planet5 = PlayerPlanet(PlanetId.apply("33635176"), Coordinates(1, 155, 6))
-  private val planet6 = PlayerPlanet(PlanetId.apply("33635734"), Coordinates(1, 155, 3))
+  private val planet7 = PlayerPlanet(PlanetId.apply("33623552"), Coordinates(1, 155, 7))
+  private val planet7_154 = PlayerPlanet(PlanetId.apply("33624816"), Coordinates(1, 154, 7))
+  private val planet13 = PlayerPlanet(PlanetId.apply("33629451"), Coordinates(1, 155, 13))
+  private val planet6 = PlayerPlanet(PlanetId.apply("33635176"), Coordinates(1, 155, 6))
+  private val planet3 = PlayerPlanet(PlanetId.apply("33635734"), Coordinates(1, 155, 3))
 }

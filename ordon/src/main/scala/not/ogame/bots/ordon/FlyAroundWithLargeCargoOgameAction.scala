@@ -31,7 +31,7 @@ class FlyAroundWithLargeCargoOgameAction[T[_]: Monad](
         Destroyer -> Selector.decreaseBy(3),
         EspionageProbe -> Selector.decreaseBy(50),
         Explorer -> Selector.skip,
-        LargeCargoShip -> Selector.decreaseBy(400)
+        LargeCargoShip -> Selector.atMost(630)
       )
     ),
     fleetSpeed = FleetSpeed.Percent100

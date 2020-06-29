@@ -6,9 +6,10 @@ import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
 import not.ogame.bots.ordon.core.{OrdonOgameDriver, TimeBasedOrdonAction}
 import not.ogame.bots.ordon.utils.{FleetSelector, ResourceSelector, Selector, SendFleet}
-import not.ogame.bots.{FleetSpeed, MyFleet, PlayerPlanet}
+import not.ogame.bots.{FleetSpeed, MyFleet, PlayerPlanet, ShipType}
 
-class ExpeditionMoveResourcesAndFleetOrdonAction(planet: PlayerPlanet, moon: PlayerPlanet) extends TimeBasedOrdonAction {
+class ExpeditionMoveResourcesAndFleetOrdonAction(planet: PlayerPlanet, moon: PlayerPlanet, expeditionFleet: Map[ShipType, Int])
+    extends TimeBasedOrdonAction {
   val fromPlanetToMoon = new SendFleet(
     from = planet,
     to = moon,
@@ -26,7 +27,7 @@ class ExpeditionMoveResourcesAndFleetOrdonAction(planet: PlayerPlanet, moon: Pla
         Destroyer -> Selector.decreaseBy(3),
         EspionageProbe -> Selector.decreaseBy(50),
         Explorer -> Selector.skip,
-        LargeCargoShip -> Selector.decreaseBy(400)
+        LargeCargoShip -> Selector.decreaseBy(expeditionFleet(LargeCargoShip))
       )
     ),
     fleetSpeed = FleetSpeed.Percent100
