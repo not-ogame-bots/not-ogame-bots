@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots.ShipType.LargeCargoShip
-import not.ogame.bots.ordon.core.{EventRegistry, OrdonOgameDriver, TimeBasedOrdonAction}
+import not.ogame.bots.ordon.core.{ChangeOnPlanet, EventRegistry, OrdonOgameDriver, TimeBasedOrdonAction}
 import not.ogame.bots.ordon.utils.{FleetSelector, ResourceSelector, Selector, SendFleet}
 import not.ogame.bots.{FleetSpeed, MyFleet, PlayerPlanet}
 
@@ -26,25 +26,26 @@ class DeployAndReturnOrdonAction(planet: PlayerPlanet, moon: PlayerPlanet) exten
     if (maybeThisFleet.isDefined) {
       val thisFleet = maybeThisFleet.get
       if (thisFleet.isReturning) {
-        handleReturningFleet(thisFleet)
+        handleReturningFleet(thisFleet, eventRegistry)
       } else {
-        handleFlyingFleet(ogame, thisFleet)
+        handleFlyingFleet(ogame, thisFleet, eventRegistry)
       }
     } else {
       handleFleetNotFound(ogame)
     }
   }
 
-  private def handleFlyingFleet(ogame: OrdonOgameDriver, fleet: MyFleet): ZonedDateTime = {
+  private def handleFlyingFleet(ogame: OrdonOgameDriver, fleet: MyFleet, eventRegistry: EventRegistry): ZonedDateTime = {
     if (isCloseToArrival(fleet)) {
       ogame.returnFleet(fleet.fleetId)
-      handleReturningFleet(findThisFleet(ogame).get)
+      handleReturningFleet(findThisFleet(ogame).get, eventRegistry)
     } else {
       chooseTimeWhenClickReturn(fleet)
     }
   }
 
-  private def handleReturningFleet(fleet: MyFleet): ZonedDateTime = {
+  private def handleReturningFleet(fleet: MyFleet, eventRegistry: EventRegistry): ZonedDateTime = {
+    eventRegistry.registerEvent(ChangeOnPlanet(fleet.arrivalTime.plusSeconds(3), planet))
     fleet.arrivalTime.plusMinutes(1)
   }
 

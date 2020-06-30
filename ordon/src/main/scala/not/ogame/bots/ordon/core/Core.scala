@@ -2,6 +2,8 @@ package not.ogame.bots.ordon.core
 
 import java.time.{Duration, ZonedDateTime}
 
+import not.ogame.bots.PlayerPlanet
+
 import scala.collection.mutable.ListBuffer
 
 class Core(ogame: OrdonOgameDriver, initialActions: List[OrdonAction]) extends EventRegistry {
@@ -99,3 +101,5 @@ trait OrdonEvent extends Comparable[OrdonEvent] {
 }
 
 case class TimeBasedOrdonEvent(override val triggerOn: ZonedDateTime) extends OrdonEvent
+
+case class ChangeOnPlanet(override val triggerOn: ZonedDateTime, planet: PlayerPlanet) extends OrdonEvent
