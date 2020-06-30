@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
-import not.ogame.bots.ordon.core.{OrdonOgameDriver, TimeBasedOrdonAction}
+import not.ogame.bots.ordon.core.{EventRegistry, OrdonOgameDriver, TimeBasedOrdonAction}
 import not.ogame.bots.ordon.utils.{FleetSelector, ResourceSelector, Selector, SendFleet}
 import not.ogame.bots.{FleetSpeed, MyFleet, PlayerPlanet, ShipType}
 
@@ -33,7 +33,7 @@ class ExpeditionMoveResourcesAndFleetOrdonAction(planet: PlayerPlanet, moon: Pla
     fleetSpeed = FleetSpeed.Percent100
   )
 
-  override def processTimeBased(ogame: OrdonOgameDriver): ZonedDateTime = {
+  override def processTimeBased(ogame: OrdonOgameDriver, eventRegistry: EventRegistry): ZonedDateTime = {
     val maybeThisFleet = ogame.readMyFleets().fleets.find(isThisFleet)
     if (maybeThisFleet.isDefined) {
       maybeThisFleet.get.arrivalTime.plusSeconds(3)

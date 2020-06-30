@@ -104,7 +104,7 @@ object OrdonQuasarConfig extends OrdonConfig {
     )
   }
 
-  private val expeditionFleet: Map[ShipType, Int] = Map(Destroyer -> 1, EspionageProbe -> 1, LargeCargoShip -> 620, Explorer -> 150)
+  private val expeditionFleet: Map[ShipType, Int] = Map(Destroyer -> 1, EspionageProbe -> 1, LargeCargoShip -> 620, Explorer -> 200)
   private val planet10 = PlayerPlanet(PlanetId.apply("33620959"), Coordinates(1, 155, 10))
   private val moon = PlayerPlanet(PlanetId.apply("33632870"), Coordinates(1, 155, 10, Moon))
   private val planet7 = PlayerPlanet(PlanetId.apply("33623552"), Coordinates(1, 155, 7))

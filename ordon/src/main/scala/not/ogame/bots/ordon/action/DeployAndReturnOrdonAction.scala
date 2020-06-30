@@ -4,14 +4,14 @@ import java.time.ZonedDateTime
 
 import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots.ShipType.LargeCargoShip
-import not.ogame.bots.ordon.core.{OrdonOgameDriver, TimeBasedOrdonAction}
+import not.ogame.bots.ordon.core.{EventRegistry, OrdonOgameDriver, TimeBasedOrdonAction}
 import not.ogame.bots.ordon.utils.{FleetSelector, ResourceSelector, Selector, SendFleet}
 import not.ogame.bots.{FleetSpeed, MyFleet, PlayerPlanet}
 
 import scala.util.Random
 
 class DeployAndReturnOrdonAction(planet: PlayerPlanet, moon: PlayerPlanet) extends TimeBasedOrdonAction {
-  private val safeBufferInMinutes: Int = 10
+  private val safeBufferInMinutes: Int = 60
   private val randomUpperLimitInSeconds: Int = 240
   private val sendFleet = new SendFleet(
     from = planet,
@@ -21,7 +21,7 @@ class DeployAndReturnOrdonAction(planet: PlayerPlanet, moon: PlayerPlanet) exten
     fleetSpeed = FleetSpeed.Percent10
   )
 
-  override def processTimeBased(ogame: OrdonOgameDriver): ZonedDateTime = {
+  override def processTimeBased(ogame: OrdonOgameDriver, eventRegistry: EventRegistry): ZonedDateTime = {
     val maybeThisFleet = findThisFleet(ogame)
     if (maybeThisFleet.isDefined) {
       val thisFleet = maybeThisFleet.get
@@ -45,7 +45,7 @@ class DeployAndReturnOrdonAction(planet: PlayerPlanet, moon: PlayerPlanet) exten
   }
 
   private def handleReturningFleet(fleet: MyFleet): ZonedDateTime = {
-    fleet.arrivalTime.plusSeconds(3)
+    fleet.arrivalTime.plusMinutes(1)
   }
 
   private def handleFleetNotFound(ogame: OrdonOgameDriver): ZonedDateTime = {

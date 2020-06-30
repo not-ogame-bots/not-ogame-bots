@@ -4,7 +4,7 @@ import java.time.{Duration, ZonedDateTime}
 
 import scala.collection.mutable.ListBuffer
 
-class Core(ordonOgameDriver: OrdonOgameDriver, initialActions: List[OrdonAction]) extends EventRegistry {
+class Core(ogame: OrdonOgameDriver, initialActions: List[OrdonAction]) extends EventRegistry {
   val events: ListBuffer[OrdonEvent] = new ListBuffer[OrdonEvent]()
 
   override def registerEvent(event: OrdonEvent): Unit = {
@@ -22,7 +22,7 @@ class Core(ordonOgameDriver: OrdonOgameDriver, initialActions: List[OrdonAction]
     val firstEvent = popEarliestEvent()
     waitTo(firstEvent, actions)
     val newActions = actions.flatMap(action => {
-      action.process(firstEvent, ordonOgameDriver, this)
+      action.process(firstEvent, ogame, this)
     })
     runInternal(newActions)
   }
@@ -46,13 +46,13 @@ class Core(ordonOgameDriver: OrdonOgameDriver, initialActions: List[OrdonAction]
 }
 
 trait OrdonAction {
-  def process(event: OrdonEvent, ordonOgameDriver: OrdonOgameDriver, eventRegistry: EventRegistry): List[OrdonAction]
+  def process(event: OrdonEvent, ogame: OrdonOgameDriver, eventRegistry: EventRegistry): List[OrdonAction]
 }
 
 abstract class BaseOrdonAction extends OrdonAction {
-  final override def process(event: OrdonEvent, ordonOgameDriver: OrdonOgameDriver, eventRegistry: EventRegistry): List[OrdonAction] = {
+  final override def process(event: OrdonEvent, ogame: OrdonOgameDriver, eventRegistry: EventRegistry): List[OrdonAction] = {
     if (shouldHandleEvent(event)) {
-      doProcess(event, ordonOgameDriver, eventRegistry)
+      doProcess(event, ogame, eventRegistry)
     } else {
       List(this)
     }
@@ -60,31 +60,31 @@ abstract class BaseOrdonAction extends OrdonAction {
 
   def shouldHandleEvent(event: OrdonEvent): Boolean
 
-  def doProcess(event: OrdonEvent, ordonOgameDriver: OrdonOgameDriver, eventRegistry: EventRegistry): List[OrdonAction]
+  def doProcess(event: OrdonEvent, ogame: OrdonOgameDriver, eventRegistry: EventRegistry): List[OrdonAction]
 }
 
 abstract class EndlessOrdonAction extends BaseOrdonAction {
-  final override def doProcess(event: OrdonEvent, ordonOgameDriver: OrdonOgameDriver, eventRegistry: EventRegistry): List[OrdonAction] = {
-    eventRegistry.registerEvent(doProcessEndless(event, ordonOgameDriver))
+  final override def doProcess(event: OrdonEvent, ogame: OrdonOgameDriver, eventRegistry: EventRegistry): List[OrdonAction] = {
+    eventRegistry.registerEvent(doProcessEndless(event, ogame, eventRegistry))
     List(this)
   }
 
-  def doProcessEndless(event: OrdonEvent, ordonOgameDriver: OrdonOgameDriver): OrdonEvent
+  def doProcessEndless(event: OrdonEvent, ogame: OrdonOgameDriver, eventRegistry: EventRegistry): OrdonEvent
 }
 
 abstract class TimeBasedOrdonAction extends EndlessOrdonAction {
   private var resumeOn: ZonedDateTime = null
 
-  final def shouldHandleEvent(event: OrdonEvent): Boolean = {
+  final override def shouldHandleEvent(event: OrdonEvent): Boolean = {
     resumeOn == null || !event.triggerOn.isBefore(resumeOn)
   }
 
-  final def doProcessEndless(event: OrdonEvent, ordonOgameDriver: OrdonOgameDriver): OrdonEvent = {
-    resumeOn = processTimeBased(ordonOgameDriver)
+  final override def doProcessEndless(event: OrdonEvent, ogame: OrdonOgameDriver, eventRegistry: EventRegistry): OrdonEvent = {
+    resumeOn = processTimeBased(ogame, eventRegistry)
     TimeBasedOrdonEvent(resumeOn)
   }
 
-  def processTimeBased(ordonOgameDriver: OrdonOgameDriver): ZonedDateTime
+  def processTimeBased(ogame: OrdonOgameDriver, eventRegistry: EventRegistry): ZonedDateTime
 }
 
 trait EventRegistry {

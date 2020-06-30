@@ -4,14 +4,14 @@ import java.time.ZonedDateTime
 
 import not.ogame.bots.FleetMissionType.Transport
 import not.ogame.bots.FleetSpeed.Percent100
-import not.ogame.bots.ordon.core.{OrdonOgameDriver, TimeBasedOrdonAction}
+import not.ogame.bots.ordon.core.{EventRegistry, OrdonOgameDriver, TimeBasedOrdonAction}
 import not.ogame.bots.ordon.utils.SendFleet
 import not.ogame.bots.{MyFleet, PlayerPlanet}
 
 import scala.util.Random
 
 class TransportToOrdonAction(fromList: List[PlayerPlanet], to: PlayerPlanet) extends TimeBasedOrdonAction {
-  override def processTimeBased(ogame: OrdonOgameDriver): ZonedDateTime = {
+  override def processTimeBased(ogame: OrdonOgameDriver, eventRegistry: EventRegistry): ZonedDateTime = {
     val maybeFleet = findTransportFleet(ogame)
     if (maybeFleet.isDefined) {
       maybeFleet.get.arrivalTime.plusSeconds(3)

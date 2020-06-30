@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 import not.ogame.bots.CoordinatesType.Planet
 import not.ogame.bots.FleetMissionType.Expedition
 import not.ogame.bots._
-import not.ogame.bots.ordon.core.{OrdonOgameDriver, TimeBasedOrdonAction}
+import not.ogame.bots.ordon.core.{EventRegistry, OrdonOgameDriver, TimeBasedOrdonAction}
 import not.ogame.bots.ordon.utils.{SelectResources, SelectShips, SendFleet}
 
 class ExpeditionOrdonAction(val startPlanet: PlayerPlanet, val expeditionFleet: Map[ShipType, Int]) extends TimeBasedOrdonAction {
@@ -21,13 +21,13 @@ class ExpeditionOrdonAction(val startPlanet: PlayerPlanet, val expeditionFleet: 
     fleetSpeed = FleetSpeed.Percent100
   )
 
-  override def processTimeBased(ogame: OrdonOgameDriver): ZonedDateTime = {
+  override def processTimeBased(ogame: OrdonOgameDriver, eventRegistry: EventRegistry): ZonedDateTime = {
     val page = ogame.readMyFleets()
     if (page.fleetSlots.currentExpeditions >= page.fleetSlots.maxExpeditions) {
       page.fleets.filter(_.fleetMissionType == Expedition).map(_.arrivalTime).min
     } else {
       ogame.sendFleet(sendFleetHelper.getSendFleetRequest(ogame))
-      processTimeBased(ogame)
+      processTimeBased(ogame, eventRegistry)
     }
   }
 }
