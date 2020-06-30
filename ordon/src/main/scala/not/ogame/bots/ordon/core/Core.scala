@@ -2,7 +2,7 @@ package not.ogame.bots.ordon.core
 
 import java.time.{Duration, ZonedDateTime}
 
-import not.ogame.bots.PlayerPlanet
+import not.ogame.bots.{Coordinates, PlayerPlanet}
 
 import scala.collection.mutable.ListBuffer
 
@@ -104,3 +104,5 @@ trait OrdonEvent extends Comparable[OrdonEvent] {
 case class TimeBasedOrdonEvent(override val triggerOn: ZonedDateTime) extends OrdonEvent
 
 case class ChangeOnPlanet(override val triggerOn: ZonedDateTime, planet: PlayerPlanet) extends OrdonEvent
+
+case class ExpeditionFleetChanged(override val triggerOn: ZonedDateTime, to: Coordinates) extends OrdonEvent
