@@ -6,6 +6,7 @@ import not.ogame.bots.CoordinatesType.Moon
 import not.ogame.bots.FacilityBuilding.{NaniteFactory, ResearchLab, RoboticsFactory, Shipyard}
 import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
 import not.ogame.bots.SuppliesBuilding._
+import not.ogame.bots.Technology.{Armor, Astrophysics, ResearchNetwork}
 import not.ogame.bots._
 import not.ogame.bots.ordon.action._
 import not.ogame.bots.ordon.core.OrdonAction
@@ -28,6 +29,7 @@ object OrdonQuasarConfig extends OrdonConfig {
       new ExpeditionMoveResourcesAndFleetOrdonAction(planet10, moon, expeditionFleet),
       new DeployAndReturnOrdonAction(planet10, moon),
       new TransportToOrdonAction(List(planet3, planet6, planet7, planet7_154, planet13), planet10),
+      new ResearchOrdonAction(planet10, List(ResearchNetwork -> 5, Armor -> 18, Astrophysics -> 15)),
       new ExpeditionOrdonAction(moon, expeditionFleet)
     )
   }
