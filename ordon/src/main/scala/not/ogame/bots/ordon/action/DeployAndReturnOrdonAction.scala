@@ -69,4 +69,6 @@ class DeployAndReturnOrdonAction(planet: PlayerPlanet, moon: PlayerPlanet) exten
   private def isThisFleet(fleet: MyFleet): Boolean = {
     fleet.from == planet.coordinates && fleet.to == moon.coordinates && fleet.fleetMissionType == Deployment && fleet.ships(LargeCargoShip) == 0
   }
+
+  override def toString: String = s"Deploy and return $resumeOn"
 }

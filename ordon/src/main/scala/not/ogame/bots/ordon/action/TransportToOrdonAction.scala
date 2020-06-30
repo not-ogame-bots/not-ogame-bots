@@ -52,4 +52,6 @@ class TransportToOrdonAction(fromList: List[PlayerPlanet], to: PlayerPlanet) ext
       ).getSendFleetRequest(ogame)
     )
   }
+
+  override def toString: String = s"Collect resources $resumeOn"
 }

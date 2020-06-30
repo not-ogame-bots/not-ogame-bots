@@ -14,4 +14,6 @@ class AlertOrdonAction extends TimeBasedOrdonAction {
     }
     ZonedDateTime.now().plusMinutes(3)
   }
+
+  override def toString: String = s"Alert $resumeOn"
 }

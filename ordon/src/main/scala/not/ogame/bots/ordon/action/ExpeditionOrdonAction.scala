@@ -30,4 +30,6 @@ class ExpeditionOrdonAction(val startPlanet: PlayerPlanet, val expeditionFleet: 
       processTimeBased(ogame, eventRegistry)
     }
   }
+
+  override def toString: String = s"Expedition $resumeOn"
 }

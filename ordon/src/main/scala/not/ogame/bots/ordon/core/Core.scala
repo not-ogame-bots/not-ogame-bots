@@ -39,6 +39,7 @@ class Core(ogame: OrdonOgameDriver, initialActions: List[OrdonAction]) extends E
     val now = ZonedDateTime.now()
     val millis = Duration.between(now, firstEvent.triggerOn).toMillis
     if (millis > 0) {
+      println()
       println(s"Time now is: $now")
       println(s"Waiting  to: ${firstEvent.triggerOn}")
       actions.foreach(action => println(action))
@@ -75,7 +76,7 @@ abstract class EndlessOrdonAction extends BaseOrdonAction {
 }
 
 abstract class TimeBasedOrdonAction extends EndlessOrdonAction {
-  private var resumeOn: ZonedDateTime = null
+  protected var resumeOn: ZonedDateTime = null
 
   final override def shouldHandleEvent(event: OrdonEvent): Boolean = {
     resumeOn == null || !event.triggerOn.isBefore(resumeOn)

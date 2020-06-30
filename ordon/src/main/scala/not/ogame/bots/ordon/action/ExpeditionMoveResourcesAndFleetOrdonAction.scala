@@ -62,4 +62,6 @@ class ExpeditionMoveResourcesAndFleetOrdonAction(planet: PlayerPlanet, moon: Pla
       ogame.sendFleet(fromMoonToPlanet.getSendFleetRequest(ogame))
     }
   }
+
+  override def toString: String = s"Move resources $resumeOn"
 }

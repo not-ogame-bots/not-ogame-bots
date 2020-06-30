@@ -13,4 +13,6 @@ class KeepActiveOrdonAction(planets: List[PlayerPlanet]) extends TimeBasedOrdonA
     Random.shuffle(planets).take(planets.size / 2 + 1).foreach(planet => ogame.readSuppliesPage(planet.id))
     ZonedDateTime.now().plusMinutes(13).plusSeconds(40)
   }
+
+  override def toString: String = s"Keep active $resumeOn"
 }
