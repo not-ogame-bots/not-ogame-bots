@@ -113,6 +113,8 @@ lazy val ordon: Project = (project in file("ordon"))
   .settings(
     name := "ordon",
     libraryDependencies ++= Seq(
+      "com.squareup.retrofit2" % "converter-gson" % "2.1.0",
+      "com.squareup.retrofit2" % "retrofit" % "2.9.0",
       "com.github.pureconfig" %% "pureconfig" % pureConfigVersion,
       "com.github.pureconfig" %% "pureconfig-enumeratum" % pureConfigVersion,
       "com.softwaremill.quicklens" %% "quicklens" % "1.5.0",

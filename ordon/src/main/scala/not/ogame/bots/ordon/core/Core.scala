@@ -2,11 +2,13 @@ package not.ogame.bots.ordon.core
 
 import java.time.{Duration, ZonedDateTime}
 
+import not.ogame.bots.ordon.utils.SlackIntegration
 import not.ogame.bots.{Coordinates, PlayerPlanet}
 
 import scala.collection.mutable.ListBuffer
 
 class Core(ogame: OrdonOgameDriver, initialActions: List[OrdonAction]) extends EventRegistry {
+  private val slackIntegration: SlackIntegration = new SlackIntegration()
   val events: ListBuffer[OrdonEvent] = new ListBuffer[OrdonEvent]()
 
   override def registerEvent(event: OrdonEvent): Unit = {
@@ -14,7 +16,7 @@ class Core(ogame: OrdonOgameDriver, initialActions: List[OrdonAction]) extends E
   }
 
   def run(): Unit = {
-    println("Starting core run")
+    slackIntegration.postMessageToSlack("Starting core run")
     registerEvent(TimeBasedOrdonEvent(ZonedDateTime.now()))
     runInternal(initialActions)
   }
