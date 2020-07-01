@@ -17,12 +17,18 @@ class ResearchOrdonAction(planet: PlayerPlanet, researchList: List[(Technology, 
       List()
     } else {
       val pageData = ogame.readTechnologyPage(planet.id)
-      val cost = TechnologyCosts.technologyCost(researchList.head._1, researchList.head._2)
-      if (pageData.currentResources.gtEqTo(cost) && pageData.currentResearchProgress.isEmpty) {
-        ogame.startResearch(planet.id, researchList.head._1)
-        List(new ResearchOrdonAction(planet, researchList.tail))
+      val uncompleted = researchList.filter(t => pageData.getIntLevel(t._1) < t._2)
+      if (uncompleted.isEmpty) {
+        List()
       } else {
-        List(this)
+        val nextResearch = uncompleted.head
+        val cost = TechnologyCosts.technologyCost(nextResearch._1, nextResearch._2)
+        if (pageData.currentResources.gtEqTo(cost) && pageData.currentResearchProgress.isEmpty) {
+          ogame.startResearch(planet.id, nextResearch._1)
+          List(new ResearchOrdonAction(planet, uncompleted.tail))
+        } else {
+          List(new ResearchOrdonAction(planet, uncompleted))
+        }
       }
     }
   }
