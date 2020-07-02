@@ -14,8 +14,6 @@ import not.ogame.bots.ghostbuster.ogame.{OgameAction, OgameOp}
 import not.ogame.bots.ghostbuster.{FLogger, processors}
 import not.ogame.bots.{LocalClock, OgameDriver}
 
-import scala.concurrent.duration._
-
 class OgameActionInterpreterImpl(ogameDriver: OgameDriver[Task] with NotificationAware, taskExecutor: TaskExecutor[Task])(
     implicit clock: LocalClock
 ) extends OgameActionExecutor[Task]

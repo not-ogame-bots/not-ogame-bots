@@ -6,6 +6,7 @@ import not.ogame.bots.{
   BuildingProgress,
   FacilityBuilding,
   Fleet,
+  LocalClock,
   MyFleet,
   OgameDriver,
   PlanetId,
@@ -54,25 +55,25 @@ package object executor {
         }
       }
     }
-    def buildSupplyAndGetTime(planetId: PlanetId, suppliesBuilding: SuppliesBuilding): F[BuildingProgress] = {
+    def buildSupplyAndGetTime(planetId: PlanetId, suppliesBuilding: SuppliesBuilding)(implicit clock: LocalClock): F[BuildingProgress] = {
       ogameDriver.buildSuppliesBuilding(planetId, suppliesBuilding) >>
         ogameDriver
           .readSuppliesPage(planetId)
-          .map(_.currentBuildingProgress.get)
+          .map(_.currentBuildingProgress.getOrElse(BuildingProgress(clock.now(), "x")))
     }
 
-    def buildFacilityAndGetTime(planetId: PlanetId, facilityBuilding: FacilityBuilding): F[BuildingProgress] = {
+    def buildFacilityAndGetTime(planetId: PlanetId, facilityBuilding: FacilityBuilding)(implicit clock: LocalClock): F[BuildingProgress] = {
       ogameDriver.buildFacilityBuilding(planetId, facilityBuilding) >>
         ogameDriver
           .readFacilityPage(planetId)
-          .map(_.currentBuildingProgress.get)
+          .map(_.currentBuildingProgress.getOrElse(BuildingProgress(clock.now(), "x")))
     }
 
-    def buildShipAndGetTime(planetId: PlanetId, shipType: ShipType, amount: Int): F[BuildingProgress] = {
+    def buildShipAndGetTime(planetId: PlanetId, shipType: ShipType, amount: Int)(implicit clock: LocalClock): F[BuildingProgress] = {
       ogameDriver.buildShips(planetId, shipType, amount) >>
         ogameDriver
           .readSuppliesPage(planetId)
-          .map(_.currentShipyardProgress.get)
+          .map(_.currentBuildingProgress.getOrElse(BuildingProgress(clock.now(), "x")))
     }
     def startResearchAndGetTime(planetId: PlanetId, technology: Technology): F[BuildingProgress] = {
       ogameDriver.startResearch(planetId, technology) >>

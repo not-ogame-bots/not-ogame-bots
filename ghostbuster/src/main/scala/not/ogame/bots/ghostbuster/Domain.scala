@@ -61,7 +61,8 @@ case class ExpeditionConfig(
     collectingOn: Boolean,
     target: Coordinates,
     maxLC: Int,
-    maxSC: Int
+    maxSC: Int,
+    maxExplorers: Int
 )
 case class FleetShip(shipType: ShipType, amount: Int)
 

@@ -32,7 +32,6 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import pureconfig.module.enumeratum._
 import pureconfig.{ConfigObjectCursor, ConfigReader, ConfigSource}
-import retry.RetryPolicies
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.http4s._
 

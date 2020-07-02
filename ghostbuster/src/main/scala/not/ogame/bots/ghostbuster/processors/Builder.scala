@@ -10,6 +10,8 @@ import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.ogame.OgameAction
 import not.ogame.bots.ghostbuster.{FLogger, Wish}
 
+import scala.math.BigDecimal.RoundingMode
+
 class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])(
     implicit clock: LocalClock
 ) extends FLogger {
@@ -181,8 +183,9 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         if (suppliesPageData.currentResources.energy < 0) {
-          if (suppliesPageData.getIntLevel(SuppliesBuilding.SolarPlant) >= 30) {
-            buildSolarSatellite(planet, suppliesPageData)
+          if (suppliesPageData.getIntLevel(SuppliesBuilding.SolarPlant) >= 20) {
+            val amount = (BigDecimal(Math.abs(suppliesPageData.currentResources.energy)) / 30).setScale(0, RoundingMode.UP).toInt
+            buildSolarSatellite(planet, suppliesPageData, amount)
           } else {
             buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
           }
@@ -203,7 +206,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
               BuilderResult.idle().pure[OgameAction]
             }
           } else {
-            val shouldBuildDeuter = crystalLevel - deuterLevel > 1 && deuterLevel < w.deuterLevel
+            val shouldBuildDeuter = crystalLevel - deuterLevel >= 1 && deuterLevel < w.deuterLevel
             val shouldBuildCrystal = crystalLevel < w.crystalLevel
             if (shouldBuildDeuter) {
               buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
@@ -230,7 +233,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           if (suppliesPageData.currentCapacity.deuterium - suppliesPageData.currentResources.deuterium < 1000) {
             buildSupplyBuildingOrNothing(SuppliesBuilding.DeuteriumStorage, suppliesPageData, planet)
           } else {
-            buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.DeuteriumSynthesizer)
+            buildSupplyBuildingOrNothing(SuppliesBuilding.DeuteriumSynthesizer, suppliesPageData, planet)
           }
         }
     }
@@ -238,13 +241,13 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
 
   private val SolarSatelliteCost = Resources(0, 2000, 500)
 
-  private def buildSolarSatellite(planet: PlayerPlanet, suppliesPageData: SuppliesPageData) = {
+  private def buildSolarSatellite(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, amount: Int) = {
     suppliesPageData.currentShipyardProgress match {
       case Some(value) => BuilderResult.building(value.finishTimestamp).pure[OgameAction]
       case None =>
         if (suppliesPageData.currentResources.gtEqTo(SolarSatelliteCost)) {
           Logger[OgameAction].info(s"${showCoordinates(planet)} Building solar satellite 1") >>
-            ogameActionDriver.buildSolarSatellites(planet.id, 1) >>
+            ogameActionDriver.buildSolarSatellites(planet.id, amount) >>
             ogameActionDriver
               .readSuppliesPage(planet.id)
               .map(f => f.currentShipyardProgress.map(p => BuilderResult.building(p.finishTimestamp)).getOrElse(BuilderResult.Idle))
@@ -264,7 +267,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
   private def buildBuildingOrStorage(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, building: SuppliesBuilding) = {
     val level = suppliesPageData.getIntLevel(building) + 1
     val requiredResources = SuppliesBuildingCosts.buildingCost(building, level)
-    if (suppliesPageData.currentCapacity.gtEqTo(requiredResources)) {
+    if (suppliesPageData.currentCapacity.gtEqTo(requiredResources)) { //TODO should build building first not storage!
       buildSupplyBuildingOrNothing(building, suppliesPageData, planet)
     } else {
       buildStorage(suppliesPageData, requiredResources, planet)

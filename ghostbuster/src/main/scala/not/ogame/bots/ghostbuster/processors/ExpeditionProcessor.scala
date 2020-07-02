@@ -57,7 +57,8 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
                 (fleetOnPlanet.ships(LargeCargoShip) + flyingLargeCargoCount) / config.maxNumberOfExpeditions,
                 config.maxLC
               )
-            val explorerToSend = (fleetOnPlanet.ships(Explorer) + flyingExplorerCount) / config.maxNumberOfExpeditions
+            val explorerToSend =
+              Math.min((fleetOnPlanet.ships(Explorer) + flyingExplorerCount) / config.maxNumberOfExpeditions, config.maxExplorers)
             val topBattleShip = getTopBattleShip(fleetOnPlanet)
             sendExpedition(
               request = SendFleetRequest(
