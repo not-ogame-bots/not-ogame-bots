@@ -44,6 +44,8 @@ trait OgameDriver[F[_]] {
   def readMyOffers(): F[List[MyOffer]]
 
   def createOffer(planetId: PlanetId, newOffer: MyOffer): F[Unit]
+
+  def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): F[GalaxyPageData] = ???
 }
 
 case class SuppliesPageData(
@@ -407,3 +409,20 @@ case class FleetSlots(
     currentTradeFleets: Int,
     maxTradeFleets: Int
 )
+
+case class GalaxyPageData(
+    playerActivityMap: Map[Coordinates, PlayerActivity],
+    debrisMap: Map[Coordinates, Resources]
+)
+
+sealed trait PlayerActivity extends EnumEntry
+
+object PlayerActivity extends Enum[PlayerActivity] {
+  case object LessThan15MinutesAgo extends PlayerActivity
+
+  case class MinutesAgo(minutes: Int) extends PlayerActivity
+
+  case object NotActive extends PlayerActivity
+
+  override def values: IndexedSeq[PlayerActivity] = findValues
+}
