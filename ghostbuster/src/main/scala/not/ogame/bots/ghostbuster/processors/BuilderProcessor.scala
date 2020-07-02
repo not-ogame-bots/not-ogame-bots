@@ -31,20 +31,24 @@ class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, ogameDriver
       .buildNextThingFromWishList(planet)
       .flatMap {
         case BuilderResult.Building(finishTime) =>
-          Logger[OgameAction].info(s"Waiting for building to finish $finishTime").as(finishTime)
+          Logger[OgameAction].info(s"${showCoordinates(planet)} Waiting for building to finish $finishTime").as(finishTime)
         case BuilderResult.Waiting(waitingTime) =>
           firstFleetArrivalTime(planet).flatMap {
             case Some(arrivalTime) if arrivalTime.isBefore(waitingTime) =>
-              Logger[OgameAction].info(s"Waiting for first fleet to arrive til $arrivalTime").as(arrivalTime)
+              Logger[OgameAction].info(s"${showCoordinates(planet)} Waiting for first fleet to arrive til $arrivalTime").as(arrivalTime)
             case _ =>
               val limitedWaitingTime = min(waitingTime, clock.now().plus(config.interval))
-              Logger[OgameAction].info(s"Waiting for resources to produce til $limitedWaitingTime").as(limitedWaitingTime)
+              Logger[OgameAction]
+                .info(s"${showCoordinates(planet)} Waiting for resources to produce til $limitedWaitingTime")
+                .as(limitedWaitingTime)
           }
         case BuilderResult.Idle =>
-          Logger[OgameAction].info("Builder is idle waiting to next interval").as(clock.now().plus(config.interval))
+          Logger[OgameAction]
+            .info(s"${showCoordinates(planet)} Builder is idle waiting to next interval")
+            .as(clock.now().plus(config.interval))
       }
       .execute()
-      .flatMap(waitTime => executor.waitTo(waitTime) >> withRetry(loopBuilder(planet))("builder"))
+      .flatMap(waitTime => executor.waitTo(waitTime) >> withRetry(loopBuilder(planet))(s"builder on ${showCoordinates(planet)}"))
   }
 
   private def firstFleetArrivalTime(planet: PlayerPlanet) = {

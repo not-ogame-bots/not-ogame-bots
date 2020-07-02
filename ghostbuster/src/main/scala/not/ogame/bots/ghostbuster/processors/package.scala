@@ -7,6 +7,7 @@ import monix.eval.Task
 import retry.RetryPolicies
 import retry.syntax.all._
 import cats.implicits._
+import not.ogame.bots.PlayerPlanet
 
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
@@ -43,7 +44,7 @@ package object processors extends StrictLogging {
     }
   }
 
-  def withRetry[T](task: Task[T])(flowName: String) = {
+  def withRetry[T](task: Task[T])(flowName: String): Task[T] = {
     val policy = RetryPolicies.capDelay[Task](5 minutes, RetryPolicies.exponentialBackoff[Task](2 seconds))
     task.retryingOnAllErrors(
       policy,
@@ -51,5 +52,9 @@ package object processors extends StrictLogging {
         logger.error(s"Restarting: $flowName. Retry details :$details", e).pure[Task]
       }
     )
+  }
+
+  def showCoordinates(planet: PlayerPlanet): String = {
+    s"${planet.coordinates.galaxy}:${planet.coordinates.system}:${planet.coordinates.position}"
   }
 }

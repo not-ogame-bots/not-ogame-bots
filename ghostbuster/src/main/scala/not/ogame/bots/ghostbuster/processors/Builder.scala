@@ -86,10 +86,6 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
     }
   }
 
-  private def showCoordinates(planet: PlayerPlanet) = {
-    s"${planet.coordinates.galaxy}:${planet.coordinates.system}:${planet.coordinates.position}"
-  }
-
   private def buildShips(planet: PlayerPlanet, w: Wish.BuildShip, suppliesPageData: SuppliesPageData) = { //TODO check not building and shipyard is not upgrading
     val requiredResourcesSingleShip = ShipCosts.shipCost(w.shipType)
     if (suppliesPageData.currentResources.gtEqTo(requiredResourcesSingleShip)) {
