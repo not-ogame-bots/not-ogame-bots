@@ -221,14 +221,18 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
   }
 
   private def onlyDeuterBuilder(planet: PlayerPlanet, suppliesPageData: SuppliesPageData) = {
-    suppliesPageData.currentBuildingProgress match {
+    (suppliesPageData.currentBuildingProgress match {
       case Some(value) =>
         Logger[OgameAction]
           .info(s"${showCoordinates(planet)} Wanted to run deuter builder but sth was being built")
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         if (suppliesPageData.currentResources.energy < 0) {
-          buildBuildingOrStorage(planet, suppliesPageData, SuppliesBuilding.SolarPlant)
+          if (suppliesPageData.getIntLevel(SuppliesBuilding.SolarPlant) >= 18) {
+            buildSupplyBuildingOrNothing(SuppliesBuilding.FusionPlant, suppliesPageData, planet)
+          } else {
+            buildSupplyBuildingOrNothing(SuppliesBuilding.SolarPlant, suppliesPageData, planet)
+          }
         } else {
           if (suppliesPageData.currentCapacity.deuterium - suppliesPageData.currentResources.deuterium < 1000) {
             buildSupplyBuildingOrNothing(SuppliesBuilding.DeuteriumStorage, suppliesPageData, planet)
@@ -236,6 +240,10 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
             buildSupplyBuildingOrNothing(SuppliesBuilding.DeuteriumSynthesizer, suppliesPageData, planet)
           }
         }
+    }).map {
+      case BuilderResult.Building(finishTime) => BuilderResult.Building(finishTime)
+      case BuilderResult.Waiting(_)           => BuilderResult.Idle
+      case BuilderResult.Idle                 => BuilderResult.Idle
     }
   }
 
@@ -267,7 +275,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
   private def buildBuildingOrStorage(planet: PlayerPlanet, suppliesPageData: SuppliesPageData, building: SuppliesBuilding) = {
     val level = suppliesPageData.getIntLevel(building) + 1
     val requiredResources = SuppliesBuildingCosts.buildingCost(building, level)
-    if (suppliesPageData.currentCapacity.gtEqTo(requiredResources)) { //TODO should build building first not storage!
+    if (suppliesPageData.currentResources.gtEqTo(requiredResources) || suppliesPageData.currentCapacity.gtEqTo(requiredResources)) {
       buildSupplyBuildingOrNothing(building, suppliesPageData, planet)
     } else {
       buildStorage(suppliesPageData, requiredResources, planet)

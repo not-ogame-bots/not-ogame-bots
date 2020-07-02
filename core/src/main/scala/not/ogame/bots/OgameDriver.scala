@@ -104,8 +104,8 @@ case class TechnologyPageData(
 }
 
 case class Resources(metal: Int, crystal: Int, deuterium: Int, energy: Int = 0) {
-  def multiply(amount: Int): Resources = {
-    Resources(metal * amount, crystal * amount, deuterium * amount, energy)
+  def multiply(amount: Double): Resources = {
+    Resources((metal * amount).toInt, (crystal * amount).toInt, (deuterium * amount).toInt, energy)
   }
 
   def gtEqTo(requiredResources: Resources): Boolean =
@@ -166,6 +166,8 @@ object SuppliesBuilding extends Enum[SuppliesBuilding] {
   case object CrystalStorage extends SuppliesBuilding
 
   case object DeuteriumStorage extends SuppliesBuilding
+
+  case object FusionPlant extends SuppliesBuilding
 
   val values: IndexedSeq[SuppliesBuilding] = findValues
 }

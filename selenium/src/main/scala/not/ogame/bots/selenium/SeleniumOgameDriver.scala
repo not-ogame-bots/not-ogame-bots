@@ -248,6 +248,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
       case SuppliesBuilding.CrystalMine          => "crystalMine"
       case SuppliesBuilding.DeuteriumSynthesizer => "deuteriumSynthesizer"
       case SuppliesBuilding.SolarPlant           => "solarPlant"
+      case SuppliesBuilding.FusionPlant          => "fusionPlant"
       case SuppliesBuilding.MetalStorage         => "metalStorage"
       case SuppliesBuilding.CrystalStorage       => "crystalStorage"
       case SuppliesBuilding.DeuteriumStorage     => "deuteriumStorage"

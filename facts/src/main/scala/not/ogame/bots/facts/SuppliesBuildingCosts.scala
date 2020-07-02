@@ -9,6 +9,7 @@ object SuppliesBuildingCosts {
       case SuppliesBuilding.CrystalMine          => crystalMineCost(level)
       case SuppliesBuilding.DeuteriumSynthesizer => deuteriumSynthesiserCost(level)
       case SuppliesBuilding.SolarPlant           => powerPlantCost(level)
+      case SuppliesBuilding.FusionPlant          => fusionPlantCost(level)
       case SuppliesBuilding.MetalStorage         => fromBaseCostPowerOf2(Resources(1000, 0, 0), level)
       case SuppliesBuilding.CrystalStorage       => fromBaseCostPowerOf2(Resources(1000, 500, 0), level)
       case SuppliesBuilding.DeuteriumStorage     => fromBaseCostPowerOf2(Resources(1000, 1000, 0), level)
@@ -29,6 +30,14 @@ object SuppliesBuildingCosts {
 
   private def powerPlantCost(level: Int): Resources = {
     Resources(metal = (75.0 * 1.5.pow(level - 1.0)).toInt, crystal = (30.0 * 1.5.pow(level - 1.0)).toInt, deuterium = 0)
+  }
+
+  private def fusionPlantCost(level: Int): Resources = {
+    calculateCostFromBaseAndPower(level, 1.8, Resources(900, 360, 180))
+  }
+
+  private def calculateCostFromBaseAndPower(level: Int, power: Double, baseCosts: Resources) = {
+    baseCosts.multiply(power.pow(level - 1.0))
   }
 
   private def fromBaseCostPowerOf2(baseCost: Resources, level: Int): Resources = {
