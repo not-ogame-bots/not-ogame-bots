@@ -39,6 +39,9 @@ class ExpeditionCollectDebrisOrdonAction(expeditionPlanet: PlayerPlanet) extends
       if (sendFleetRequest.ships.asInstanceOf[Ships].ships.values.sum > 0) {
         ogame.sendFleet(sendFleetRequest)
       }
+      println("Collecting debris")
+    } else {
+      println("Collecting debris not triggered")
     }
   }
 }

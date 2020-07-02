@@ -113,7 +113,7 @@ object OrdonQuasarConfig extends OrdonConfig {
 
   def initialActionsV2(): List[OrdonAction] = {
     List(
-      new KeepActiveOrdonAction(List(planet10, moon, planet7, planet7_154, planet13, planet3)),
+      new KeepActiveOrdonAction(List(planet10, moon, planet7, moon7, planet7_154, planet13, moon13, planet3)),
       new ExpeditionMoveResourcesAndFleetOrdonAction(planet10, moon, expeditionFleet),
       new DeployAndReturnOrdonAction(planet10, moon),
       new TransportToOrdonAction(List(planet3, planet6, planet7, planet7_154, planet13), planet10),
@@ -132,8 +132,10 @@ object OrdonQuasarConfig extends OrdonConfig {
   private val planet10 = PlayerPlanet(PlanetId.apply("33620959"), Coordinates(1, 155, 10))
   private val moon = PlayerPlanet(PlanetId.apply("33632870"), Coordinates(1, 155, 10, Moon))
   private val planet7 = PlayerPlanet(PlanetId.apply("33623552"), Coordinates(1, 155, 7))
+  private val moon7 = PlayerPlanet(PlanetId.apply("33635018"), Coordinates(1, 155, 7, Moon))
   private val planet7_154 = PlayerPlanet(PlanetId.apply("33624816"), Coordinates(1, 154, 7))
   private val planet13 = PlayerPlanet(PlanetId.apply("33629451"), Coordinates(1, 155, 13))
+  private val moon13 = PlayerPlanet(PlanetId.apply("33639213"), Coordinates(1, 155, 3, Moon))
   private val planet6 = PlayerPlanet(PlanetId.apply("33635176"), Coordinates(1, 155, 6))
   private val planet3 = PlayerPlanet(PlanetId.apply("33635734"), Coordinates(1, 155, 3))
 }
