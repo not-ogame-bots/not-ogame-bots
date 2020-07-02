@@ -6,7 +6,7 @@ import not.ogame.bots.CoordinatesType.Moon
 import not.ogame.bots.FacilityBuilding.{NaniteFactory, ResearchLab, RoboticsFactory, Shipyard}
 import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
 import not.ogame.bots.SuppliesBuilding._
-import not.ogame.bots.Technology.Armor
+import not.ogame.bots.Technology._
 import not.ogame.bots._
 import not.ogame.bots.ordon.action._
 import not.ogame.bots.ordon.core.OrdonAction
@@ -20,18 +20,6 @@ object OrdonQuasarConfig extends OrdonConfig {
       .map(_.split(":")(1).trim.drop(1).dropRight(1))
     source.close()
     Credentials(credentials.head, credentials(1), credentials(2), credentials(3))
-  }
-
-  def initialActionsV2(): List[OrdonAction] = {
-    List(
-      new AlertOrdonAction(),
-      new KeepActiveOrdonAction(List(planet10, moon, planet7, planet7_154, planet13, planet3)),
-      new ExpeditionMoveResourcesAndFleetOrdonAction(planet10, moon, expeditionFleet),
-      new DeployAndReturnOrdonAction(planet10, moon),
-      new TransportToOrdonAction(List(planet3, planet6, planet7, planet7_154, planet13), planet10),
-      new ResearchOrdonAction(planet10, List(Armor -> 19)),
-      new ExpeditionOrdonAction(moon, expeditionFleet)
-    )
   }
 
   def getInitialActions(implicit clock: LocalClock): IO[List[ScheduledAction[IO]]] = {
@@ -106,7 +94,22 @@ object OrdonQuasarConfig extends OrdonConfig {
     )
   }
 
-  private val expeditionFleet: Map[ShipType, Int] = Map(Destroyer -> 1, EspionageProbe -> 1, LargeCargoShip -> 800, Explorer -> 280)
+  def initialActionsV2(): List[OrdonAction] = {
+    List(
+      new KeepActiveOrdonAction(List(planet10, moon, planet7, planet7_154, planet13, planet3)),
+      new ExpeditionMoveResourcesAndFleetOrdonAction(planet10, moon, expeditionFleet),
+      new DeployAndReturnOrdonAction(planet10, moon),
+      new TransportToOrdonAction(List(planet3, planet6, planet7, planet7_154, planet13), planet10),
+      new ResearchOrdonAction(planet10, researchList),
+      new ExpeditionOrdonAction(moon, expeditionFleet),
+      new StatusAction(expeditionFleet)
+    )
+  }
+
+  private val researchList =
+    List(Weapons -> 12, Shielding -> 12, Weapons -> 13, Shielding -> 13, Armor -> 18)
+
+  private val expeditionFleet: Map[ShipType, Int] = Map(Destroyer -> 1, EspionageProbe -> 1, LargeCargoShip -> 1000, Explorer -> 350)
   private val planet10 = PlayerPlanet(PlanetId.apply("33620959"), Coordinates(1, 155, 10))
   private val moon = PlayerPlanet(PlanetId.apply("33632870"), Coordinates(1, 155, 10, Moon))
   private val planet7 = PlayerPlanet(PlanetId.apply("33623552"), Coordinates(1, 155, 7))

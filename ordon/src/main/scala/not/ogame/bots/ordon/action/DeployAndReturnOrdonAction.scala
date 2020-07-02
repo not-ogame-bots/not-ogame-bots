@@ -46,7 +46,7 @@ class DeployAndReturnOrdonAction(planet: PlayerPlanet, moon: PlayerPlanet) exten
 
   private def handleReturningFleet(fleet: MyFleet, eventRegistry: EventRegistry): ZonedDateTime = {
     eventRegistry.registerEvent(ChangeOnPlanet(fleet.arrivalTime.plusSeconds(3), planet))
-    fleet.arrivalTime.plusMinutes(1)
+    fleet.arrivalTime.plusSeconds(4)
   }
 
   private def handleFleetNotFound(ogame: OrdonOgameDriver): ZonedDateTime = {
