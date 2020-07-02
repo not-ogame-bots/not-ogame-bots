@@ -58,4 +58,7 @@ class OrdonOgameDriver(val ogameDriver: OgameDriver[IO]) {
 
   def createOffer(planetId: PlanetId, newOffer: MyOffer): Unit =
     ogameDriver.createOffer(planetId, newOffer).unsafeRunSync()
+
+  def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): GalaxyPageData =
+    ogameDriver.readGalaxyPage(planetId, galaxy, system).unsafeRunSync()
 }

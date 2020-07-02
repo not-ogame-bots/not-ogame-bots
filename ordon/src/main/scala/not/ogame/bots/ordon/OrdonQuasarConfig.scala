@@ -101,6 +101,7 @@ object OrdonQuasarConfig extends OrdonConfig {
       new DeployAndReturnOrdonAction(planet10, moon),
       new TransportToOrdonAction(List(planet3, planet6, planet7, planet7_154, planet13), planet10),
       new ResearchOrdonAction(planet10, researchList),
+      new ExpeditionCollectDebrisOrdonAction(moon),
       new ExpeditionOrdonAction(moon, expeditionFleet),
       new StatusAction(expeditionFleet)
     )
