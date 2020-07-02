@@ -17,34 +17,30 @@ object SuppliesBuildingCosts {
   }
 
   private def metalMineCost(level: Int): Resources = {
-    Resources(metal = (60.0 * 1.5.pow(level - 1.0)).toInt, crystal = (15.0 * 1.5.pow(level - 1.0)).toInt, deuterium = 0)
+    calculateCostFromBaseAndPower(Resources(60, 15, 0), 1.5, level)
   }
 
   private def crystalMineCost(level: Int): Resources = {
-    Resources(metal = (48.0 * 1.6.pow(level - 1.0)).toInt, crystal = (24.0 * 1.6.pow(level - 1.0)).toInt, deuterium = 0)
+    calculateCostFromBaseAndPower(Resources(48, 24, 0), 1.6, level)
   }
 
   private def deuteriumSynthesiserCost(level: Int): Resources = {
-    Resources(metal = (225.0 * 1.5.pow(level - 1.0)).toInt, crystal = (75.0 * 1.5.pow(level - 1.0)).toInt, deuterium = 0)
+    calculateCostFromBaseAndPower(Resources(225, 75, 0), 1.5, level)
   }
 
   private def powerPlantCost(level: Int): Resources = {
-    Resources(metal = (75.0 * 1.5.pow(level - 1.0)).toInt, crystal = (30.0 * 1.5.pow(level - 1.0)).toInt, deuterium = 0)
+    calculateCostFromBaseAndPower(Resources(75, 30, 0), 1.5, level)
   }
 
   private def fusionPlantCost(level: Int): Resources = {
-    calculateCostFromBaseAndPower(level, 1.8, Resources(900, 360, 180))
-  }
-
-  private def calculateCostFromBaseAndPower(level: Int, power: Double, baseCosts: Resources) = {
-    baseCosts.multiply(power.pow(level - 1.0))
+    calculateCostFromBaseAndPower(Resources(900, 360, 180), 1.8, level)
   }
 
   private def fromBaseCostPowerOf2(baseCost: Resources, level: Int): Resources = {
-    Resources(
-      metal = (baseCost.metal * 2.0.pow(level - 1.0)).toInt,
-      crystal = (baseCost.crystal * 2.0.pow(level - 1.0)).toInt,
-      deuterium = (baseCost.deuterium * 2.0.pow(level - 1.0)).toInt
-    )
+    calculateCostFromBaseAndPower(baseCost, 2.0, level)
+  }
+
+  private def calculateCostFromBaseAndPower(baseCosts: Resources, power: Double, level: Int) = {
+    baseCosts.multiply(power.pow(level - 1.0))
   }
 }
