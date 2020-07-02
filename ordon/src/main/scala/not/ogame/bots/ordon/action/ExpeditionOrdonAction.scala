@@ -25,7 +25,7 @@ class ExpeditionOrdonAction(val startPlanet: PlayerPlanet, val expeditionFleet: 
     val page = ogame.readMyFleets()
     if (page.fleetSlots.currentExpeditions >= page.fleetSlots.maxExpeditions) {
       val nextExpeditionFleet = page.fleets.filter(_.fleetMissionType == Expedition).minBy(_.arrivalTime)
-      eventRegistry.registerEvent(ExpeditionFleetChanged(nextExpeditionFleet.arrivalTime, nextExpeditionFleet.to))
+      eventRegistry.registerEvent(ExpeditionFleetChanged(nextExpeditionFleet.arrivalTime.plusSeconds(3), nextExpeditionFleet.to))
       nextExpeditionFleet.arrivalTime
     } else {
       ogame.sendFleet(sendFleetHelper.getSendFleetRequest(ogame))

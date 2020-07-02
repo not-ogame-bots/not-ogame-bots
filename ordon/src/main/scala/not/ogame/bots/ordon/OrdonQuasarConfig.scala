@@ -94,6 +94,23 @@ object OrdonQuasarConfig extends OrdonConfig {
     )
   }
 
+  def monitorSos(): OrdonAction =
+    new MonitorActivityOrdonAction(
+      "SOS",
+      planet10,
+      List(
+        Coordinates(1, 154, 1),
+        Coordinates(1, 154, 2),
+        Coordinates(1, 154, 9),
+        Coordinates(1, 154, 9, Moon),
+        Coordinates(1, 154, 10),
+        Coordinates(1, 154, 10, Moon),
+        Coordinates(1, 154, 15),
+        Coordinates(1, 154, 15, Moon),
+        Coordinates(1, 168, 1)
+      )
+    )
+
   def initialActionsV2(): List[OrdonAction] = {
     List(
       new KeepActiveOrdonAction(List(planet10, moon, planet7, planet7_154, planet13, planet3)),
@@ -103,6 +120,7 @@ object OrdonQuasarConfig extends OrdonConfig {
       new ResearchOrdonAction(planet10, researchList),
       new ExpeditionCollectDebrisOrdonAction(moon),
       new ExpeditionOrdonAction(moon, expeditionFleet),
+      monitorSos(),
       new StatusAction(expeditionFleet)
     )
   }
