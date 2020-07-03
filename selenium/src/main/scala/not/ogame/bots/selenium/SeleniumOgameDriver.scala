@@ -467,4 +467,13 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
       new CreateOfferComponentFiller(webDriver).createOffer(newOffer)
     }
   }
+
+  override def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): F[GalaxyPageData] = {
+    Sync[F].delay {
+      webDriver.get(
+        s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=ingame&component=galaxy&galaxy=$galaxy&system=$system&cp=$planetId"
+      )
+      new GalaxyComponentReader(webDriver).readGalaxyPage()
+    }
+  }
 }

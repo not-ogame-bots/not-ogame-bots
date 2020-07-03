@@ -45,7 +45,7 @@ trait OgameDriver[F[_]] {
 
   def createOffer(planetId: PlanetId, newOffer: MyOffer): F[Unit]
 
-  def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): F[GalaxyPageData] = ???
+  def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): F[GalaxyPageData]
 }
 
 case class SuppliesPageData(
