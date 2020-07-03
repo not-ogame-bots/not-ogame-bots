@@ -7,7 +7,7 @@ import not.ogame.bots.SendFleetRequestShips.Ships
 import not.ogame.bots.ShipType.Explorer
 import not.ogame.bots.ordon.core._
 import not.ogame.bots.ordon.utils.SendFleet
-import not.ogame.bots.{PlayerPlanet, Resources}
+import not.ogame.bots.{Coordinates, PlanetId, PlayerPlanet, Resources}
 
 class ExpeditionCollectDebrisOrdonAction(expeditionPlanet: PlayerPlanet) extends BaseOrdonAction {
   override def shouldHandleEvent(event: OrdonEvent): Boolean = {
@@ -28,20 +28,21 @@ class ExpeditionCollectDebrisOrdonAction(expeditionPlanet: PlayerPlanet) extends
     )
     val isThereDebrisToCollect = galaxyPageData.debrisMap.contains(expeditionDebrisTarget)
     if (!isAlreadyCollectingDebris && isThereDebrisToCollect) {
-      val sendFleetRequest = new SendFleet(
-        from = expeditionPlanet,
-        to = expeditionPlanet,
-        selectResources = _ => Resources.Zero,
-        selectShips = page => Map(Explorer -> Math.min(page.ships(Explorer), 100)),
-        fleetSpeed = Percent100,
-        missionType = Recycle
-      ).getSendFleetRequest(ogame)
-      if (sendFleetRequest.ships.asInstanceOf[Ships].ships.values.sum > 0) {
-        ogame.sendFleet(sendFleetRequest)
-      }
-      println("Collecting debris")
-    } else {
-      println("Collecting debris not triggered")
+      collectDebris(ogame, expeditionDebrisTarget)
+    }
+  }
+
+  private def collectDebris(ogame: OrdonOgameDriver, expeditionDebrisTarget: Coordinates): Unit = {
+    val sendFleetRequest = new SendFleet(
+      from = expeditionPlanet,
+      to = PlayerPlanet(PlanetId.apply(""), expeditionDebrisTarget),
+      selectResources = _ => Resources.Zero,
+      selectShips = page => Map(Explorer -> page.ships(Explorer)),
+      fleetSpeed = Percent100,
+      missionType = Recycle
+    ).getSendFleetRequest(ogame)
+    if (sendFleetRequest.ships.asInstanceOf[Ships].ships.values.sum > 0) {
+      ogame.sendFleet(sendFleetRequest)
     }
   }
 }
