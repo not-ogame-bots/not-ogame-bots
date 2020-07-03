@@ -3,62 +3,78 @@ package not.ogame.bots.ordon.core
 import cats.effect.IO
 import cats.implicits._
 import not.ogame.bots._
+import org.openqa.selenium.StaleElementReferenceException
 
 class OrdonOgameDriver(val ogameDriver: OgameDriver[IO]) {
   def login(): Unit =
-    ogameDriver.login().unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.login())
 
   def readSuppliesPage(planetId: PlanetId): SuppliesPageData =
-    ogameDriver.readSuppliesPage(planetId).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.readSuppliesPage(planetId))
 
   def buildSuppliesBuilding(planetId: PlanetId, suppliesBuilding: SuppliesBuilding): Unit =
-    ogameDriver.buildSuppliesBuilding(planetId, suppliesBuilding).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.buildSuppliesBuilding(planetId, suppliesBuilding))
 
   def readFacilityPage(planetId: PlanetId): FacilityPageData =
-    ogameDriver.readFacilityPage(planetId).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.readFacilityPage(planetId))
 
   def buildFacilityBuilding(planetId: PlanetId, facilityBuilding: FacilityBuilding): Unit =
-    ogameDriver.buildFacilityBuilding(planetId, facilityBuilding).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.buildFacilityBuilding(planetId, facilityBuilding))
 
   def readTechnologyPage(planetId: PlanetId): TechnologyPageData =
-    ogameDriver.readTechnologyPage(planetId).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.readTechnologyPage(planetId))
 
   def startResearch(planetId: PlanetId, technology: Technology): Unit =
-    ogameDriver.startResearch(planetId, technology).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.startResearch(planetId, technology))
 
   def buildShips(planetId: PlanetId, shipType: ShipType, count: Int): Unit =
-    ogameDriver.buildShips(planetId, shipType, count).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.buildShips(planetId, shipType, count))
 
   def buildSolarSatellites(planetId: PlanetId, count: Int): Unit =
-    ogameDriver.buildSolarSatellites(planetId, count).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.buildSolarSatellites(planetId, count))
 
   def readFleetPage(planetId: PlanetId): FleetPageData =
-    ogameDriver.readFleetPage(planetId).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.readFleetPage(planetId))
 
   def readAllFleets(): List[Fleet] =
-    ogameDriver.readAllFleets().unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.readAllFleets())
 
   def readMyFleets(): MyFleetPageData =
-    ogameDriver.readMyFleets().unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.readMyFleets())
 
   def sendFleet(sendFleetRequest: SendFleetRequest): Unit =
-    ogameDriver.sendFleet(sendFleetRequest).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.sendFleet(sendFleetRequest))
 
   def returnFleet(fleetId: FleetId): Unit =
-    ogameDriver.returnFleet(fleetId).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.returnFleet(fleetId))
 
   def readPlanets(): List[PlayerPlanet] =
-    ogameDriver.readPlanets().unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.readPlanets())
 
   def checkIsLoggedIn(): Boolean =
-    ogameDriver.checkIsLoggedIn().unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.checkIsLoggedIn())
 
   def readMyOffers(): List[MyOffer] =
-    ogameDriver.readMyOffers().unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.readMyOffers())
 
   def createOffer(planetId: PlanetId, newOffer: MyOffer): Unit =
-    ogameDriver.createOffer(planetId, newOffer).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.createOffer(planetId, newOffer))
 
   def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): GalaxyPageData =
-    ogameDriver.readGalaxyPage(planetId, galaxy, system).unsafeRunSync()
+    retryCommonErrors(() => ogameDriver.readGalaxyPage(planetId, galaxy, system))
+
+  @scala.annotation.tailrec
+  private def retryCommonErrors[T](action: () => IO[T], attempts: Int = 4): T = {
+    try {
+      action().unsafeRunSync()
+    } catch {
+      case e: StaleElementReferenceException =>
+        if (attempts > 0) {
+          e.printStackTrace()
+          retryCommonErrors(action, attempts - 1)
+        } else {
+          throw e
+        }
+    }
+  }
 }
