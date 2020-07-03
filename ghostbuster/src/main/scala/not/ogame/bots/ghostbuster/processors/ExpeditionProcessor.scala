@@ -47,6 +47,7 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
             val flyingSmallCargoCount = expeditions.map(_.ships(SmallCargoShip)).sum
             val flyingLargeCargoCount = expeditions.map(_.ships(LargeCargoShip)).sum
             val flyingExplorerCount = expeditions.map(_.ships(Explorer)).sum
+            val flyingLightFighterCount = expeditions.map(_.ships(LightFighter)).sum
             val smallCargoToSend =
               Math.min(
                 fleetOnPlanet.ships(SmallCargoShip) + flyingSmallCargoCount / config.maxNumberOfExpeditions,
@@ -60,6 +61,7 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
             val explorerToSend =
               Math.min((fleetOnPlanet.ships(Explorer) + flyingExplorerCount) / config.maxNumberOfExpeditions, config.maxExplorers)
             val topBattleShip = getTopBattleShip(fleetOnPlanet)
+            val lightFighterToSend = (fleetOnPlanet.ships(LightFighter) + flyingLightFighterCount) / config.maxNumberOfExpeditions
             sendExpedition(
               request = SendFleetRequest(
                 planet,
@@ -68,6 +70,7 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
                     SmallCargoShip -> Math.min(smallCargoToSend, fleetOnPlanet.ships(ShipType.SmallCargoShip)),
                     LargeCargoShip -> Math.min(largeCargoToSend, fleetOnPlanet.ships(ShipType.LargeCargoShip)),
                     Explorer -> Math.min(explorerToSend, fleetOnPlanet.ships(ShipType.Explorer)),
+                    LightFighter -> lightFighterToSend,
                     topBattleShip -> 1,
                     EspionageProbe -> Math.min(1, fleetOnPlanet.ships(ShipType.EspionageProbe))
                   )

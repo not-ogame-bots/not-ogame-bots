@@ -3,21 +3,20 @@ POST localhost:8080/spread
 Content-Type: application/json
 
 {
-  "to": [
-    "33660481",
-    "33663703",
-    "33666179"
+  "from" : "33620962",
+  "to" : [
+    "33632829"
   ],
-  "from": "33667779",
-  "ships": {
-    "large_cargo_ship": 120
+  "ships" : {
+    "large_cargo_ship" : 500
   },
-  "resources": {
-    "metal": 1000000,
-    "crystal": 1000000,
-    "deuterium": 1000000
+  "resources" : {
+    "metal" : 12700000,
+    "crystal" : 4100000,
+    "deuterium" : 0,
+    "energy" : 0
   },
-  "mission-type": "transport"
+  "missionType" : "Transport"
 }
 
 ###

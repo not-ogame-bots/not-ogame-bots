@@ -54,7 +54,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           onlyDeuterBuilder(planet, suppliesPageData)
       }
       .sequence
-      .map(_.getOrElse(BuilderResult.Idle))
+      .map(_.getOrElse(BuilderResult.idle()))
   }
 
   private def startResearch(planet: PlayerPlanet, technology: Technology, technologyPageData: TechnologyPageData) = {
@@ -254,7 +254,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
             ogameActionDriver.buildSolarSatellites(planet.id, amount) >>
             ogameActionDriver
               .readSuppliesPage(planet.id)
-              .map(f => f.currentShipyardProgress.map(p => BuilderResult.building(p.finishTimestamp)).getOrElse(BuilderResult.Idle))
+              .map(f => f.currentShipyardProgress.map(p => BuilderResult.building(p.finishTimestamp)).getOrElse(BuilderResult.idle()))
         } else {
           val secondsToWait =
             calculateWaitingTime(SolarSatelliteCost, suppliesPageData.currentProduction, suppliesPageData.currentResources)
