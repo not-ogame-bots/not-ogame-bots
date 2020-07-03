@@ -22,7 +22,7 @@ class MonitorActivityOrdonAction(monitoredPlayerName: String, playerPlanet: Play
       })
       .map(entry => entry.toString())
       .mkString(s"$monitoredPlayerName\n", "\n", "\n")
-    slackIntegration.postMessageToSlack(message)
+    slackIntegration.postActivityMessageToSlack(message)
     ZonedDateTime.now().plusMinutes(10)
   }
 }

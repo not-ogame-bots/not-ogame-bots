@@ -15,14 +15,18 @@ class StatusAction(expeditionFleet: Map[ShipType, Int]) extends TimeBasedOrdonAc
   override def processTimeBased(ogame: OrdonOgameDriver, eventRegistry: EventRegistry): ZonedDateTime = {
     val allFleets = ogame.readAllFleets()
     val myFleetPageData = ogame.readMyFleets()
-    val reports: Iterable[CharSequence] = List(
+    val reports: Seq[String] = List(
       getExpeditionCountReport(myFleetPageData),
       getExpeditionCompositionReport(myFleetPageData),
       getFSReport(myFleetPageData),
       getHostileFleetReport(allFleets)
     )
     slackIntegration.postMessageToSlack(reports.mkString("\n"))
-    ZonedDateTime.now().plusMinutes(10)
+    if (reports.exists(report => report.startsWith("ERROR"))) {
+      ZonedDateTime.now().plusMinutes(2)
+    } else {
+      ZonedDateTime.now().plusMinutes(10)
+    }
   }
 
   private def getExpeditionCountReport(myFleetPageData: MyFleetPageData): String = {
@@ -60,6 +64,7 @@ class StatusAction(expeditionFleet: Map[ShipType, Int]) extends TimeBasedOrdonAc
     if (!allFleets.exists(fleet => fleet.fleetAttitude == Hostile && fleet.fleetMissionType != Spy)) {
       s"OK    No hostile fleets"
     } else {
+      slackIntegration.postAlertToSlack(s"ERROR Hostile fleet detected")
       s"ERROR Hostile fleet detected"
     }
   }

@@ -13,14 +13,24 @@ class SlackIntegration {
     .addConverterFactory(GsonConverterFactory.create(new GsonBuilder().setLenient().create()))
     .build()
     .create[SlackService](classOf[SlackService])
-  private val statusTokenUrl: String = getStatusTokenUrl
+  private val statusTokenUrl: String = getTokenUrl("slack-status-token")
+  private val activityTokenUrl: String = getTokenUrl("slack-status-activity-token")
+  private val alertTokenUrl: String = getTokenUrl("slack-status-alerts-token")
 
   def postMessageToSlack(message: String): Unit = {
     service.postMessage(statusTokenUrl, SlackMessage(message)).execute()
   }
 
-  private def getStatusTokenUrl: String = {
-    val source = Source.fromFile(s"${System.getenv("HOME")}/.not-ogame-bots/slack-status-token")
+  def postActivityMessageToSlack(message: String): Unit = {
+    service.postMessage(activityTokenUrl, SlackMessage(message)).execute()
+  }
+
+  def postAlertToSlack(message: String): Unit = {
+    service.postMessage(alertTokenUrl, SlackMessage(message)).execute()
+  }
+
+  private def getTokenUrl(tokenName: String): String = {
+    val source = Source.fromFile(s"${System.getenv("HOME")}/.not-ogame-bots/$tokenName")
     val statusTokenUrl = source.getLines().toList.head
     source.close()
     statusTokenUrl
@@ -33,3 +43,12 @@ trait SlackService {
 }
 
 case class SlackMessage(text: String)
+
+object M {
+  def main(args: Array[String]): Unit = {
+    val integration = new SlackIntegration()
+    integration.postActivityMessageToSlack("test")
+    integration.postMessageToSlack("test")
+    integration.postAlertToSlack("test")
+  }
+}
