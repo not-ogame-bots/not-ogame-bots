@@ -12,13 +12,14 @@ import not.ogame.bots.ghostbuster.api.{CollectResourcesEndpoint, SpreadResources
 import not.ogame.bots.ghostbuster.executor.impl.TaskExecutorImpl
 import not.ogame.bots.ghostbuster.infrastructure.{FCMService, FirebaseResource}
 import not.ogame.bots.ghostbuster.interpreter.OgameActionInterpreterImpl
-import not.ogame.bots.ghostbuster.notifications.OgameNotificationDecorator
+import not.ogame.bots.ghostbuster.notifications.{Notifier, OgameNotificationDecorator}
 import not.ogame.bots.ghostbuster.ogame.OgameActionDriver
 import not.ogame.bots.ghostbuster.processors.{
   ActivityFakerProcessor,
   Builder,
   BuilderProcessor,
   EscapeFleetProcessor,
+  ExpeditionDebrisCollectingProcessor,
   ExpeditionProcessor,
   FlyAndBuildProcessor,
   FlyAndReturnProcessor
@@ -62,23 +63,26 @@ object Main extends StrictLogging {
       driver <- WebDriverResource.firefox[Task]()
       selenium = SeleniumOgameDriverCreator.create[Task](driver, credentials)
       firebase <- FirebaseResource.create(SettingsDirectory)
-      decoratedDriver = new OgameNotificationDecorator(selenium)
+      notifier = new Notifier
+      decoratedDriver = new OgameNotificationDecorator(selenium, notifier)
       executor = new TaskExecutorImpl(decoratedDriver)
       actionInterpreter = new OgameActionInterpreterImpl(decoratedDriver, executor)
       safeDriver = new OgameActionDriver
       collectingEndpoint = new CollectResourcesEndpoint(new CollectResourcesAction(safeDriver)(actionInterpreter))
       spreadingEndpoint = new SpreadResourcesEndpoint(new SpreadResourcesAction(safeDriver)(actionInterpreter))
       _ <- httpServer(List(httpStateExposer.getStatus, collectingEndpoint.collectEndpoint, spreadingEndpoint.spreadEndpoint))
-    } yield (actionInterpreter, firebase, executor, safeDriver))
+    } yield (actionInterpreter, firebase, executor, safeDriver, notifier))
       .use {
-        case (interpreter, firebase, executor, safeDriver) =>
+        case (interpreter, firebase, executor, safeDriver, notifier) =>
           implicit val impInterpreter: OgameActionInterpreterImpl = interpreter
           val fcmService = new FCMService[Task](firebase)
           val stateAgg = new StateAggregator(state, interpreter)
           val hostileFleetReporter = new HostileFleetReporter(fcmService, interpreter)
           val builder = new Builder(safeDriver, botConfig.wishlist)
           val fbp = new FlyAndBuildProcessor(safeDriver, botConfig.fsConfig, builder)
-          val ep = new ExpeditionProcessor(botConfig.expeditionConfig, safeDriver)
+          val ep = new ExpeditionProcessor(botConfig.expeditionConfig, safeDriver, notifier)
+          val edcp =
+            new ExpeditionDebrisCollectingProcessor(safeDriver, botConfig.expeditionDebrisCollectorConfig, botConfig.expeditionConfig)
           val activityFaker = new ActivityFakerProcessor(safeDriver)
           val bp = new BuilderProcessor(builder, botConfig.smartBuilder, safeDriver)
           val far = new FlyAndReturnProcessor(botConfig.flyAndReturn, safeDriver)
@@ -94,7 +98,8 @@ object Main extends StrictLogging {
               far.run(),
               stateAgg.run(),
               hostileFleetReporter.run(),
-              efp.run()
+              efp.run(),
+              edcp.run()
             )
           )
       }

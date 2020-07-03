@@ -241,7 +241,9 @@ object ShipType extends Enum[ShipType] {
 
 case class MyFleetPageData(fleets: List[MyFleet], fleetSlots: MyFleetSlots)
 
-case class MyFleetSlots(currentFleets: Int, maxFleets: Int, currentExpeditions: Int, maxExpeditions: Int)
+case class MyFleetSlots(currentFleets: Int, maxFleets: Int, currentExpeditions: Int, maxExpeditions: Int) {
+  val isAtLeastOneSlotAvailable: Boolean = currentFleets < maxFleets
+}
 
 case class MyFleet(
     fleetId: FleetId,

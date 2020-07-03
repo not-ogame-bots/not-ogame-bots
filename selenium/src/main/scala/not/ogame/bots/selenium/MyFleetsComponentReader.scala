@@ -83,6 +83,8 @@ class MyFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) 
       FleetMissionType.Attack
     } else if (missionTextLocalized.contains("Szpieguj")) {
       FleetMissionType.Spy
+    } else if (missionTextLocalized.contains("Zbieraj")) {
+      FleetMissionType.Recycle
     } else {
       FleetMissionType.Unknown
     }

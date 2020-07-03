@@ -34,4 +34,7 @@ class OgameActionDriver extends OgameDriver[OgameAction] {
     liftF[OgameOp, Unit](OgameOp.CreateOffer(planetId, newOffer))
   def buildSolarSatellites(planetId: PlanetId, count: Int): OgameAction[Unit] =
     liftF[OgameOp, Unit](OgameOp.BuildSolarSatellite(planetId, count))
+
+  override def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): OgameAction[GalaxyPageData] =
+    liftF[OgameOp, GalaxyPageData](OgameOp.ReadGalaxyPage(planetId, galaxy, system))
 }

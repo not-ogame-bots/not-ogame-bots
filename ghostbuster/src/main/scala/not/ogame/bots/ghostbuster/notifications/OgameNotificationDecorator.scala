@@ -9,12 +9,10 @@ import monix.reactive.subjects.ConcurrentSubject
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.FLogger
 
-class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Scheduler)
+class OgameNotificationDecorator(driver: OgameDriver[Task], notifier: Notifier)(implicit s: Scheduler)
     extends BaseOgameDriver[Task]
     with NotificationAware
     with FLogger {
-  private val notifications = ConcurrentSubject.publish[Notification]
-
   override def login(): Task[Unit] = logStartEnd("login") {
     driver.login().flatTap(_ => notify(Notification.Login()))
   }
@@ -99,15 +97,15 @@ class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Schedule
     driver.checkIsLoggedIn()
   }
 
-  private def notify(refreshed: Notification) = {
-    Task.fromFuture(notifications.onNext(refreshed)).void
+  private def notify(notification: Notification) = {
+    notifier.notify(notification)
   }
 
   private def logStartEnd[T](message: String)(action: Task[T]): Task[T] = {
     Logger[Task].debug(s"start $message") >> action <* Logger[Task].debug(s"end $message")
   }
 
-  override def subscribeToNotifications: Observable[Notification] = notifications
+  override def subscribeToNotifications: Observable[Notification] = notifier.subscribeToNotifications
 
   override def readMyOffers(): Task[List[MyOffer]] = ???
 
@@ -124,8 +122,8 @@ class OgameNotificationDecorator(driver: OgameDriver[Task])(implicit s: Schedule
   override def buildSolarSatellites(planetId: PlanetId, count: Int): Task[Unit] = {
     driver.buildSolarSatellites(planetId, count) //TODO add notify
   }
-}
 
-trait NotificationAware {
-  def subscribeToNotifications: Observable[Notification]
+  override def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): Task[GalaxyPageData] = {
+    driver.readGalaxyPage(planetId, galaxy, system) //TODO add notify
+  }
 }

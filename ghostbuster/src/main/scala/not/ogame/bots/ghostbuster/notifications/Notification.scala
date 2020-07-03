@@ -17,6 +17,7 @@ object Notification {
   case class FleetOnPlanetRefreshed(value: FleetPageData, planetId: PlanetId) extends Notification
   case class ShipBuilt(shipType: ShipType, amount: Int, planetId: PlanetId) extends Notification
   case class FleetSent(sendFleetRequest: SendFleetRequest) extends Notification
+  case class ExpeditionTick(planet: PlayerPlanet) extends Notification
   case class FleetReturned(fleetId: FleetId) extends Notification
   case class ReadAllFleets(value: List[Fleet]) extends Notification
   case class ReadPlanets(value: List[PlayerPlanet]) extends Notification

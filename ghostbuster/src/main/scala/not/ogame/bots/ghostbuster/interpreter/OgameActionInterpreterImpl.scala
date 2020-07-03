@@ -66,6 +66,8 @@ class OgameActionInterpreterImpl(ogameDriver: OgameDriver[Task] with Notificatio
             implicitly[Async[Task]].bracketCase(acquire.foldMap(compiler))(use(_).foldMap(compiler))(release(_, _).foldMap(compiler))
           case OgameOp.BuildSolarSatellite(planetId, count) =>
             ogameDriver.buildSolarSatellites(planetId, count)
+          case OgameOp.ReadGalaxyPage(planetId, galaxy, system) =>
+            ogameDriver.readGalaxyPage(planetId, galaxy, system)
         })
     }
   }
@@ -79,5 +81,5 @@ class OgameActionInterpreterImpl(ogameDriver: OgameDriver[Task] with Notificatio
     }
   }
 
-  override def subscribeToNotifications: Observable[Notification] = ogameDriver.subscribeToNotifications
+  override def subscribeToNotifications: Observable[Notification] = ogameDriver.subscribeToNotifications //TODO remove from here
 }

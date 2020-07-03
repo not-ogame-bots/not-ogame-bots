@@ -8,20 +8,23 @@ import monix.eval.Task
 import not.ogame.bots.ShipType._
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.executor._
+import not.ogame.bots.ghostbuster.notifications.{Notification, Notifier}
 import not.ogame.bots.ghostbuster.ogame.OgameAction
 import not.ogame.bots.ghostbuster.{ExpeditionConfig, FLogger}
+import scala.concurrent.duration._
 
-class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[OgameAction])(
+class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[OgameAction], notifier: Notifier)(
     implicit executor: OgameActionExecutor[Task],
     clock: LocalClock
 ) extends FLogger {
   def run(): Task[Unit] = {
     if (config.isOn) {
-      ogameDriver
-        .readPlanets()
-        .execute()
-        .map(planets => planets.filter(p => config.startingPlanetId.contains(p.id)).head)
-        .flatMap(processAndWait)
+      Task.sleep(5 seconds) >>
+        ogameDriver
+          .readPlanets()
+          .execute()
+          .map(planets => planets.filter(p => config.startingPlanetId.contains(p.id)).head)
+          .flatMap(processAndWait)
     } else {
       Task.never
     }
@@ -29,6 +32,7 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
 
   private def processAndWait(playerPlanet: PlayerPlanet): Task[Unit] = {
     for {
+      _ <- notifier.notify(Notification.ExpeditionTick(playerPlanet)) //todo how to not notify on start?
       time <- lookForFleet(playerPlanet).execute()
       _ <- executor.waitTo(time)
       _ <- withRetry(processAndWait(playerPlanet))("expedition")
@@ -83,10 +87,7 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
           }
       } else {
         val min = expeditions.map(_.arrivalTime).min
-        for {
-          _ <- collectDebris(List(planet), expeditions) //TODO fixme
-          _ <- Logger[OgameAction].info(s"All expeditions are in the air, waiting for first to reach its target - $min")
-        } yield min
+        Logger[OgameAction].info(s"All expeditions are in the air, waiting for first to reach its target - $min").as(min)
       }
     } yield time
   }
@@ -100,34 +101,6 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
       Cruiser
     } else {
       LightFighter
-    }
-  }
-
-  private def collectDebris(planets: List[PlayerPlanet], expeditions: List[MyFleet]) = {
-    val shouldCollectDebris = config.collectingOn && false //TODO fixme
-    if (shouldCollectDebris) {
-      val debrisCollectingPlanet = planets.filter(_.id == config.collectingPlanet).head
-      ogameDriver
-        .readFleetPage(debrisCollectingPlanet.id)
-        .flatMap { pf =>
-          if (pf.ships(ShipType.Explorer) >= 300) {
-            Logger[OgameAction].info("Will send fleet to collect debris...") >>
-              ogameDriver
-                .sendFleet(
-                  SendFleetRequest(
-                    debrisCollectingPlanet,
-                    SendFleetRequestShips.Ships(Map(ShipType.Explorer -> 300)),
-                    config.target.copy(coordinatesType = CoordinatesType.Debris),
-                    FleetMissionType.Recycle,
-                    FleetResources.Given(Resources.Zero)
-                  )
-                )
-          } else {
-            Logger[OgameAction].warn("There is not enough ships to collect debris")
-          }
-        }
-    } else {
-      Logger[OgameAction].info("Returning fleet is ok, no need to collect debris")
     }
   }
 

@@ -1,4 +1,5 @@
 package not.ogame.bots.ghostbuster.ogame
+
 import acyclic.skipped
 import cats.effect.ExitCase
 import not.ogame.bots._
@@ -15,6 +16,7 @@ object OgameOp {
   case class ReadPlanets() extends OgameOp[List[PlayerPlanet]]
   case class CheckLoginStatus() extends OgameOp[Boolean]
   case class ReadMyOffers() extends OgameOp[List[MyOffer]]
+  case class ReadGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int) extends OgameOp[GalaxyPageData]
 
   case class Login() extends OgameOp[Unit]
   case class BuildSuppliesBuilding(planetId: PlanetId, suppliesBuilding: SuppliesBuilding) extends OgameOp[Unit]

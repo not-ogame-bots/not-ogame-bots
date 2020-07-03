@@ -32,7 +32,8 @@ case class BotConfig(
     expeditionConfig: ExpeditionConfig,
     smartBuilder: SmartBuilderConfig,
     escapeConfig: EscapeConfig,
-    flyAndReturn: FlyAndReturnConfig
+    flyAndReturn: FlyAndReturnConfig,
+    expeditionDebrisCollectorConfig: ExpeditionDebrisCollectorConfig
 )
 
 case class SmartBuilderConfig(
@@ -57,8 +58,6 @@ case class ExpeditionConfig(
     isOn: Boolean,
     maxNumberOfExpeditions: Int,
     startingPlanetId: PlanetId,
-    collectingPlanet: PlanetId,
-    collectingOn: Boolean,
     target: Coordinates,
     maxLC: Int,
     maxSC: Int,
@@ -77,3 +76,5 @@ case class FlyAndReturnConfig(
     remainDeuterAmount: Int,
     speeds: List[FleetSpeed]
 )
+
+case class ExpeditionDebrisCollectorConfig(from: PlanetId)
