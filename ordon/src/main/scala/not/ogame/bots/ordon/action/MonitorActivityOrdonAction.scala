@@ -20,6 +20,8 @@ class MonitorActivityOrdonAction(monitoredPlayerName: String, playerPlanet: Play
         val galaxyPageData = ogame.readGalaxyPage(playerPlanet.id, g, s)
         galaxyPageData.playerActivityMap.filter(entry => cList.contains(entry._1))
       })
+      .toList
+      .sortBy(entry => entry._1.galaxy * 100000 + entry._1.system * 100 + entry._1.position)
       .map(entry => entry.toString())
       .mkString(s"$monitoredPlayerName\n", "\n", "\n")
     slackIntegration.postActivityMessageToSlack(message)
