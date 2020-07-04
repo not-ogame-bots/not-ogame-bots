@@ -10,7 +10,7 @@ import not.ogame.bots._
 import not.ogame.bots.ghostbuster.actions.{CollectResourcesAction, SpreadResourcesAction}
 import not.ogame.bots.ghostbuster.api.{CollectResourcesEndpoint, SpreadResourcesEndpoint, StatusEndpoint}
 import not.ogame.bots.ghostbuster.executor.impl.TaskExecutorImpl
-import not.ogame.bots.ghostbuster.infrastructure.{FCMService, FirebaseResource}
+import not.ogame.bots.ghostbuster.infrastructure.{SlackCredentials, SlackServiceImpl}
 import not.ogame.bots.ghostbuster.interpreter.OgameActionInterpreterImpl
 import not.ogame.bots.ghostbuster.notifications.{Notifier, OgameNotificationDecorator}
 import not.ogame.bots.ghostbuster.ogame.OgameActionDriver
@@ -48,21 +48,21 @@ object Main extends StrictLogging {
     }
     System.setProperty("webdriver.gecko.driver", "selenium/geckodriver")
     val botConfig = ConfigSource.resources("quasar.conf").loadOrThrow[BotConfig]
-    val credentials = ConfigSource.file(s"${SettingsDirectory}/quasar-credentials.conf").loadOrThrow[Credentials]
+    val credentials = ConfigSource.file(s"$SettingsDirectory/quasar-credentials.conf").loadOrThrow[Credentials]
+    val slackCredentials = ConfigSource.file(s"$SettingsDirectory/slack-credentials.conf").loadOrThrow[SlackCredentials]
     logger.info(pprint.apply(botConfig).render)
 
     Ref
       .of[Task, State](State.Empty)
-      .flatMap(state => app(botConfig, credentials, state))
+      .flatMap(state => app(botConfig, credentials, state, slackCredentials))
       .runSyncUnsafe()
   }
 
-  private def app(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State]) = {
+  private def app(botConfig: BotConfig, credentials: Credentials, state: Ref[Task, State], slackCredentials: SlackCredentials) = {
     val httpStateExposer = new StatusEndpoint(state)
     (for {
       driver <- WebDriverResource.firefox[Task]()
       selenium = SeleniumOgameDriverCreator.create[Task](driver, credentials)
-      firebase <- FirebaseResource.create(SettingsDirectory)
       notifier = new Notifier
       decoratedDriver = new OgameNotificationDecorator(selenium, notifier)
       executor = new TaskExecutorImpl(decoratedDriver)
@@ -71,13 +71,13 @@ object Main extends StrictLogging {
       collectingEndpoint = new CollectResourcesEndpoint(new CollectResourcesAction(safeDriver)(actionInterpreter))
       spreadingEndpoint = new SpreadResourcesEndpoint(new SpreadResourcesAction(safeDriver)(actionInterpreter))
       _ <- httpServer(List(httpStateExposer.getStatus, collectingEndpoint.collectEndpoint, spreadingEndpoint.spreadEndpoint))
-    } yield (actionInterpreter, firebase, executor, safeDriver, notifier))
+    } yield (actionInterpreter, executor, safeDriver, notifier))
       .use {
-        case (interpreter, firebase, executor, safeDriver, notifier) =>
+        case (interpreter, executor, safeDriver, notifier) =>
           implicit val impInterpreter: OgameActionInterpreterImpl = interpreter
-          val fcmService = new FCMService[Task](firebase)
+          val slackService = new SlackServiceImpl(slackCredentials)
           val stateAgg = new StateAggregator(state, interpreter)
-          val hostileFleetReporter = new HostileFleetReporter(fcmService, interpreter)
+          val hostileFleetReporter = new HostileFleetReporter(slackService, interpreter)
           val builder = new Builder(safeDriver, botConfig.wishlist)
           val fbp = new FlyAndBuildProcessor(safeDriver, botConfig.fsConfig, builder)
           val ep = new ExpeditionProcessor(botConfig.expeditionConfig, safeDriver, notifier)
@@ -88,20 +88,21 @@ object Main extends StrictLogging {
           val far = new FlyAndReturnProcessor(botConfig.flyAndReturn, safeDriver)
           val efp = new EscapeFleetProcessor(safeDriver, botConfig.escapeConfig)
 
-          Task.raceMany(
-            List(
-              executor.run(),
-              fbp.run(),
-              activityFaker.run(),
-              ep.run(),
-              bp.run(),
-              far.run(),
-              stateAgg.run(),
-              hostileFleetReporter.run(),
-              efp.run(),
-              edcp.run()
+          slackService.postMessage("I am alive") >>
+            Task.raceMany(
+              List(
+                executor.run(),
+                fbp.run(),
+                activityFaker.run(),
+                ep.run(),
+                bp.run(),
+                far.run(),
+                stateAgg.run(),
+                hostileFleetReporter.run(),
+                efp.run(),
+                edcp.run()
+              )
             )
-          )
       }
       .onErrorRestartIf { e =>
         logger.error(e.getMessage, e)

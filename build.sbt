@@ -101,6 +101,8 @@ lazy val ghostbuster: Project = (project in file("ghostbuster"))
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
       "com.google.firebase" % "firebase-admin" % "6.8.1",
       "org.typelevel" %% "cats-free" % "2.1.1",
+      "com.softwaremill.sttp.client" %% "okhttp-backend-monix" % "2.2.0",
+      "com.softwaremill.sttp.client" %% "circe" % "2.2.0",
       "com.github.cb372" %% "cats-retry" % "1.1.1",
       "org.scalameta" %% "munit" % "0.7.7" % Test
     ) ++ jsonDependencies,
