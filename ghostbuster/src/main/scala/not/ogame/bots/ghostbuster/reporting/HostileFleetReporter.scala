@@ -7,7 +7,7 @@ import monix.eval.Task
 import monix.reactive.Consumer
 import not.ogame.bots.ghostbuster.FLogger
 import not.ogame.bots.ghostbuster.executor.OgameActionExecutor
-import not.ogame.bots.ghostbuster.infrastructure.SlackService
+import not.ogame.bots.ghostbuster.infrastructure.{Channel, SlackService}
 import not.ogame.bots.ghostbuster.notifications.Notification
 import not.ogame.bots.{Fleet, FleetAttitude, FleetMissionType, LocalClock}
 
@@ -29,7 +29,10 @@ class HostileFleetReporter(slackService: SlackService[Task], taskExecutor: Ogame
       .consumeWith(Consumer.foreachTask { fleet =>
         Logger[Task].warn(s"!!!! HOSTILE FLEET DETECTED ${pprint.apply(fleet)} !!!!") >>
           slackService
-            .postMessage(s"@Channel My Imperator, a hostile fleet has been detected. It will arrive at ${fleet.arrivalTime}")
+            .postMessage(
+              s"@Channel My Imperator, a hostile fleet has been detected. It will arrive at ${fleet.arrivalTime}",
+              Channel.Alerts
+            )
       })
   }
 }

@@ -2,10 +2,11 @@ package not.ogame.bots.ghostbuster.reporting
 
 import monix.eval.Task
 import monix.reactive.{Consumer, Observable}
-import not.ogame.bots.ghostbuster.infrastructure.SlackService
+import not.ogame.bots.ghostbuster.infrastructure.{Channel, SlackService}
 import not.ogame.bots.ghostbuster.notifications.{Notification, Notifier}
 import not.ogame.bots.ghostbuster.{ExpeditionConfig, FlyAndReturnConfig, FsConfig}
 import not.ogame.bots.{FleetAttitude, FleetMissionType, PlayerPlanet}
+
 import scala.concurrent.duration._
 
 class StateReporter(
@@ -29,7 +30,7 @@ class StateReporter(
               }
               .mkString("\n")
           }
-          .consumeWith(Consumer.foreachTask(slackService.postMessage))
+          .consumeWith(Consumer.foreachTask(slackService.postMessage(_, Channel.Status)))
       }
   }
 

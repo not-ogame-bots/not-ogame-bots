@@ -13,9 +13,13 @@ import sttp.client.okhttp.monix.OkHttpMonixBackend
 
 class SlackServiceImpl(credentials: SlackCredentials) extends SlackService[Task] {
   private implicit val backend: SttpBackend[Task, Observable[ByteBuffer], WebSocketHandler] = OkHttpMonixBackend().runSyncUnsafe()
-  private val stringUri = s"https://hooks.slack.com/services/${credentials.statusToken}"
+  private def urlFromToken(token: String) = s"https://hooks.slack.com/services/$token"
 
-  def postMessage(message: String): Task[Unit] = {
+  def postMessage(message: String, channel: Channel): Task[Unit] = {
+    val stringUri = channel match {
+      case Channel.Alerts => urlFromToken(credentials.statusAlertToken)
+      case Channel.Status => urlFromToken(credentials.statusToken)
+    }
     basicRequest
       .post(uri"$stringUri")
       .body(SlackMessage(message))
@@ -29,8 +33,14 @@ class SlackServiceImpl(credentials: SlackCredentials) extends SlackService[Task]
 
 case class SlackMessage(text: String)
 
-case class SlackCredentials(statusToken: String)
+case class SlackCredentials(statusToken: String, statusAlertToken: String)
 
 trait SlackService[F[_]] {
-  def postMessage(message: String): F[Unit]
+  def postMessage(message: String, channel: Channel): F[Unit]
+}
+
+sealed trait Channel
+object Channel {
+  case object Alerts extends Channel
+  case object Status extends Channel
 }

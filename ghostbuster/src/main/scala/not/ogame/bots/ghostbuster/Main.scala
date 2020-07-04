@@ -10,7 +10,7 @@ import not.ogame.bots._
 import not.ogame.bots.ghostbuster.actions.{CollectResourcesAction, SpreadResourcesAction}
 import not.ogame.bots.ghostbuster.api.{CollectResourcesEndpoint, SpreadResourcesEndpoint, StatusEndpoint}
 import not.ogame.bots.ghostbuster.executor.impl.TaskExecutorImpl
-import not.ogame.bots.ghostbuster.infrastructure.{SlackCredentials, SlackServiceImpl}
+import not.ogame.bots.ghostbuster.infrastructure.{Channel, SlackCredentials, SlackServiceImpl}
 import not.ogame.bots.ghostbuster.interpreter.OgameActionInterpreterImpl
 import not.ogame.bots.ghostbuster.notifications.{Notifier, OgameNotificationDecorator}
 import not.ogame.bots.ghostbuster.ogame.OgameActionDriver
@@ -89,7 +89,7 @@ object Main extends StrictLogging {
           val efp = new EscapeFleetProcessor(safeDriver, botConfig.escapeConfig)
           val stateReporter =
             new StateReporter(slackService, notifier, botConfig.expeditionConfig, botConfig.fsConfig, botConfig.flyAndReturn)
-          slackService.postMessage("I am alive") >>
+          slackService.postMessage("I am alive", Channel.Status) >>
             Task.raceMany(
               List(
                 executor.run(),
