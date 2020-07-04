@@ -24,7 +24,7 @@ import not.ogame.bots.ghostbuster.processors.{
   FlyAndBuildProcessor,
   FlyAndReturnProcessor
 }
-import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator}
+import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator, StateReporter}
 import not.ogame.bots.selenium.{SeleniumOgameDriverCreator, WebDriverResource}
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
@@ -87,7 +87,8 @@ object Main extends StrictLogging {
           val bp = new BuilderProcessor(builder, botConfig.smartBuilder, safeDriver)
           val far = new FlyAndReturnProcessor(botConfig.flyAndReturn, safeDriver)
           val efp = new EscapeFleetProcessor(safeDriver, botConfig.escapeConfig)
-
+          val stateReporter =
+            new StateReporter(slackService, notifier, botConfig.expeditionConfig, botConfig.fsConfig, botConfig.flyAndReturn)
           slackService.postMessage("I am alive") >>
             Task.raceMany(
               List(
@@ -100,7 +101,8 @@ object Main extends StrictLogging {
                 stateAgg.run(),
                 hostileFleetReporter.run(),
                 efp.run(),
-                edcp.run()
+                edcp.run(),
+                stateReporter.run()
               )
             )
       }

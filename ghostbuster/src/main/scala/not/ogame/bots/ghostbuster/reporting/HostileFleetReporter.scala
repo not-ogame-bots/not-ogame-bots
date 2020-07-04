@@ -29,7 +29,7 @@ class HostileFleetReporter(slackService: SlackService[Task], taskExecutor: Ogame
       .consumeWith(Consumer.foreachTask { fleet =>
         Logger[Task].warn(s"!!!! HOSTILE FLEET DETECTED ${pprint.apply(fleet)} !!!!") >>
           slackService
-            .postMessage(s"My Imperator, a hostile fleet has been detected. It will arrive at ${fleet.arrivalTime}")
+            .postMessage(s"@Channel My Imperator, a hostile fleet has been detected. It will arrive at ${fleet.arrivalTime}")
       })
   }
 }

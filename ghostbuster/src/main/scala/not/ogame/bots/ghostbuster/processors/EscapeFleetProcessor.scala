@@ -32,7 +32,7 @@ class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: 
             .race(
               executor.waitTo(dateTime) >> Logger[Task].info("Reading fleets normally"),
               executor.subscribeToNotifications
-                .collect { case n: Notification.ReadAllFleets => n.value }
+                .collect { case n: Notification.ReadAllFleets => n.fleets }
                 .consumeWith(Consumer.head) <* Logger[Task].info("Used fleets from notification")
             )
             .flatMap {
