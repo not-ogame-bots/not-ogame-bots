@@ -16,7 +16,7 @@ val jsonDependencies = Seq(
   "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion
 )
 
-lazy val commonSettings = commonSmlBuildSettings ++ acyclicSettings ++ splainSettings ++ Seq(
+lazy val commonSettings = commonSmlBuildSettings ++ acyclicSettings ++ Seq(
   scalaVersion := "2.13.1",
   libraryDependencies += compilerPlugin("com.softwaremill.neme" %% "neme-plugin" % "0.0.5")
 )
@@ -99,7 +99,6 @@ lazy val ghostbuster: Project = (project in file("ghostbuster"))
       "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-blaze-server" % http4sVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
-      "com.google.firebase" % "firebase-admin" % "6.8.1",
       "org.typelevel" %% "cats-free" % "2.1.1",
       "com.softwaremill.sttp.client" %% "okhttp-backend-monix" % "2.2.0",
       "com.softwaremill.sttp.client" %% "circe" % "2.2.0",
