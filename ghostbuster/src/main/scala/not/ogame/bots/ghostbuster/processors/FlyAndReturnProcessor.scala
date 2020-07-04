@@ -75,16 +75,20 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver
   private def send(from: PlayerPlanet, to: PlayerPlanet, resources: Resources): OgameAction[Unit] = {
     val fleetSpeed = Random.shuffle(config.speeds).head
     ogameDriver
-      .sendFleet(
-        SendFleetRequest(
-          from = from,
-          ships = SendFleetRequestShips.AllShips,
-          targetCoordinates = to.coordinates,
-          fleetMissionType = Deployment,
-          resources = FleetResources.Given(resources),
-          speed = fleetSpeed
-        )
-      )
+      .readFleetPage(from.id)
+      .flatMap { fp =>
+        ogameDriver
+          .sendFleet(
+            SendFleetRequest(
+              from = from,
+              ships = SendFleetRequestShips.Ships(new FleetSelector(Map(ShipType.Explorer -> Selector.decreaseBy(300)))(fp)),
+              targetCoordinates = to.coordinates,
+              fleetMissionType = Deployment,
+              resources = FleetResources.Given(resources),
+              speed = fleetSpeed
+            )
+          )
+      }
   }
 
   private def isCloseToArrival(fleet: MyFleet) = {
