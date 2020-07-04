@@ -18,7 +18,7 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver
     implicit executor: OgameActionExecutor[Task],
     clock: LocalClock
 ) extends FLogger {
-  def run(): Task[Unit] = { //TODO add support for other way
+  def run(): Task[Unit] = {
     if (config.isOn) {
       for {
         planets <- ogameDriver.readPlanets().execute()
@@ -54,13 +54,25 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver
       case Some(fleet) if fleet.isReturning =>
         Logger[OgameAction].info(s"Found returning fleet ${pprint.apply(fleet)}").as(fleet.arrivalTime.plus(3 seconds))
       case None =>
-        Logger[OgameAction].info(s"Fleet is on planet $from. Sending fleet to $to")
-        new ResourceSelector[OgameAction](deuteriumSelector = Selector.decreaseBy(config.remainDeuterAmount))
-          .selectResources(ogameDriver, from)
-          .flatMap { resources =>
-            send(from, to, resources).as(clock.now())
-          }
+        sendFleetOr(from, to) {
+          Logger[OgameAction].warn(s"There was no fleet on $from planet. Sleeping 15 minutes...").as(clock.now().plus(15 minutes))
+        }
     }
+  }
+
+  private def sendFleetOr(from: PlayerPlanet, to: PlayerPlanet)(fallback: OgameAction[ZonedDateTime]) = {
+    for {
+      resources <- new ResourceSelector[OgameAction](deuteriumSelector = Selector.decreaseBy(config.remainDeuterAmount))
+        .selectResources(ogameDriver, from)
+      fleetPage <- ogameDriver.readFleetPage(from.id)
+      shipsToSend = new FleetSelector(Map(ShipType.Explorer -> Selector.decreaseBy(300)))(fleetPage)
+      nextTime <- if (shipsToSend.values.sum > 0) {
+        Logger[OgameAction].info(s"Fleet is on planet $from. Sending fleet to $to") >>
+          send(from, to, resources, shipsToSend).as(clock.now())
+      } else {
+        fallback
+      }
+    } yield nextTime
   }
 
   private def returnOrWait(fleet: MyFleet): OgameAction[ZonedDateTime] = {
@@ -72,23 +84,18 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver
     }
   }
 
-  private def send(from: PlayerPlanet, to: PlayerPlanet, resources: Resources): OgameAction[Unit] = {
+  private def send(from: PlayerPlanet, to: PlayerPlanet, resources: Resources, ships: Map[ShipType, Int]): OgameAction[Unit] = {
     val fleetSpeed = Random.shuffle(config.speeds).head
-    ogameDriver
-      .readFleetPage(from.id)
-      .flatMap { fp =>
-        ogameDriver
-          .sendFleet(
-            SendFleetRequest(
-              from = from,
-              ships = SendFleetRequestShips.Ships(new FleetSelector(Map(ShipType.Explorer -> Selector.decreaseBy(300)))(fp)),
-              targetCoordinates = to.coordinates,
-              fleetMissionType = Deployment,
-              resources = FleetResources.Given(resources),
-              speed = fleetSpeed
-            )
-          )
-      }
+    ogameDriver.sendFleet(
+      SendFleetRequest(
+        from = from,
+        ships = SendFleetRequestShips.Ships(ships),
+        targetCoordinates = to.coordinates,
+        fleetMissionType = Deployment,
+        resources = FleetResources.Given(resources),
+        speed = fleetSpeed
+      )
+    )
   }
 
   private def isCloseToArrival(fleet: MyFleet) = {
