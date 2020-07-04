@@ -65,7 +65,7 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver
       resources <- new ResourceSelector[OgameAction](deuteriumSelector = Selector.decreaseBy(config.remainDeuterAmount))
         .selectResources(ogameDriver, from)
       fleetPage <- ogameDriver.readFleetPage(from.id)
-      shipsToSend = new FleetSelector(Map(ShipType.Explorer -> Selector.decreaseBy(300)))(fleetPage)
+      shipsToSend = new FleetSelector(Map(ShipType.Explorer -> Selector.decreaseBy(config.explorersToLeft)))(fleetPage)
       nextTime <- if (shipsToSend.values.sum > 0) {
         Logger[OgameAction].info(s"Fleet is on planet $from. Sending fleet to $to") >>
           send(from, to, resources, shipsToSend).as(clock.now())

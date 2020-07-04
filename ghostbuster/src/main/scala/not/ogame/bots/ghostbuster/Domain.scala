@@ -74,7 +74,8 @@ case class FlyAndReturnConfig(
     safeBuffer: FiniteDuration,
     randomUpperLimit: FiniteDuration,
     remainDeuterAmount: Int,
-    speeds: List[FleetSpeed]
+    speeds: List[FleetSpeed],
+    explorersToLeft: Int
 )
 
 case class ExpeditionDebrisCollectorConfig(from: PlanetId)
