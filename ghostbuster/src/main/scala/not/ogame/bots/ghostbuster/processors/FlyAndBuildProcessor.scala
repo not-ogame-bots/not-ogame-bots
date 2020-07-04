@@ -23,7 +23,7 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
         .readPlanets()
         .map(_.filter(p => fsConfig.eligiblePlanets.contains(p.id)))
         .execute()
-        .flatMap(lookOnPlanets)
+        .flatMap(pl => withRetry(lookOnPlanets(pl))("flyAndBuild"))
     } else {
       Task.never
     }
@@ -66,7 +66,7 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
       .flatMap {
         case Some(planet) =>
           Logger[Task].info(s"Planet with fs fleet ${pprint.apply(planet)}") >>
-            withRetry(buildAndSend(planet, planets))("flyAndBuild")
+            buildAndSend(planet, planets)
         case None =>
           Logger[Task].warn("Couldn't find fs fleet on any planet, looking in the air...") >>
             lookAtInTheAir(planets)
