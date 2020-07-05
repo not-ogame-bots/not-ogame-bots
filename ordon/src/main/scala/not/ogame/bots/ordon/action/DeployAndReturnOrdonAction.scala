@@ -3,7 +3,7 @@ package not.ogame.bots.ordon.action
 import java.time.ZonedDateTime
 
 import not.ogame.bots.FleetMissionType.Deployment
-import not.ogame.bots.ShipType.LargeCargoShip
+import not.ogame.bots.ShipType.Explorer
 import not.ogame.bots.ordon.core.{ChangeOnPlanet, EventRegistry, OrdonOgameDriver, TimeBasedOrdonAction}
 import not.ogame.bots.ordon.utils.{FleetSelector, ResourceSelector, Selector, SendFleet}
 import not.ogame.bots.{FleetSpeed, MyFleet, PlayerPlanet}
@@ -16,7 +16,7 @@ class DeployAndReturnOrdonAction(planet: PlayerPlanet, moon: PlayerPlanet) exten
   private val sendFleet = new SendFleet(
     from = planet,
     to = moon,
-    selectShips = new FleetSelector(filters = Map(LargeCargoShip -> Selector.skip)),
+    selectShips = new FleetSelector(filters = Map(Explorer -> Selector.skip)),
     selectResources = new ResourceSelector(deuteriumSelector = Selector.decreaseBy(300_000)),
     fleetSpeed = FleetSpeed.Percent10
   )
@@ -67,7 +67,7 @@ class DeployAndReturnOrdonAction(planet: PlayerPlanet, moon: PlayerPlanet) exten
   }
 
   private def isThisFleet(fleet: MyFleet): Boolean = {
-    fleet.from == planet.coordinates && fleet.to == moon.coordinates && fleet.fleetMissionType == Deployment && fleet.ships(LargeCargoShip) == 0
+    fleet.from == planet.coordinates && fleet.to == moon.coordinates && fleet.fleetMissionType == Deployment && fleet.ships(Explorer) == 0
   }
 
   override def toString: String = s"Deploy and return $resumeOn"

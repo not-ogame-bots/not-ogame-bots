@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import not.ogame.bots.FleetAttitude.Hostile
 import not.ogame.bots.FleetMissionType.{Expedition, Spy}
-import not.ogame.bots.ShipType.DeathStar
+import not.ogame.bots.ShipType._
 import not.ogame.bots.ordon.core.{EventRegistry, OrdonOgameDriver, TimeBasedOrdonAction}
 import not.ogame.bots.ordon.utils.SlackIntegration
 import not.ogame.bots.{Fleet, MyFleetPageData, ShipType}
@@ -43,9 +43,15 @@ class StatusAction(expeditionFleet: Map[ShipType, Int]) extends TimeBasedOrdonAc
     val expectedFleetSize = expeditionFleet.values.sum
     val allShipsFine = myFleetPageData.fleets
       .filter(fleet => fleet.fleetMissionType == Expedition && !fleet.isReturning)
-      .forall(_.ships.values.sum == expectedFleetSize)
+      .forall(fleet => {
+        fleet.ships(LargeCargoShip) > 900 &&
+          fleet.ships(LightFighter) > 1000 &&
+          fleet.ships(Explorer) == 100 &&
+          fleet.ships(EspionageProbe) == 1 &&
+          fleet.ships(Destroyer) == 1
+      })
     if (allShipsFine) {
-      s"OK    Expedition composition match size"
+      s"OK    Expedition composition ok"
     } else {
       s"ERROR Expedition composition mismatch"
     }
