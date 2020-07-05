@@ -23,39 +23,60 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
         .readPlanets()
         .map(_.filter(p => fsConfig.eligiblePlanets.contains(p.id)))
         .execute()
-        .flatMap(pl => withRetry(lookOnPlanets(pl))("flyAndBuild"))
+        .flatMap(planets => withRetry(loop(planets))("flyAndBuild"))
     } else {
       Task.never
     }
   }
 
-  private def lookAtInTheAir(planets: List[PlayerPlanet]): Task[Unit] = {
+  private def loop(planets: List[PlayerPlanet]): Task[Unit] = {
+    lookAtInTheAir(planets)
+      .flatMap {
+        case Some(fleet) => executor.waitTo(fleet.arrivalTime) >> buildAndSend(planets.find(_.coordinates == fleet.to).get, planets)
+        case None =>
+          lookOnPlanets(planets)
+            .flatMap {
+              case Some(planet) => buildAndSend(planet, planets)
+              case None =>
+                Task
+                  .eval(clock.now().plus(fsConfig.searchInterval))
+                  .flatTap { nextInterval =>
+                    Logger[Task].warn(s"Couldn't find fs fleet either on planet or in the air, waiting to the next interval $nextInterval")
+                  }
+                  .flatMap(nextInterval => executor.waitTo(nextInterval))
+            }
+      }
+      .flatMap(_ => loop(planets))
+  }
+
+  private def lookAtInTheAir(planets: List[PlayerPlanet]): Task[Option[MyFleet]] = {
     (for {
-      fleets <- ogameDriver.readAllFleetsRedirect()
-      possibleFsFleets = fleets.filter(f => isFsFleet(planets, f))
+      fleetPageData <- ogameDriver.readMyFleets()
+      possibleFsFleets = fleetPageData.fleets.find(f => isFsFleet(planets, f))
       waitingTime <- possibleFsFleets match {
-        case l @ _ :: _ =>
+        case Some(fleet) =>
           Logger[OgameAction]
-            .info("Too many fleets in the air. Waiting for the first one to reach its target.")
-            .as(l.map(_.arrivalTime).min)
-        case Nil =>
+            .info("Found fs fleet, waiting for it to reach its target.")
+            .as(Option(fleet))
+        case None =>
           Logger[OgameAction]
-            .warn(s"Couldn't find fs fleet either on planets or in the air. Waiting ${fsConfig.searchInterval}...")
-            .as(clock.now().plus(fsConfig.searchInterval))
+            .warn(s"Couldn't find fs fleet in the air")
+            .as(Option.empty[MyFleet])
       }
     } yield waitingTime)
       .execute()
-      .flatMap(waitingTime => executor.waitTo(waitingTime))
-      .flatMap(_ => lookOnPlanets(planets))
   }
 
-  private def isFsFleet(planets: List[PlayerPlanet], f: Fleet) = {
+  private def isFsFleet(planets: List[PlayerPlanet], f: MyFleet) = {
+    val ships = fsConfig.ships.map(f => f.shipType -> f.amount).toMap
     val eligiblePlanets = fsConfig.eligiblePlanets.map(pId => planets.find(_.id == pId).get)
-    f.fleetAttitude == FleetAttitude.Friendly && f.fleetMissionType == FleetMissionType.Deployment && eligiblePlanets
-      .exists(p => p.coordinates == f.to) && eligiblePlanets.exists(p => p.coordinates == f.from)
+    f.fleetMissionType == FleetMissionType.Deployment &&
+    eligiblePlanets.exists(p => p.coordinates == f.to) &&
+    eligiblePlanets.exists(p => p.coordinates == f.from) &&
+    f.ships.forall { case (shipType, amount) => amount >= ships(shipType) }
   }
 
-  private def lookOnPlanets(planets: List[PlayerPlanet]): Task[Unit] = {
+  private def lookOnPlanets(planets: List[PlayerPlanet]): Task[Option[PlayerPlanet]] = {
     Stream
       .emits(planets)
       .evalMap(p => ogameDriver.readFleetPage(p.id).map(p -> _))
@@ -65,11 +86,9 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
       .execute()
       .flatMap {
         case Some(planet) =>
-          Logger[Task].info(s"Planet with fs fleet ${pprint.apply(planet)}") >>
-            buildAndSend(planet, planets)
+          Logger[Task].info(s"Planet with fs fleet ${pprint.apply(planet)}").as(Some(planet))
         case None =>
-          Logger[Task].warn("Couldn't find fs fleet on any planet, looking in the air...") >>
-            lookAtInTheAir(planets)
+          Logger[Task].warn("Couldn't find fs fleet on any planet").as(None)
       }
   }
 
@@ -82,7 +101,6 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
     for {
       _ <- buildAndContinue(currentPlanet, clock.now())
       _ <- sendFleet(from = currentPlanet, to = targetPlanet)
-      _ <- lookAtInTheAir(planets)
     } yield ()
   }
 
