@@ -38,8 +38,7 @@ class ExpeditionOrdonAction(val startPlanet: PlayerPlanet) extends TimeBasedOrdo
 }
 
 class ExpeditionFleetHelper {
-  private val maxLargeCargoCount = 1100
-  private val masExplorerCount = 100
+  private val expectedExplorerCount = 100
 
   def getExpeditionFleet(ogame: OrdonOgameDriver, startPlanet: PlayerPlanet): Map[ShipType, Int] = {
     val myFleetPageData = ogame.readMyFleets()
@@ -52,9 +51,9 @@ class ExpeditionFleetHelper {
     val averageExpeditionShips = availableExpeditionShips
       .map(e => e._1 -> e._2 / myFleetPageData.fleetSlots.maxExpeditions)
     Map(
-      LightFighter -> averageExpeditionShips(LightFighter),
-      LargeCargoShip -> Math.min(averageExpeditionShips(LargeCargoShip), maxLargeCargoCount),
-      Explorer -> Math.min(averageExpeditionShips(Explorer), masExplorerCount),
+      LightFighter -> Math.min(averageExpeditionShips(LightFighter), fleetPageData.ships(LightFighter)),
+      LargeCargoShip -> Math.min(averageExpeditionShips(LargeCargoShip), fleetPageData.ships(LargeCargoShip)),
+      Explorer -> Math.min(expectedExplorerCount, fleetPageData.ships(Explorer)),
       Destroyer -> 1,
       EspionageProbe -> 1
     )

@@ -3,7 +3,7 @@ package not.ogame.bots.ordon.action
 import java.time.ZonedDateTime
 
 import not.ogame.bots.FleetMissionType.Deployment
-import not.ogame.bots.ShipType.{Destroyer, EspionageProbe, Explorer, LargeCargoShip}
+import not.ogame.bots.ShipType._
 import not.ogame.bots.ordon.core.{EventRegistry, OrdonOgameDriver, TimeBasedOrdonAction}
 import not.ogame.bots.ordon.utils.{FleetSelector, ResourceSelector, Selector, SendFleet}
 import not.ogame.bots.{FleetSpeed, MyFleet, PlayerPlanet, ShipType}
@@ -15,7 +15,7 @@ class ExpeditionMoveResourcesAndFleetOrdonAction(planet: PlayerPlanet, moon: Pla
     to = moon,
     selectResources =
       new ResourceSelector(metalSelector = Selector.skip, crystalSelector = Selector.skip, deuteriumSelector = Selector.atMost(300_000)),
-    selectShips = page => Map(LargeCargoShip -> page.ships(LargeCargoShip)),
+    selectShips = page => Map(Explorer -> page.ships(Explorer)),
     fleetSpeed = FleetSpeed.Percent10
   )
   val fromMoonToPlanet = new SendFleet(
@@ -24,10 +24,11 @@ class ExpeditionMoveResourcesAndFleetOrdonAction(planet: PlayerPlanet, moon: Pla
     selectResources = new ResourceSelector(deuteriumSelector = Selector.decreaseBy(300_000)),
     selectShips = new FleetSelector(
       filters = Map(
+        LightFighter -> Selector.skip,
+        LargeCargoShip -> Selector.skip,
         Destroyer -> Selector.decreaseBy(3),
         EspionageProbe -> Selector.decreaseBy(50),
-        Explorer -> Selector.skip,
-        LargeCargoShip -> Selector.decreaseBy(expeditionFleet(LargeCargoShip))
+        Explorer -> Selector.decreaseBy(600)
       )
     ),
     fleetSpeed = FleetSpeed.Percent100
@@ -46,7 +47,7 @@ class ExpeditionMoveResourcesAndFleetOrdonAction(planet: PlayerPlanet, moon: Pla
   private def isThisFleet(fleet: MyFleet): Boolean = {
     isFlyingOnCorrectPath(fleet) &&
     fleet.fleetMissionType == Deployment &&
-    fleet.ships(LargeCargoShip) > 0
+    fleet.ships(Explorer) > 0
   }
 
   private def isFlyingOnCorrectPath(fleet: MyFleet) = {
@@ -55,7 +56,7 @@ class ExpeditionMoveResourcesAndFleetOrdonAction(planet: PlayerPlanet, moon: Pla
   }
 
   private def sendFleet(ogame: OrdonOgameDriver): Unit = {
-    val isFleetOnPlanet = ogame.readFleetPage(planet.id).ships(LargeCargoShip) > 0
+    val isFleetOnPlanet = ogame.readFleetPage(planet.id).ships(Explorer) > 0
     if (isFleetOnPlanet)
       ogame.sendFleet(fromPlanetToMoon.getSendFleetRequest(ogame))
     else {

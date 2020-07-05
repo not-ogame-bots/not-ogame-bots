@@ -37,7 +37,7 @@ class ExpeditionCollectDebrisOrdonAction(expeditionPlanet: PlayerPlanet) extends
       from = expeditionPlanet,
       to = PlayerPlanet(PlanetId.apply(""), expeditionDebrisTarget),
       selectResources = _ => Resources.Zero,
-      selectShips = page => Map(Explorer -> page.ships(Explorer)),
+      selectShips = page => Map(Explorer -> Math.min(page.ships(Explorer), 300)),
       fleetSpeed = Percent100,
       missionType = Recycle
     ).getSendFleetRequest(ogame)
