@@ -1,15 +1,13 @@
 package not.ogame.bots.ghostbuster.processors
 
-import java.time.ZonedDateTime
-
 import cats.implicits._
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import not.ogame.bots._
+import not.ogame.bots.ghostbuster.FLogger
 import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.ogame.OgameAction
-import not.ogame.bots.ghostbuster.FLogger
 
 import scala.concurrent.duration._
 
@@ -32,7 +30,7 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
   private def loop(planets: List[PlayerPlanet]): Task[Unit] = {
     lookAtInTheAir(planets)
       .flatMap {
-        case Some(fleet) => executor.waitTo(fleet.arrivalTime) >> buildAndSend(planets.find(_.coordinates == fleet.to).get, planets)
+        case Some(fleet) => executor.waitTo(fleet.arrivalTime)
         case None =>
           lookOnPlanets(planets)
             .flatMap {
@@ -99,7 +97,7 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
   private def buildAndSend(currentPlanet: PlayerPlanet, planets: List[PlayerPlanet]): Task[Unit] = {
     val targetPlanet = nextPlanet(currentPlanet, planets)
     for {
-      _ <- buildAndContinue(currentPlanet, clock.now())
+      _ <- buildAndContinue(currentPlanet)
       _ <- sendFleet(from = currentPlanet, to = targetPlanet)
     } yield ()
   }
@@ -159,15 +157,8 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
     } yield ()
   }
 
-  private def buildAndContinue(planet: PlayerPlanet, startedBuildingAt: ZonedDateTime): Task[Unit] = {
-    if (fsConfig.builder) {
-      builder
-        .buildNextThingFromWishList(planet)
-        .execute()
-        .void
-    } else {
-      Task.unit
-    }
+  private def buildAndContinue(planet: PlayerPlanet): Task[Unit] = {
+    Task.unit
   }
 }
 case class FsConfig(
@@ -178,10 +169,7 @@ case class FsConfig(
     takeResources: Boolean,
     gatherShips: Boolean,
     fleetSpeed: FleetSpeed,
-    eligiblePlanets: List[PlanetId],
-    builder: Boolean,
-    maxWaitTime: FiniteDuration,
-    maxBuildingTime: FiniteDuration
+    eligiblePlanets: List[PlanetId]
 )
 
 case class FleetShip(shipType: ShipType, amount: Int)
