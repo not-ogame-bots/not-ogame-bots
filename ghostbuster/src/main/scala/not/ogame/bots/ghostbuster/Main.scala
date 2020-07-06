@@ -22,7 +22,8 @@ import not.ogame.bots.ghostbuster.processors.{
   ExpeditionDebrisCollectingProcessor,
   ExpeditionProcessor,
   FlyAndBuildProcessor,
-  FlyAndReturnProcessor
+  FlyAndReturnProcessor,
+  Wish
 }
 import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator, StateReporter}
 import not.ogame.bots.selenium.{SeleniumOgameDriverCreator, WebDriverResource}

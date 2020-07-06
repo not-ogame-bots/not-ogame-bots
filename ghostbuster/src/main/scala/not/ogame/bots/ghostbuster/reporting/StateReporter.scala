@@ -4,7 +4,7 @@ import monix.eval.Task
 import monix.reactive.{Consumer, Observable}
 import not.ogame.bots.ghostbuster.infrastructure.{Channel, SlackService}
 import not.ogame.bots.ghostbuster.notifications.{Notification, Notifier}
-import not.ogame.bots.ghostbuster.{ExpeditionConfig, FlyAndReturnConfig, FsConfig}
+import not.ogame.bots.ghostbuster.processors.{ExpeditionConfig, FlyAndReturnConfig, FsConfig}
 import not.ogame.bots.{FleetAttitude, FleetMissionType, PlayerPlanet}
 
 import scala.concurrent.duration._

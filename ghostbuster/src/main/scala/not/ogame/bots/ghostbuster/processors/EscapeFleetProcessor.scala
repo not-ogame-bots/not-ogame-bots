@@ -10,7 +10,9 @@ import not.ogame.bots._
 import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.notifications.Notification
 import not.ogame.bots.ghostbuster.ogame.OgameAction
-import not.ogame.bots.ghostbuster.{EscapeConfig, FLogger}
+import not.ogame.bots.ghostbuster.FLogger
+
+import scala.concurrent.duration.FiniteDuration
 
 class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: EscapeConfig)(
     implicit executor: OgameActionExecutor[Task],
@@ -100,3 +102,4 @@ class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: 
     } yield ()
   }
 }
+case class EscapeConfig(target: Coordinates, interval: FiniteDuration, minEscapeTime: FiniteDuration, escapeTimeThreshold: FiniteDuration)

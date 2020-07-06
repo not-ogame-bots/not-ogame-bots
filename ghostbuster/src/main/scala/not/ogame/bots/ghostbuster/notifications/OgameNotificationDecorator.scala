@@ -5,7 +5,6 @@ import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
 import monix.execution.Scheduler
 import monix.reactive.Observable
-import monix.reactive.subjects.ConcurrentSubject
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.FLogger
 

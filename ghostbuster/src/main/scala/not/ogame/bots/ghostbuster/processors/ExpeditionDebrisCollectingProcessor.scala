@@ -8,7 +8,7 @@ import not.ogame.bots._
 import not.ogame.bots.ghostbuster.executor.{OgameActionExecutor, _}
 import not.ogame.bots.ghostbuster.notifications.Notification
 import not.ogame.bots.ghostbuster.ogame.OgameAction
-import not.ogame.bots.ghostbuster.{ExpeditionConfig, ExpeditionDebrisCollectorConfig, FLogger}
+import not.ogame.bots.ghostbuster.FLogger
 
 class ExpeditionDebrisCollectingProcessor(
     driver: OgameDriver[OgameAction],
@@ -81,3 +81,5 @@ class ExpeditionDebrisCollectingProcessor(
     }
   }
 }
+
+case class ExpeditionDebrisCollectorConfig(from: PlanetId)

@@ -9,7 +9,7 @@ import monix.eval.Task
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.ogame.OgameAction
-import not.ogame.bots.ghostbuster.{FLogger, FsConfig}
+import not.ogame.bots.ghostbuster.FLogger
 
 import scala.concurrent.duration._
 
@@ -181,3 +181,18 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
     }
   }
 }
+case class FsConfig(
+    ships: List[FleetShip],
+    isOn: Boolean,
+    searchInterval: FiniteDuration,
+    remainDeuterAmount: Int,
+    takeResources: Boolean,
+    gatherShips: Boolean,
+    fleetSpeed: FleetSpeed,
+    eligiblePlanets: List[PlanetId],
+    builder: Boolean,
+    maxWaitTime: FiniteDuration,
+    maxBuildingTime: FiniteDuration
+)
+
+case class FleetShip(shipType: ShipType, amount: Int)

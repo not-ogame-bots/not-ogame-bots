@@ -9,7 +9,7 @@ import not.ogame.bots.FleetMissionType.Deployment
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.ogame.OgameAction
-import not.ogame.bots.ghostbuster.{FLogger, FlyAndReturnConfig}
+import not.ogame.bots.ghostbuster.FLogger
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -110,3 +110,14 @@ class FlyAndReturnProcessor(config: FlyAndReturnConfig, ogameDriver: OgameDriver
     fleet.from == from.coordinates && fleet.to == to.coordinates && fleet.fleetMissionType == FleetMissionType.Deployment
   }
 }
+
+case class FlyAndReturnConfig(
+    from: PlanetId,
+    to: PlanetId,
+    isOn: Boolean,
+    safeBuffer: FiniteDuration,
+    randomUpperLimit: FiniteDuration,
+    remainDeuterAmount: Int,
+    speeds: List[FleetSpeed],
+    explorersToLeft: Int
+)

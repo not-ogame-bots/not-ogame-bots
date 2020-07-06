@@ -2,13 +2,15 @@ package not.ogame.bots.ghostbuster.processors
 
 import java.time.ZonedDateTime
 
+import cats.implicits._
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
-import not.ogame.bots.{LocalClock, OgameDriver, PlayerPlanet}
-import not.ogame.bots.ghostbuster.{FLogger, SmartBuilderConfig}
-import cats.implicits._
+import not.ogame.bots.ghostbuster.FLogger
 import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.ogame.OgameAction
+import not.ogame.bots.{LocalClock, OgameDriver, PlayerPlanet}
+
+import scala.concurrent.duration.FiniteDuration
 
 class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, ogameDriver: OgameDriver[OgameAction])(
     implicit executor: OgameActionExecutor[Task],
@@ -61,3 +63,7 @@ class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, ogameDriver
       }
   }
 }
+case class SmartBuilderConfig(
+    interval: FiniteDuration,
+    isOn: Boolean
+)

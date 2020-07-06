@@ -8,7 +8,7 @@ import not.ogame.bots._
 import not.ogame.bots.facts.{FacilityBuildingCosts, ShipCosts, SuppliesBuildingCosts, TechnologyCosts}
 import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.ogame.OgameAction
-import not.ogame.bots.ghostbuster.{FLogger, Wish}
+import not.ogame.bots.ghostbuster.FLogger
 
 import scala.math.BigDecimal.RoundingMode
 
@@ -311,4 +311,26 @@ object BuilderResult {
   def building(finishTime: ZonedDateTime): BuilderResult = Building(finishTime)
   def waiting(waitingTime: ZonedDateTime): BuilderResult = Waiting(waitingTime)
   def idle(): BuilderResult = Idle
+}
+
+sealed trait Wish {
+  def planetId: PlanetId
+}
+object Wish {
+  case class BuildSupply(suppliesBuilding: SuppliesBuilding, level: Int, planetId: PlanetId) extends Wish
+
+  case class BuildFacility(facilityBuilding: FacilityBuilding, level: Int, planetId: PlanetId) extends Wish
+
+  case class BuildShip(shipType: ShipType, planetId: PlanetId, amount: Int) extends Wish
+
+  case class SmartSupplyBuilder(
+      metalLevel: Int,
+      crystalLevel: Int,
+      deuterLevel: Int,
+      planetId: PlanetId
+  ) extends Wish
+
+  case class Research(technology: Technology, level: Int, planetId: PlanetId) extends Wish
+
+  case class DeuterBuilder(level: Int, planetId: PlanetId) extends Wish
 }

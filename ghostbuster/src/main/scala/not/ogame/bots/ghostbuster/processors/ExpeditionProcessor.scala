@@ -10,7 +10,7 @@ import not.ogame.bots._
 import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.notifications.{Notification, Notifier}
 import not.ogame.bots.ghostbuster.ogame.OgameAction
-import not.ogame.bots.ghostbuster.{ExpeditionConfig, FLogger}
+import not.ogame.bots.ghostbuster.FLogger
 
 import scala.concurrent.duration._
 
@@ -125,3 +125,12 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
       }
   }
 }
+case class ExpeditionConfig(
+    isOn: Boolean,
+    maxNumberOfExpeditions: Int,
+    startingPlanetId: PlanetId,
+    target: Coordinates,
+    maxLC: Int,
+    maxSC: Int,
+    maxExplorers: Int
+)
