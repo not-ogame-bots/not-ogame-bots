@@ -32,7 +32,6 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
 
   private def processAndWait(playerPlanet: PlayerPlanet): Task[Unit] = {
     for {
-      _ <- Task.sleep(5 seconds) // create time gap not to starve other jobs
       timeAndNotification <- lookForFleet(playerPlanet).execute()
       (time, notification) = timeAndNotification
       _ <- executor.waitTo(time)
