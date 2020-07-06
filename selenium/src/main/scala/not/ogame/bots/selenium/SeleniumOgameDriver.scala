@@ -412,7 +412,7 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
             val slots = new FleetDispatchComponentReader(webDriver).readSlots()
             MyFleetPageData(List.empty, MyFleetSlots(slots.currentFleets, slots.maxFleets, slots.currentExpeditions, slots.maxExpeditions))
           } else {
-            throw new RuntimeException(s"Couldn't proceed to movement page")
+            throw CouldNotProceedToUrl(urlProvider.readMyFleetsUrl)
           }
         })
         .handleErrorWith { err =>

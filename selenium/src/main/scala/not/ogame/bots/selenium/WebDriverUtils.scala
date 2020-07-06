@@ -39,7 +39,7 @@ object WebDriverUtils {
       findMany(by).flatMap {
         case l @ _ :: _          => Sync[F].pure(l)
         case Nil if attempts > 0 => Timer[F].sleep(100 millis) >> waitForElementsF(by, attempts - 1)
-        case _                   => Sync[F].raiseError(new RuntimeException(s"Timeout waiting for element to become available: $by"))
+        case _                   => Sync[F].raiseError(TimeoutWaitingForElementBy(by))
       }
 
     def switchToOtherTab(): F[Unit] = Sync[F].delay {
@@ -60,7 +60,7 @@ object WebDriverUtils {
           if (attempts > 0) {
             Timer[F].sleep(10 millis) >> safeUrlF(url, attempts - 1)
           } else {
-            Sync[F].raiseError(new RuntimeException(s"Couldn't proceed to page $url"))
+            Sync[F].raiseError(CouldNotProceedToUrl(url))
           }
         } else {
           Sync[F].unit
