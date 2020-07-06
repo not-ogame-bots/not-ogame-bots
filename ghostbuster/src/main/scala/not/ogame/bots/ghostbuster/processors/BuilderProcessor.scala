@@ -37,7 +37,8 @@ class BuilderProcessor(builder: Builder, config: SmartBuilderConfig, ogameDriver
         case BuilderResult.Waiting(waitingTime) =>
           firstFleetArrivalTime(planet).flatMap {
             case Some(arrivalTime) if arrivalTime.isBefore(waitingTime) =>
-              Logger[OgameAction].info(s"${showCoordinates(planet)} Waiting for first fleet to arrive til $arrivalTime").as(arrivalTime)
+              val modified = arrivalTime.plusSeconds(5) // need this to make sure resources has been refreshed correctly
+              Logger[OgameAction].info(s"${showCoordinates(planet)} Waiting for first fleet to arrive til $modified").as(modified)
             case _ =>
               val limitedWaitingTime = min(waitingTime, clock.now().plus(config.interval))
               Logger[OgameAction]
