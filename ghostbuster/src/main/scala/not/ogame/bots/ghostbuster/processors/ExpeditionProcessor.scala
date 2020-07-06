@@ -11,6 +11,7 @@ import not.ogame.bots.ghostbuster.executor._
 import not.ogame.bots.ghostbuster.notifications.{Notification, Notifier}
 import not.ogame.bots.ghostbuster.ogame.OgameAction
 import not.ogame.bots.ghostbuster.{ExpeditionConfig, FLogger}
+
 import scala.concurrent.duration._
 
 class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[OgameAction], notifier: Notifier)(
@@ -19,12 +20,11 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
 ) extends FLogger {
   def run(): Task[Unit] = {
     if (config.isOn) {
-      Task.sleep(5 seconds) >>
-        ogameDriver
-          .readPlanets()
-          .execute()
-          .map(planets => planets.filter(p => config.startingPlanetId.contains(p.id)).head)
-          .flatMap(processAndWait)
+      ogameDriver
+        .readPlanets()
+        .execute()
+        .map(planets => planets.filter(p => config.startingPlanetId.contains(p.id)).head)
+        .flatMap(processAndWait)
     } else {
       Task.never
     }
@@ -32,14 +32,16 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
 
   private def processAndWait(playerPlanet: PlayerPlanet): Task[Unit] = {
     for {
-      _ <- notifier.notify(Notification.ExpeditionTick(playerPlanet)) //todo how to not notify on start?
-      time <- lookForFleet(playerPlanet).execute()
+      _ <- Task.sleep(5 seconds) // create time gap not to starve other jobs
+      timeAndNotification <- lookForFleet(playerPlanet).execute()
+      (time, notification) = timeAndNotification
       _ <- executor.waitTo(time)
+      _ <- notification.map(notifier.notify).sequence
       _ <- withRetry(processAndWait(playerPlanet))("expedition")
     } yield ()
   }
 
-  private def lookForFleet(planet: PlayerPlanet): OgameAction[ZonedDateTime] = {
+  private def lookForFleet(planet: PlayerPlanet): OgameAction[(ZonedDateTime, Option[Notification])] = {
     for {
       myFleets <- ogameDriver.readMyFleets()
       fleetOnPlanet <- ogameDriver.readFleetPage(planet.id)
@@ -83,11 +85,18 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
                 FleetMissionType.Expedition,
                 FleetResources.Given(Resources.Zero)
               )
-            ).as(clock.now())
+            ).as(clock.now() -> None)
           }
       } else {
-        val min = expeditions.map(_.arrivalTime).min
-        Logger[OgameAction].info(s"All expeditions are in the air, waiting for first to reach its target - $min").as(min)
+        val firstExpedition = expeditions.minBy(_.arrivalTime)
+        Logger[OgameAction].info(s"All expeditions are in the air, waiting for first to reach its target - ${firstExpedition.arrivalTime}") >>
+          (if (firstExpedition.isReturning) {
+             firstExpedition.arrivalTime -> Option.empty[Notification]
+           } else {
+             firstExpedition.arrivalTime -> Some(
+               Notification.ExpeditionReachedTarget(planet)
+             )
+           }).pure[OgameAction]
       }
     } yield time
   }

@@ -30,7 +30,7 @@ class ExpeditionDebrisCollectingProcessor(
 
   private def loop(from: PlayerPlanet) = {
     executor.subscribeToNotifications
-      .collect { case n: Notification.ExpeditionTick => n }
+      .collect { case n: Notification.ExpeditionReachedTarget => n }
       .consumeWith(Consumer.foreachTask {
         _ =>
           driver
