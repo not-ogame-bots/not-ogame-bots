@@ -164,18 +164,7 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
       builder
         .buildNextThingFromWishList(planet)
         .execute()
-        .flatMap {
-          case BuilderResult.Building(finishTime)
-              if timeDiff(clock.now(), finishTime) < fsConfig.maxBuildingTime && timeDiff(startedBuildingAt, clock.now()) < fsConfig.maxWaitTime =>
-            Logger[Task].info(s"Decided to wait for building to finish til $finishTime") >>
-              executor.waitTo(finishTime) >> buildAndContinue(planet, startedBuildingAt)
-          case BuilderResult.Waiting(waitingTime)
-              if timeDiff(clock.now(), waitingTime) < fsConfig.maxBuildingTime && timeDiff(startedBuildingAt, clock.now()) < fsConfig.maxWaitTime =>
-            Logger[Task].info(s"Decided to wait for resources to produce til $waitingTime") >>
-              executor.waitTo(waitingTime) >> buildAndContinue(planet, startedBuildingAt)
-          case _ =>
-            Task.unit
-        }
+        .void
     } else {
       Task.unit
     }
