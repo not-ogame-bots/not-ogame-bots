@@ -23,6 +23,7 @@ import not.ogame.bots.ghostbuster.processors.{
   ExpeditionProcessor,
   FlyAndBuildProcessor,
   FlyAndReturnProcessor,
+  SendShipsProcessor,
   Wish
 }
 import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator, StateReporter}
@@ -90,6 +91,7 @@ object Main extends StrictLogging {
           val efp = new EscapeFleetProcessor(safeDriver, botConfig.escapeConfig)
           val stateReporter =
             new StateReporter(slackService, notifier, botConfig.expeditionConfig, botConfig.fsConfig, botConfig.flyAndReturn)
+          val sendShipsProcessor = new SendShipsProcessor(botConfig.sendShips, safeDriver)
           slackService.postMessage("I am alive", Channel.Status) >>
             Task.raceMany(
               List(
@@ -103,7 +105,8 @@ object Main extends StrictLogging {
                 hostileFleetReporter.run(),
                 efp.run(),
                 edcp.run(),
-                stateReporter.run()
+                stateReporter.run(),
+                sendShipsProcessor.run()
               )
             )
       }

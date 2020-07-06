@@ -6,6 +6,7 @@ import not.ogame.bots.ghostbuster.processors.{
   ExpeditionDebrisCollectorConfig,
   FlyAndReturnConfig,
   FsConfig,
+  SendShipConfig,
   SmartBuilderConfig,
   Wish
 }
@@ -17,5 +18,6 @@ case class BotConfig(
     smartBuilder: SmartBuilderConfig,
     escapeConfig: EscapeConfig,
     flyAndReturn: FlyAndReturnConfig,
-    expeditionDebrisCollectorConfig: ExpeditionDebrisCollectorConfig
+    expeditionDebrisCollectorConfig: ExpeditionDebrisCollectorConfig,
+    sendShips: SendShipConfig
 )

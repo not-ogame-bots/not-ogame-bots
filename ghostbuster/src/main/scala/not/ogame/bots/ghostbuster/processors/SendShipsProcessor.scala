@@ -10,7 +10,8 @@ import not.ogame.bots.ghostbuster.ogame.{OgameAction, OgameActionDriver}
 
 import scala.concurrent.duration.FiniteDuration
 
-class SendShipsProcessor(config: SendShipConfig, driver: OgameActionDriver)(implicit executor: OgameActionExecutor[Task]) extends FLogger {
+class SendShipsProcessor(config: SendShipConfig, driver: OgameActionDriver)(implicit executor: OgameActionExecutor[Task], clock: LocalClock)
+    extends FLogger {
   def run(): Task[Unit] = {
     driver
       .readPlanets()
@@ -21,9 +22,17 @@ class SendShipsProcessor(config: SendShipConfig, driver: OgameActionDriver)(impl
   }
 
   def loop(from: PlayerPlanet, to: PlayerPlanet): Task[Unit] = {
+    for {
+      _ <- checkAndSend(from, to)
+      _ <- executor.waitTo(clock.now().plus(config.interval))
+      _ <- loop(from, to)
+    } yield ()
+  }
+
+  private def checkAndSend(from: PlayerPlanet, to: PlayerPlanet) = {
     (for {
-      ships <- driver.readFleetPage(from.id).map(_.ships)
-      interestingShips = ships.filter(fs => config.ships.contains(fs._1)).filter(_._2 > 0)
+      fleetPageData <- driver.readFleetPage(from.id)
+      interestingShips = config.select(fleetPageData)
       _ <- if (interestingShips.nonEmpty) {
         Logger[OgameAction].info(s"Found some interesting ships $interestingShips on planet. Sending them to target...") >>
           driver.sendFleet(
@@ -42,4 +51,14 @@ class SendShipsProcessor(config: SendShipConfig, driver: OgameActionDriver)(impl
   }
 }
 
-case class SendShipConfig(from: PlanetId, to: PlanetId, ships: List[ShipType], interval: FiniteDuration)
+case class SendShipConfig(from: PlanetId, to: PlanetId, selectors: List[ShipSelector], interval: FiniteDuration) {
+  def select(fleetPageData: FleetPageData): Map[ShipType, Int] = {
+    selectors.foldLeft(Map.empty[ShipType, Int])((acc, item) => acc + item.select(fleetPageData)).filter(_._2 > 0)
+  }
+}
+
+case class ShipSelector(shipType: ShipType, decreaseBy: Int = 0) {
+  def select(fleetPageData: FleetPageData): (ShipType, Int) = {
+    shipType -> Math.max(fleetPageData.ships(shipType) - decreaseBy, 0)
+  }
+}
