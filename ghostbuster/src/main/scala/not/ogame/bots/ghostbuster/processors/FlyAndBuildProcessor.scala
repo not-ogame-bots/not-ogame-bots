@@ -11,7 +11,7 @@ import not.ogame.bots.ghostbuster.ogame.OgameAction
 
 import scala.concurrent.duration._
 
-class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsConfig, builder: Builder)(
+class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsConfig)(
     implicit executor: OgameActionExecutor[Task],
     clock: LocalClock
 ) extends FLogger {

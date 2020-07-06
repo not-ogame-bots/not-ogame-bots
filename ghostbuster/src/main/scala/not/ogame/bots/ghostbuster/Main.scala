@@ -81,7 +81,7 @@ object Main extends StrictLogging {
           val stateAgg = new StateAggregator(state, interpreter)
           val hostileFleetReporter = new HostileFleetReporter(slackService, interpreter)
           val builder = new Builder(safeDriver, botConfig.wishlist)
-          val fbp = new FlyAndBuildProcessor(safeDriver, botConfig.fsConfig, builder)
+          val fbp = new FlyAndBuildProcessor(safeDriver, botConfig.fsConfig)
           val ep = new ExpeditionProcessor(botConfig.expeditionConfig, safeDriver, notifier)
           val edcp =
             new ExpeditionDebrisCollectingProcessor(safeDriver, botConfig.expeditionDebrisCollectorConfig, botConfig.expeditionConfig)
