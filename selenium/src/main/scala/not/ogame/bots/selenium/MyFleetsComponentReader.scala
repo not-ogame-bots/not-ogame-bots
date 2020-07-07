@@ -26,8 +26,13 @@ class MyFleetsComponentReader(webDriver: WebDriver)(implicit clock: LocalClock) 
       getFrom(fleetElement),
       getTo(fleetElement),
       getFleetDataReturnFlight(fleetElement),
-      getShips(fleetElement)
+      getShips(fleetElement),
+      getIsReturnable(fleetElement)
     )
+  }
+
+  private def getIsReturnable(fleetElement: WebElement): Boolean = {
+    !fleetElement.findElements(By.className("reversal")).isEmpty
   }
 
   private def getFleetId(fleetElement: WebElement): FleetId = {

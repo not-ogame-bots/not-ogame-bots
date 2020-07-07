@@ -252,7 +252,8 @@ case class MyFleet(
     from: Coordinates,
     to: Coordinates,
     isReturning: Boolean,
-    ships: Map[ShipType, Int]
+    ships: Map[ShipType, Int],
+    isReturnable: Boolean
 )
 
 case class Fleet(
