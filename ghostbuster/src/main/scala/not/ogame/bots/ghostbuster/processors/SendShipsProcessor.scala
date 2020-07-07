@@ -17,7 +17,7 @@ class SendShipsProcessor(config: SendShipConfig, driver: OgameActionDriver)(impl
       .readPlanets()
       .execute()
       .flatMap { planets =>
-        loop(planets.find(_.id == config.from).get, planets.find(_.id == config.to).get)
+        withRetry(loop(planets.find(_.id == config.from).get, planets.find(_.id == config.to).get))("sendShipsProcessor")
       }
   }
 

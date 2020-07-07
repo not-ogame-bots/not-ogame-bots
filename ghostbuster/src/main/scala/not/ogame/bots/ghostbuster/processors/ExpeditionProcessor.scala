@@ -12,8 +12,6 @@ import not.ogame.bots.ghostbuster.notifications.{Notification, Notifier}
 import not.ogame.bots.ghostbuster.ogame.OgameAction
 import not.ogame.bots.ghostbuster.FLogger
 
-import scala.concurrent.duration._
-
 class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[OgameAction], notifier: Notifier)(
     implicit executor: OgameActionExecutor[Task],
     clock: LocalClock
@@ -32,15 +30,13 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
 
   private def processAndWait(playerPlanet: PlayerPlanet): Task[Unit] = {
     for {
-      timeAndNotification <- lookForFleet(playerPlanet).execute()
-      (time, notification) = timeAndNotification
+      time <- lookForFleet(playerPlanet).execute()
       _ <- executor.waitTo(time)
-      _ <- notification.map(notifier.notify).sequence
       _ <- withRetry(processAndWait(playerPlanet))("expedition")
     } yield ()
   }
 
-  private def lookForFleet(planet: PlayerPlanet): OgameAction[(ZonedDateTime, Option[Notification])] = {
+  private def lookForFleet(planet: PlayerPlanet): OgameAction[ZonedDateTime] = {
     for {
       myFleets <- ogameDriver.readMyFleets()
       fleetOnPlanet <- ogameDriver.readFleetPage(planet.id)
@@ -84,18 +80,13 @@ class ExpeditionProcessor(config: ExpeditionConfig, ogameDriver: OgameDriver[Oga
                 FleetMissionType.Expedition,
                 FleetResources.Given(Resources.Zero)
               )
-            ).as(clock.now() -> None)
+            ).as(clock.now())
           }
       } else {
         val firstExpedition = expeditions.minBy(_.arrivalTime)
-        Logger[OgameAction].info(s"All expeditions are in the air, waiting for first to reach its target - ${firstExpedition.arrivalTime}") >>
-          (if (firstExpedition.isReturning) {
-             firstExpedition.arrivalTime -> Option.empty[Notification]
-           } else {
-             firstExpedition.arrivalTime -> Some(
-               Notification.ExpeditionReachedTarget(planet)
-             )
-           }).pure[OgameAction]
+        Logger[OgameAction]
+          .info(s"All expeditions are in the air, waiting for first to reach its target - ${firstExpedition.arrivalTime}")
+          .as(firstExpedition.arrivalTime)
       }
     } yield time
   }

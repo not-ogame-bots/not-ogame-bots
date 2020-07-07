@@ -8,13 +8,13 @@ import monix.eval.Task
 import monix.reactive.Consumer
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.executor._
-import not.ogame.bots.ghostbuster.notifications.Notification
+import not.ogame.bots.ghostbuster.notifications.{Notification, Notifier}
 import not.ogame.bots.ghostbuster.ogame.OgameAction
 import not.ogame.bots.ghostbuster.FLogger
 
 import scala.concurrent.duration.FiniteDuration
 
-class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: EscapeConfig)(
+class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: EscapeConfig, notifier: Notifier)(
     implicit executor: OgameActionExecutor[Task],
     clock: LocalClock
 ) extends FLogger {
@@ -33,7 +33,7 @@ class EscapeFleetProcessor(ogameDriver: OgameDriver[OgameAction], escapeConfig: 
           Task
             .race(
               executor.waitTo(dateTime) >> Logger[Task].info("Reading fleets normally"),
-              executor.subscribeToNotifications
+              notifier.subscribeToNotifications
                 .collect { case n: Notification.ReadAllFleets => n.fleets }
                 .consumeWith(Consumer.head) <* Logger[Task].info("Used fleets from notification")
             )

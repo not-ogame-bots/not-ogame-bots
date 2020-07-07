@@ -224,7 +224,7 @@ class Builder(ogameActionDriver: OgameDriver[OgameAction], wishlist: List[Wish])
           .map(_ => BuilderResult.building(value.finishTimestamp))
       case None =>
         if (suppliesPageData.currentResources.energy < 0) {
-          if (suppliesPageData.getIntLevel(SuppliesBuilding.SolarPlant) >= 18) {
+          if (suppliesPageData.getIntLevel(SuppliesBuilding.SolarPlant) >= 18) { //chose cheaper option
             buildSupplyBuildingOrNothing(SuppliesBuilding.FusionPlant, suppliesPageData, planet)
           } else {
             buildSupplyBuildingOrNothing(SuppliesBuilding.SolarPlant, suppliesPageData, planet)

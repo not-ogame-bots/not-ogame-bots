@@ -6,14 +6,15 @@ import monix.eval.Task
 import monix.reactive.Consumer
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.executor.{OgameActionExecutor, _}
-import not.ogame.bots.ghostbuster.notifications.Notification
+import not.ogame.bots.ghostbuster.notifications.{Notification, Notifier}
 import not.ogame.bots.ghostbuster.ogame.OgameAction
 import not.ogame.bots.ghostbuster.FLogger
 
 class ExpeditionDebrisCollectingProcessor(
     driver: OgameDriver[OgameAction],
     config: ExpeditionDebrisCollectorConfig,
-    expeditionConfig: ExpeditionConfig
+    expeditionConfig: ExpeditionConfig,
+    notifier: Notifier
 )(
     implicit executor: OgameActionExecutor[Task]
 ) extends FLogger {
@@ -29,8 +30,8 @@ class ExpeditionDebrisCollectingProcessor(
   private val debrisTarget: Coordinates = expeditionConfig.target.copy(coordinatesType = CoordinatesType.Debris)
 
   private def loop(from: PlayerPlanet) = {
-    executor.subscribeToNotifications
-      .collect { case n: Notification.ExpeditionReachedTarget => n }
+    notifier.subscribeToNotifications
+      .collect { case n: Notification.ExpeditionPhaseTwoCompleted => n }
       .consumeWith(Consumer.foreachTask {
         _ =>
           driver

@@ -54,7 +54,7 @@ class FlyAndBuildProcessor(ogameDriver: OgameDriver[OgameAction], fsConfig: FsCo
       waitingTime <- possibleFsFleets match {
         case Some(fleet) =>
           Logger[OgameAction]
-            .info("Found fs fleet, waiting for it to reach its target.")
+            .info(s"Found fs fleet, waiting for it to reach its target ${fleet.arrivalTime}")
             .as(Option(fleet))
         case None =>
           Logger[OgameAction]

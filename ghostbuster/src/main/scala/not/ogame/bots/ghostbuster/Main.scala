@@ -21,12 +21,13 @@ import not.ogame.bots.ghostbuster.processors.{
   EscapeFleetProcessor,
   ExpeditionDebrisCollectingProcessor,
   ExpeditionProcessor,
+  FleetTracker,
   FlyAndBuildProcessor,
   FlyAndReturnProcessor,
   SendShipsProcessor,
   Wish
 }
-import not.ogame.bots.ghostbuster.reporting.{HostileFleetReporter, State, StateAggregator, StateReporter}
+import not.ogame.bots.ghostbuster.reporting.{ExpeditionReporter, HostileFleetReporter, State, StateAggregator, StateReporter}
 import not.ogame.bots.selenium.{SeleniumOgameDriverCreator, WebDriverResource}
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
@@ -78,20 +79,27 @@ object Main extends StrictLogging {
         case (interpreter, executor, safeDriver, notifier) =>
           implicit val impInterpreter: OgameActionInterpreterImpl = interpreter
           val slackService = new SlackServiceImpl(slackCredentials)
-          val stateAgg = new StateAggregator(state, interpreter)
-          val hostileFleetReporter = new HostileFleetReporter(slackService, interpreter)
+          val stateAgg = new StateAggregator(state, notifier)
+          val hostileFleetReporter = new HostileFleetReporter(slackService, notifier)
           val builder = new Builder(safeDriver, botConfig.wishlist)
           val fbp = new FlyAndBuildProcessor(safeDriver, botConfig.fsConfig)
           val ep = new ExpeditionProcessor(botConfig.expeditionConfig, safeDriver, notifier)
           val edcp =
-            new ExpeditionDebrisCollectingProcessor(safeDriver, botConfig.expeditionDebrisCollectorConfig, botConfig.expeditionConfig)
-          val activityFaker = new ActivityFakerProcessor(safeDriver)
+            new ExpeditionDebrisCollectingProcessor(
+              safeDriver,
+              botConfig.expeditionDebrisCollectorConfig,
+              botConfig.expeditionConfig,
+              notifier
+            )
+          val activityFaker = new ActivityFakerProcessor(safeDriver, notifier)
           val bp = new BuilderProcessor(builder, botConfig.smartBuilder, safeDriver)
           val far = new FlyAndReturnProcessor(botConfig.flyAndReturn, safeDriver)
-          val efp = new EscapeFleetProcessor(safeDriver, botConfig.escapeConfig)
+          val efp = new EscapeFleetProcessor(safeDriver, botConfig.escapeConfig, notifier)
           val stateReporter =
             new StateReporter(slackService, notifier, botConfig.expeditionConfig, botConfig.fsConfig, botConfig.flyAndReturn)
           val sendShipsProcessor = new SendShipsProcessor(botConfig.sendShips, safeDriver)
+          val fleetArrivedNotificator = new FleetTracker(notifier, safeDriver)
+          val expReporterProcessor = new ExpeditionReporter(slackService, notifier)
           slackService.postMessage("I am alive", Channel.Status) >>
             Task.raceMany(
               List(
@@ -106,7 +114,9 @@ object Main extends StrictLogging {
                 efp.run(),
                 edcp.run(),
                 stateReporter.run(),
-                sendShipsProcessor.run()
+                sendShipsProcessor.run(),
+                fleetArrivedNotificator.run(),
+                expReporterProcessor.run()
               )
             )
       }

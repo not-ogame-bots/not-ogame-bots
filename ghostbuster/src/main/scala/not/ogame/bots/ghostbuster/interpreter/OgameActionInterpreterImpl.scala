@@ -7,14 +7,12 @@ import cats.implicits._
 import cats.~>
 import io.chrisdavenport.log4cats.Logger
 import monix.eval.Task
-import monix.reactive.Observable
 import not.ogame.bots.ghostbuster.executor.OgameActionExecutor
-import not.ogame.bots.ghostbuster.notifications.{Notification, NotificationAware}
 import not.ogame.bots.ghostbuster.ogame.{OgameAction, OgameOp}
 import not.ogame.bots.ghostbuster.{FLogger, processors}
 import not.ogame.bots.{LocalClock, OgameDriver}
 
-class OgameActionInterpreterImpl(ogameDriver: OgameDriver[Task] with NotificationAware, taskExecutor: TaskExecutor[Task])(
+class OgameActionInterpreterImpl(ogameDriver: OgameDriver[Task], taskExecutor: TaskExecutor[Task])(
     implicit clock: LocalClock
 ) extends OgameActionExecutor[Task]
     with FLogger {
@@ -80,6 +78,4 @@ class OgameActionInterpreterImpl(ogameDriver: OgameDriver[Task] with Notificatio
       Logger[Task].debug(s"sleeping ~ ${sleepTime.toSeconds / 60} minutes til $time") >> Task.sleep(sleepTime)
     }
   }
-
-  override def subscribeToNotifications: Observable[Notification] = ogameDriver.subscribeToNotifications //TODO remove from here
 }

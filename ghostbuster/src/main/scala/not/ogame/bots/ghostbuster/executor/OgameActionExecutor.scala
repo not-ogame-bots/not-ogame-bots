@@ -8,7 +8,5 @@ import not.ogame.bots.ghostbuster.ogame.OgameAction
 trait OgameActionExecutor[F[_]] {
   def execute[A](action: OgameAction[A]): F[A]
 
-  def subscribeToNotifications: Observable[Notification] //TODO change to fs2?
-
   def waitTo(time: ZonedDateTime): F[Unit]
 }

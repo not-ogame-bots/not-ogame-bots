@@ -74,14 +74,14 @@ class OgameNotificationDecorator(driver: OgameDriver[Task], notifier: Notifier)(
   override def sendFleet(sendFleetRequest: SendFleetRequest): Task[Unit] = logStartEnd("sendFleet") {
     driver
       .sendFleet(sendFleetRequest)
-      .flatTap(_ => notify(Notification.FleetSent(sendFleetRequest)))
+      .flatTap(_ => notify(Notification.SendFleet(sendFleetRequest)))
       .onError { case e => notify(Notification.Failure(e)) }
   }
 
   override def returnFleet(fleetId: FleetId): Task[Unit] = logStartEnd("returnFleet") {
     driver
       .returnFleet(fleetId)
-      .flatTap(_ => notify(Notification.FleetReturned(fleetId)))
+      .flatTap(_ => notify(Notification.ReturnFleet(fleetId)))
       .onError { case e => notify(Notification.Failure(e)) }
   }
 

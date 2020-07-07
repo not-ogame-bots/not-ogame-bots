@@ -8,15 +8,14 @@ import monix.reactive.Consumer
 import not.ogame.bots.ghostbuster.FLogger
 import not.ogame.bots.ghostbuster.executor.OgameActionExecutor
 import not.ogame.bots.ghostbuster.infrastructure.{Channel, SlackService}
-import not.ogame.bots.ghostbuster.notifications.Notification
+import not.ogame.bots.ghostbuster.notifications.{Notification, Notifier}
 import not.ogame.bots.{Fleet, FleetAttitude, FleetMissionType, LocalClock}
 
-class HostileFleetReporter(slackService: SlackService[Task], taskExecutor: OgameActionExecutor[Task])(implicit clock: LocalClock)
-    extends FLogger {
+class HostileFleetReporter(slackService: SlackService[Task], notifier: Notifier)(implicit clock: LocalClock) extends FLogger {
   private implicit val uEq: Eq[Fleet] = Eq.fromUniversalEquals
 
   def run(): Task[Unit] = {
-    taskExecutor.subscribeToNotifications
+    notifier.subscribeToNotifications
       .collect {
         case Notification.ReadAllFleets(fleets) =>
           fleets.filter(

@@ -17,8 +17,9 @@ class SlackServiceImpl(credentials: SlackCredentials) extends SlackService[Task]
 
   def postMessage(message: String, channel: Channel): Task[Unit] = {
     val stringUri = channel match {
-      case Channel.Alerts => urlFromToken(credentials.statusAlertToken)
-      case Channel.Status => urlFromToken(credentials.statusToken)
+      case Channel.Alerts    => urlFromToken(credentials.statusAlertToken)
+      case Channel.Status    => urlFromToken(credentials.statusToken)
+      case Channel.ExpStatus => urlFromToken(credentials.statusExpToken)
     }
     basicRequest
       .post(uri"$stringUri")
@@ -33,7 +34,7 @@ class SlackServiceImpl(credentials: SlackCredentials) extends SlackService[Task]
 
 case class SlackMessage(text: String)
 
-case class SlackCredentials(statusToken: String, statusAlertToken: String)
+case class SlackCredentials(statusToken: String, statusAlertToken: String, statusExpToken: String)
 
 trait SlackService[F[_]] {
   def postMessage(message: String, channel: Channel): F[Unit]
@@ -43,4 +44,5 @@ sealed trait Channel
 object Channel {
   case object Alerts extends Channel
   case object Status extends Channel
+  case object ExpStatus extends Channel
 }
