@@ -67,10 +67,13 @@ class StatusAction(expeditionFleet: Map[ShipType, Int]) extends TimeBasedOrdonAc
   }
 
   private def getHostileFleetReport(allFleets: List[Fleet]): String = {
-    if (!allFleets.exists(fleet => fleet.fleetAttitude == Hostile && fleet.fleetMissionType != Spy)) {
+    val hostileFleets = allFleets.filter(fleet => fleet.fleetAttitude == Hostile && fleet.fleetMissionType != Spy)
+    if (hostileFleets.isEmpty) {
       s"OK    No hostile fleets"
     } else {
-      slackIntegration.postAlertToSlack(s"ERROR Hostile fleet detected")
+      hostileFleets.foreach(
+        fleet => slackIntegration.postAlertToSlack(s"Hostile fleet to:${fleet.to} is arriving on: ${fleet.arrivalTime}")
+      )
       s"ERROR Hostile fleet detected"
     }
   }
