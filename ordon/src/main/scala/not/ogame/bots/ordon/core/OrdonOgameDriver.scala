@@ -3,6 +3,7 @@ package not.ogame.bots.ordon.core
 import cats.effect.IO
 import cats.implicits._
 import not.ogame.bots._
+import not.ogame.bots.selenium.{CouldNotProceedToUrl, TimeoutWaitingForElement}
 import org.openqa.selenium.StaleElementReferenceException
 
 class OrdonOgameDriver(val ogameDriver: OgameDriver[IO]) {
@@ -71,6 +72,21 @@ class OrdonOgameDriver(val ogameDriver: OgameDriver[IO]) {
       case e: StaleElementReferenceException =>
         if (attempts > 0) {
           e.printStackTrace()
+          retryCommonErrors(action, attempts - 1)
+        } else {
+          throw e
+        }
+      case e: TimeoutWaitingForElement =>
+        if (attempts > 0) {
+          e.printStackTrace()
+          retryCommonErrors(action, attempts - 1)
+        } else {
+          throw e
+        }
+      case e: CouldNotProceedToUrl =>
+        if (attempts > 0) {
+          e.printStackTrace()
+          ogameDriver.login().unsafeRunSync()
           retryCommonErrors(action, attempts - 1)
         } else {
           throw e
