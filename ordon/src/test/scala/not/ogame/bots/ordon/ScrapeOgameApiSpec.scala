@@ -8,18 +8,21 @@ class ScrapeOgameApiSpec extends munit.FunSuite {
     val playerToMilitaryPoints = getPlayerToMilitaryPoints
     val playerToPlanetList = getPlayerToPlanetList
 
-    val potentialTargets = playerToMilitaryPoints.filter(_._2 > 200_000).keys.toSet
+    val potentialTargets = playerToMilitaryPoints.filter(_._2 > 500_000).keys.toSet
+    val minimalTargets = playerToMilitaryPoints.filter(_._2 > 100_000).keys.toSet
     val bandits = playerToHonorPoints.filter(_._2 < -500).keys.toSet
 
     playerToPlanetList
-      .filter(entry => potentialTargets.contains(entry._1))
-      .filter(entry => bandits.contains(entry._1))
-      //      .filter(entry => entry._2.map(_._1).forall(_.startsWith("1")))
+      .filter(entry => potentialTargets.contains(entry._1) || (bandits.contains(entry._1) && minimalTargets.contains(entry._1)))
+      //      .filter(entry => bandits.contains(entry._1))
+      .filter(entry => entry._2.map(_._1).forall(_.startsWith("1")))
       .map(entry => entry._1 -> sortCoordinates(entry._2))
       .foreach(entry => {
-        println(playerToMilitaryPoints(entry._1))
+        println(playerToMilitaryPoints(entry._1) + " " + bandits.contains(entry._1))
         println(entry._2)
       })
+    //100794
+    //    playerToPlanetList("100794").foreach(println(_))
     //    getPlayerToPlanetList("101452").foreach(println(_))
   }
 
