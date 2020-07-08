@@ -28,6 +28,8 @@ class Core(ogame: OrdonOgameDriver, initialActions: List[OrdonAction]) extends E
     val newActions = actions.flatMap(action => {
       action.process(firstEvent, ogame, this)
     })
+    // TODO: Fix Deploy and return - which got scheduled 24 ahead for some reason
+    checkEventsWithinRange()
     runInternal(newActions)
   }
 
@@ -46,6 +48,13 @@ class Core(ogame: OrdonOgameDriver, initialActions: List[OrdonAction]) extends E
       println(s"Waiting  to: ${firstEvent.triggerOn}")
       actions.foreach(action => println(action))
       Thread.sleep(millis)
+    }
+  }
+
+  private def checkEventsWithinRange(): Unit = {
+    val maxTriggerOn = events.max.triggerOn
+    if (maxTriggerOn.isAfter(ZonedDateTime.now().plusHours(20))) {
+      throw new RuntimeException(s"Got an event with suspicious triggerOn: $maxTriggerOn")
     }
   }
 }
