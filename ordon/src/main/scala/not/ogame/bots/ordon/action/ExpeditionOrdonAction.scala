@@ -54,8 +54,8 @@ class ExpeditionFleetHelper {
       LightFighter -> Math.min(averageExpeditionShips(LightFighter), fleetPageData.ships(LightFighter)),
       LargeCargoShip -> Math.min(averageExpeditionShips(LargeCargoShip), fleetPageData.ships(LargeCargoShip)),
       Explorer -> Math.min(expectedExplorerCount, fleetPageData.ships(Explorer)),
-      Destroyer -> 1,
-      EspionageProbe -> 1
+      Destroyer -> Math.min(1, fleetPageData.ships(Destroyer)),
+      EspionageProbe -> Math.min(1, fleetPageData.ships(EspionageProbe))
     )
   }
 }
