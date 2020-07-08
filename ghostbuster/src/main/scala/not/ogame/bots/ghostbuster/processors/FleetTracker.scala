@@ -53,21 +53,9 @@ class FleetTracker(notifier: Notifier, ogameActionDriver: OgameActionDriver)(imp
   private def listenAndTrack = {
     notifier.subscribeToNotifications
       .collect {
-        case Notification.SendFleet(sendFleetRequest) => sendFleetRequest
+        case Notification.SendFleet(_, fleet) => fleet
       }
-      .consumeWith(Consumer.foreachTask { sendFleetRequest =>
-        ogameActionDriver
-          .readMyFleets()
-          .execute()
-          .map { myFleetsPage =>
-            myFleetsPage.fleets
-              .filter(
-                f => f.from == sendFleetRequest.from.coordinates && f.to == sendFleetRequest.targetCoordinates && !f.isReturning && f.isReturnable
-              )
-              .maxBy(_.arrivalTime)
-          }
-          .flatMap(trackFleet)
-      })
+      .consumeWith(Consumer.foreachTask(trackFleet))
   }
 
   private def trackFleet(fleet: MyFleet) = {

@@ -7,6 +7,7 @@ import monix.execution.Scheduler
 import monix.reactive.Observable
 import not.ogame.bots._
 import not.ogame.bots.ghostbuster.FLogger
+import not.ogame.bots.ghostbuster.executor._
 
 class OgameNotificationDecorator(driver: OgameDriver[Task], notifier: Notifier)(implicit s: Scheduler)
     extends BaseOgameDriver[Task]
@@ -73,9 +74,10 @@ class OgameNotificationDecorator(driver: OgameDriver[Task], notifier: Notifier)(
 
   override def sendFleet(sendFleetRequest: SendFleetRequest): Task[Unit] = logStartEnd("sendFleet") {
     driver
-      .sendFleet(sendFleetRequest)
-      .flatTap(_ => notify(Notification.SendFleet(sendFleetRequest)))
+      .sendAndTrackFleet(sendFleetRequest)
+      .flatTap(myFleet => notify(Notification.SendFleet(sendFleetRequest, myFleet)))
       .onError { case e => notify(Notification.Failure(e)) }
+      .void
   }
 
   override def returnFleet(fleetId: FleetId): Task[Unit] = logStartEnd("returnFleet") {
