@@ -25,7 +25,7 @@ object OrdonQuasarConfig extends OrdonConfig {
   def getInitialActions(implicit clock: LocalClock): IO[List[ScheduledAction[IO]]] = {
     val listOfActions = List(
       new AlertOgameAction[IO](),
-      new KeepActiveOgameAction[IO](List(planet10, moon10, planet7, planet7_154, planet13)),
+      new KeepActiveOgameAction[IO](List(planet10, moon10, planet7, planet1_154, planet13)),
       //      new FlyAroundWithLargeCargoOgameAction[IO](planet, moon),
       //      new DeployAndReturnNoLargeCargoOgameAction[IO](planet, moon),
       //      new BuildBuildingsOgameAction[IO](planet, taskQueue(clock)),
@@ -171,31 +171,47 @@ object OrdonQuasarConfig extends OrdonConfig {
     )
   }
 
+  def monitorSannty(): OrdonAction = {
+    new MonitorActivityOrdonAction(
+      "Sannty",
+      planet10,
+      List(
+        Coordinates(1, 153, 5),
+        Coordinates(1, 154, 5),
+        Coordinates(1, 154, 6),
+        Coordinates(1, 154, 6, Moon),
+        Coordinates(3, 154, 5),
+        Coordinates(3, 154, 6)
+      )
+    )
+  }
+
   def initialActionsV2(): List[OrdonAction] = {
     List(
       new KeepActiveOrdonAction(allPlanetsAndMoons),
-      //      new ExpeditionMoveResourcesAndFleetOrdonAction(planet10, moon10, expeditionFleet),
-      //      new DeployAndReturnOrdonAction(planet10, moon10),
-      //      new TransportToOrdonAction(List(planet3, planet6, planet7, planet7_154, planet13), planet10),
-      //      new ResearchOrdonAction(planet10, researchList),
+      new ExpeditionMoveResourcesAndFleetOrdonAction(planet10, moon10, expeditionFleet),
+      new DeployAndReturnOrdonAction(planet10, moon10),
+      new TransportToOrdonAction(List(planet3, planet6, planet7, planet1_154, planet13), planet10),
+      new ResearchOrdonAction(planet10, researchList),
       new ExpeditionCollectDebrisOrdonAction(moon10),
       new ExpeditionOrdonAction(moon10),
       //      monitorSos(),
       //      monitorRadamantys(),
       //      monitorVed(),
-      monitorAdmiralSun(),
-      monitorAdmiralMagnetar(),
+      //      monitorAdmiralSun(),
+      //      monitorAdmiralMagnetar(),
+      monitorSannty(),
       new StatusAction(expeditionFleet)
     )
   }
 
   private val researchList =
-    List(Computer -> 14, Computer -> 15, Weapons -> 14, Shielding -> 14, Armor -> 19)
+    List(Espionage -> 12, Weapons -> 15, Shielding -> 15, Armor -> 19)
 
   private val expeditionFleet: Map[ShipType, Int] =
     Map(Destroyer -> 1, EspionageProbe -> 1, LargeCargoShip -> 1000, Explorer -> 250, LightFighter -> 1700)
 
-  private val planet7_154 = PlayerPlanet(PlanetId.apply("33624816"), Coordinates(1, 154, 7))
+  private val planet1_154 = PlayerPlanet(PlanetId.apply("33624816"), Coordinates(1, 154, 7))
   private val planet3 = PlayerPlanet(PlanetId.apply("33635734"), Coordinates(1, 155, 3))
   private val moon3 = PlayerPlanet(PlanetId.apply("33639213"), Coordinates(1, 155, 3, Moon))
   private val planet6 = PlayerPlanet(PlanetId.apply("33635176"), Coordinates(1, 155, 6))
@@ -206,6 +222,10 @@ object OrdonQuasarConfig extends OrdonConfig {
   private val moon10 = PlayerPlanet(PlanetId.apply("33632870"), Coordinates(1, 155, 10, Moon))
   private val planet13 = PlayerPlanet(PlanetId.apply("33629451"), Coordinates(1, 155, 13))
   private val moon13 = PlayerPlanet(PlanetId.apply("33639213"), Coordinates(1, 155, 3, Moon))
+
+  private val planet1_433 = PlayerPlanet(PlanetId.apply("33647631"), Coordinates(1, 433, 8))
+  private val moon1_433 = PlayerPlanet(PlanetId.apply("33652322"), Coordinates(1, 433, 8, Moon))
+
   private val allPlanetsAndMoons =
-    List(planet7_154, planet3, moon3, planet6, moon6, planet7, moon7, planet10, moon10, planet13, moon13)
+    List(planet1_154, planet3, moon3, planet6, moon6, planet7, moon7, planet10, moon10, planet13, moon13)
 }
