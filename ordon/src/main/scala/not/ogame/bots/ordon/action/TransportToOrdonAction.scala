@@ -4,6 +4,7 @@ import java.time.ZonedDateTime
 
 import not.ogame.bots.FleetMissionType.Transport
 import not.ogame.bots.FleetSpeed.Percent100
+import not.ogame.bots.ShipType.SmallCargoShip
 import not.ogame.bots.ordon.core.{EventRegistry, OrdonOgameDriver, TimeBasedOrdonAction}
 import not.ogame.bots.ordon.utils.SendFleet
 import not.ogame.bots.{MyFleet, PlayerPlanet}
@@ -46,7 +47,7 @@ class TransportToOrdonAction(fromList: List[PlayerPlanet], to: PlayerPlanet) ext
         from = from,
         to = to,
         selectResources = page => page.currentResources,
-        selectShips = page => page.ships,
+        selectShips = page => Map(SmallCargoShip -> page.ships(SmallCargoShip)),
         fleetSpeed = Percent100,
         missionType = Transport
       ).getSendFleetRequest(ogame)
