@@ -4,15 +4,16 @@ Content-Type: application/json
 
 {
   "from": [
-    "33660481",
-    "33663703",
-    "33666179"
+    "33624132",
+    "33625085",
+    "33626410",
+    "33631643"
   ],
-  "to": "33667779",
+  "to": "33620962",
   "ships": {
-    "large_cargo_ship": 120
+    "large_cargo_ship": 300
   },
-  "mission-type": "transport"
+  "missionType": "Transport"
 }
 
 ###
