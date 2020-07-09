@@ -12,7 +12,7 @@ object EasySelenium {
         if (attempts > 0) {
           safeUrl(url, attempts - 1)
         } else {
-          throw new RuntimeException(s"Couldn't proceed to page $url")
+          throw CouldNotProceedToUrl(url)
         }
       }
     }
@@ -25,7 +25,7 @@ object EasySelenium {
           Thread.sleep(100)
           waitForElement(by, attempts - 1)
         } else {
-          throw new RuntimeException(s"Time out waiting for $by")
+          throw TimeoutWaitingForElementBy(by)
         }
       }
     }
@@ -44,7 +44,7 @@ object EasySelenium {
           Thread.sleep(100)
           waitForPredicate(predicate, attempts - 1)
         } else {
-          throw new RuntimeException(s"Time out waiting for $predicate")
+          throw TimeoutWaitingForElementByPredicate()
         }
       }
     }
@@ -63,7 +63,7 @@ object EasySelenium {
           Thread.sleep(100)
           waitForElement(by, attempts - 1)
         } else {
-          throw new RuntimeException(s"Time out waiting for $by")
+          throw TimeoutWaitingForElementBy(by)
         }
       }
     }
