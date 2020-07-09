@@ -3,6 +3,7 @@ package not.ogame.bots.selenium
 import not.ogame.bots.FleetSpeed._
 import not.ogame.bots._
 import not.ogame.bots.selenium.EasySelenium._
+import org.openqa.selenium.support.ui.{ExpectedConditions, WebDriverWait}
 import org.openqa.selenium.{By, JavascriptExecutor, WebDriver}
 
 import scala.util.Random
@@ -146,14 +147,14 @@ class SendFleetAction(webDriver: WebDriver) {
   }
 
   private def waitUntilVisible(by: By): Unit = {
-    webDriver.waitForPredicate(_.findElementsS(by).map(_.getAttribute("style")).exists(!_.contains("none")))
+    new WebDriverWait(webDriver, 2).until(ExpectedConditions.visibilityOfElementLocated(by))
   }
 
   private def waitUntilInvisible(by: By): Unit = {
-    webDriver.waitForPredicate(_.findElementsS(by).map(_.getAttribute("style")).exists(_.contains("none")))
+    new WebDriverWait(webDriver, 2).until(ExpectedConditions.invisibilityOfElementLocated(by))
   }
 
   private def waitUntilIsOn(by: By): Unit = {
-    webDriver.waitForPredicate(_.findElementsS(by).map(_.getAttribute("class")).exists(_.contains("on")))
+    new WebDriverWait(webDriver, 2).until(ExpectedConditions.attributeContains(by, "class", "on"))
   }
 }
