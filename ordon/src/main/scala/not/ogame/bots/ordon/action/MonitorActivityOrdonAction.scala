@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 
 import not.ogame.bots.PlayerActivity.LessThan15MinutesAgo
 import not.ogame.bots.ordon.core.{EventRegistry, OrdonOgameDriver, TimeBasedOrdonAction}
-import not.ogame.bots.ordon.utils.SlackIntegration
+import not.ogame.bots.ordon.utils.{Galaxy, SlackIntegration}
 import not.ogame.bots.{Coordinates, PlayerActivity, PlayerPlanet}
 
 class MonitorActivityOrdonAction(monitoredPlayerName: String, playerPlanet: PlayerPlanet, coordinatesList: List[Coordinates])
@@ -12,16 +12,8 @@ class MonitorActivityOrdonAction(monitoredPlayerName: String, playerPlanet: Play
   private val slackIntegration = new SlackIntegration()
 
   override def processTimeBased(ogame: OrdonOgameDriver, eventRegistry: EventRegistry): ZonedDateTime = {
-    val message = coordinatesList
-      .groupBy(c => c.galaxy -> c.system)
-      .flatMap(entry => {
-        val g = entry._1._1
-        val s = entry._1._2
-        val cList = entry._2
-        val galaxyPageData = ogame.readGalaxyPage(playerPlanet.id, g, s)
-        galaxyPageData.playerActivityMap.filter(entry => cList.contains(entry._1))
-      })
-      .toList
+    val playerActivityMap = Galaxy.getPlayerActivityMap(ogame, playerPlanet, coordinatesList)
+    val message = playerActivityMap.toList
       .sortBy(entry => entry._1.galaxy * 100000 + entry._1.system * 100 + entry._1.position)
       .map(entry => {
         entryToString(entry)

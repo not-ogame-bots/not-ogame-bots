@@ -11,6 +11,8 @@ import not.ogame.bots._
 import not.ogame.bots.ordon.action._
 import not.ogame.bots.ordon.core.OrdonAction
 
+import scala.io.Source
+
 object OrdonQuasarConfig extends OrdonConfig {
   def getCredentials: Credentials = {
     val source = scala.io.Source.fromFile(s"${System.getenv("HOME")}/.not-ogame-bots/s169-pl.conf")
@@ -186,12 +188,32 @@ object OrdonQuasarConfig extends OrdonConfig {
     )
   }
 
+  def monitorLashlo(): OrdonAction = {
+    new MonitorActivityOrdonAction(
+      "Lashlo",
+      planet10,
+      List(
+        Coordinates(1, 4, 12),
+        Coordinates(1, 4, 12, Moon),
+        Coordinates(5, 329, 12),
+        Coordinates(5, 329, 13),
+        Coordinates(5, 330, 4),
+        Coordinates(5, 330, 4, Moon),
+        Coordinates(5, 330, 12),
+        Coordinates(5, 330, 13),
+        Coordinates(5, 330, 14),
+        Coordinates(5, 331, 12),
+        Coordinates(5, 331, 13)
+      )
+    )
+  }
+
   def initialActionsV2(): List[OrdonAction] = {
     List(
       new KeepActiveOrdonAction(allPlanetsAndMoons),
-      new ExpeditionMoveResourcesAndFleetOrdonAction(planet10, moon10, expeditionFleet),
-      new DeployAndReturnOrdonAction(planet10, moon10),
-      new TransportToOrdonAction(List(planet3, planet6, planet7, planet1_154, planet13), planet10),
+      //      new ExpeditionMoveResourcesAndFleetOrdonAction(planet10, moon10, expeditionFleet),
+      //      new DeployAndReturnOrdonAction(planet10, moon10),
+      new TransportToOrdonAction(List(planet1_49, planet1_154, planet3, planet6, planet7, planet13, planet1_433, planet2_66), planet10),
       new ResearchOrdonAction(planet10, researchList),
       new ExpeditionCollectDebrisOrdonAction(moon10),
       new ExpeditionOrdonAction(moon10),
@@ -201,8 +223,18 @@ object OrdonQuasarConfig extends OrdonConfig {
       //      monitorAdmiralSun(),
       //      monitorAdmiralMagnetar(),
       monitorSannty(),
+      monitorLashlo(),
       new StatusAction(expeditionFleet)
     )
+  }
+
+  def checkIdle(): List[OrdonAction] = {
+    List(new CheckIdleAction(moon10, findTargets()))
+  }
+
+  private def findTargets(): Iterator[String] = {
+    Source.fromInputStream(System.in).getLines()
+    //    List("Sannty", "Hoeren") ++ Random.shuffle(Stats.getTargets)
   }
 
   private val researchList =
@@ -223,8 +255,14 @@ object OrdonQuasarConfig extends OrdonConfig {
   private val planet13 = PlayerPlanet(PlanetId.apply("33629451"), Coordinates(1, 155, 13))
   private val moon13 = PlayerPlanet(PlanetId.apply("33639213"), Coordinates(1, 155, 3, Moon))
 
+  private val planet1_49 = PlayerPlanet(PlanetId.apply("33643174"), Coordinates(1, 49, 7))
+  private val moon1_49 = PlayerPlanet(PlanetId.apply("33644794"), Coordinates(1, 49, 7, Moon))
+
   private val planet1_433 = PlayerPlanet(PlanetId.apply("33647631"), Coordinates(1, 433, 8))
   private val moon1_433 = PlayerPlanet(PlanetId.apply("33652322"), Coordinates(1, 433, 8, Moon))
+
+  private val planet2_66 = PlayerPlanet(PlanetId.apply("33644463"), Coordinates(2, 66, 6))
+  private val moon2_66 = PlayerPlanet(PlanetId.apply("33649008"), Coordinates(2, 66, 6, Moon))
 
   private val allPlanetsAndMoons =
     List(planet1_154, planet3, moon3, planet6, moon6, planet7, moon7, planet10, moon10, planet13, moon13)
