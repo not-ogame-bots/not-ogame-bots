@@ -210,6 +210,7 @@ object OrdonQuasarConfig extends OrdonConfig {
 
   def initialActionsV2(): List[OrdonAction] = {
     List(
+      new ChatRelayOrdonAction(),
       new KeepActiveOrdonAction(allPlanetsAndMoons),
       //      new ExpeditionMoveResourcesAndFleetOrdonAction(planet10, moon10, expeditionFleet),
       //      new DeployAndReturnOrdonAction(planet10, moon10),
