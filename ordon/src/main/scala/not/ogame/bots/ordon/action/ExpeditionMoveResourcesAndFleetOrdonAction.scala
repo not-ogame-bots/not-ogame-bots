@@ -28,7 +28,7 @@ class ExpeditionMoveResourcesAndFleetOrdonAction(planet: PlayerPlanet, moon: Pla
         LargeCargoShip -> Selector.skip,
         Destroyer -> Selector.decreaseBy(3),
         EspionageProbe -> Selector.decreaseBy(50),
-        Explorer -> Selector.decreaseBy(600)
+        Explorer -> Selector.decreaseBy(800)
       )
     ),
     fleetSpeed = FleetSpeed.Percent100
