@@ -46,6 +46,10 @@ trait OgameDriver[F[_]] {
   def createOffer(planetId: PlanetId, newOffer: MyOffer): F[Unit]
 
   def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): F[GalaxyPageData]
+
+  def readAllianceMessages(): F[List[ChatMessage]]
+
+  def readChatConversations(): F[List[ChatConversations]]
 }
 
 case class SuppliesPageData(
@@ -431,3 +435,17 @@ object PlayerActivity extends Enum[PlayerActivity] {
 
   override def values: IndexedSeq[PlayerActivity] = findValues
 }
+
+case class ChatMessage(
+    id: String,
+    from: String,
+    date: ZonedDateTime,
+    message: String
+)
+
+case class ChatConversations(
+    id: String,
+    conversationWith: String,
+    lastDate: ZonedDateTime,
+    lastMessage: String
+)
