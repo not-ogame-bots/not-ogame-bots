@@ -1,0 +1,160 @@
+#notificationbarcomponent {
+    position: absolute;
+    width: 670px;
+    height: 45px;
+    left: 170px;
+    right: 0;
+    top: 97px;
+}
+
+#notificationbarcomponent #message-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 670px;
+    height: 40px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#notificationbarcomponent #messages_collapsed {
+    float: initial;
+    position: absolute;
+    font-size: 11px;
+    height: 38px;
+    line-height: 17px;
+    margin: 2px 0 0 0;
+    overflow: visible;
+    text-align: left;
+    width: 430px;
+    left: 150px;
+}
+
+#notificationbarcomponent #messages_collapsed a:link,
+#notificationbarcomponent #messages_collapsed a:visited,
+.no-touch #notificationbarcomponent #messages_collapsed a:hover,
+#notificationbarcomponent #messages_collapsed a:active {
+    background: transparent url("/cdn/img/navigation/message-open-close-bg.gif") no-repeat top left;
+    float: right;
+    height: 18px;
+    margin: -15px 0 0 0;
+    width: 20px;
+}
+
+#notificationbarcomponent #messages_collapsed a.open {
+    background-position: 0 -18px;
+    display: none;
+}
+
+/* ****************** Eventbox: Communication Menu ************************** */
+#notificationbarcomponent .comm_menu {
+    background-image: url("/cdn/img/layout/sprite_header_icons.png");
+    background-repeat: no-repeat;
+    display: block;
+    height: 40px;
+    position: absolute;
+    width: 60px;
+}
+#notificationbarcomponent .comm_menu.messages { left:13px; }
+#notificationbarcomponent .comm_menu.chat { left: 73px; }
+#notificationbarcomponent .comm_menu.buddies { left:133px; }
+
+#notificationbarcomponent .comm_menu.messages { background-position: 15px 1px; }
+#notificationbarcomponent .no-touch .comm_menu.messages:hover { background-position: 15px -78px; }
+#notificationbarcomponent .comm_menu.messages.selected { background-position: 15px -39px; }
+
+#notificationbarcomponent .comm_menu.chat { background-position: 8px -117px; }
+#notificationbarcomponent .no-touch .comm_menu.chat:hover { background-position: 8px -204px; }
+#notificationbarcomponent .comm_menu.chat.selected { background-position: 8px -161px; }
+
+#notificationbarcomponent .comm_menu.buddies { background-position: 2px -251px; }
+#notificationbarcomponent .no-touch .comm_menu.buddies:hover { background-position: 2px -343px; }
+#notificationbarcomponent .comm_menu.buddies.selected { background-position: 2px -298px; }
+
+/* ***** .new_msg_count is displayed in event header and on newsfeed tabs *** */
+#notificationbarcomponent .new_msg_count {
+    display: block;
+    min-width: 12px;
+    height: 16px;
+    border-radius: 8px;
+    background-color: #242D37;
+    border: 1px solid #40C4C1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.75);
+    text-align: center;
+    text-decoration: none;
+    color: #FFF;
+    float: right;
+    padding: 0 2px;
+    z-index: 3;
+    position: absolute;
+}
+
+#notificationbarcomponent .comm_menu .new_msg_count { top: 3px; }
+#notificationbarcomponent .comm_menu.messages .new_msg_count { right: -6px; }
+#notificationbarcomponent .comm_menu.chat .new_msg_count { right: 0; }
+#notificationbarcomponent .comm_menu.buddies .new_msg_count { right: 10px; }
+
+#notificationbarcomponent .tabs_btn_img .new_msg_count {
+    top: -6px;
+    right: -5px;
+}
+
+
+
+#notificationbarcomponent #attack_alert {
+    position: absolute;
+    right:30px;
+    color:#fff;
+    display:block;
+    height: 37px;
+    margin:0;
+    text-decoration:none;
+    width: 55px;
+}
+
+#notificationbarcomponent #attack_alert.noAttack {
+    visibility: hidden;
+}
+
+#notificationbarcomponent #attack_alert a {
+    background-image: url("/cdn/img/layout/detail-spriteset.png");
+    background-repeat: no-repeat;
+    display:block;
+    height: 40px;
+    margin: 0 0 0 3px;
+    width: 62px;
+}
+#galaxy #notificationbarcomponent #attack_alert a {
+    height: 45px;
+    margin: 1px 0 0 6px;
+}
+
+#notificationbarcomponent #attack_alert.longtime a { background-position: -490px 0; }
+#galaxy #notificationbarcomponent #attack_alert.longtime a { background-position: -490px -80px; }
+
+#notificationbarcomponent #attack_alert.today a { background-position: -490px -40px; }
+#galaxy #notificationbarcomponent #attack_alert.today a { background-position: -490px -125px; }
+
+/* #attack_alert.longtime a { background: transparent url("/cdn/img/layout/anim_alert_longtime.png") 0 0 no-repeat; }
+#galaxy #notificationbarcomponent #attack_alert.longtime a { background: transparent url("/cdn/img/layout/anim_alert_galaxy_longtime.png") 0 0 no-repeat; }
+
+#attack_alert.today a { background: transparent url("/cdn/img/layout/anim_alert_today.png") 0 0 no-repeat; }
+#galaxy #notificationbarcomponent #attack_alert.today a { background: transparent url("/cdn/img/layout/anim_alert_galaxy_today.png") 0 0 no-repeat; } */
+
+/* GIF Animation if Attack sooner than 6h: */
+#notificationbarcomponent #attack_alert.soon a { background: transparent url("/cdn/img/layout/anim_alert_soon.gif") 0 0 no-repeat; }
+#galaxy #notificationbarcomponent #attack_alert.soon a { background: transparent url("/cdn/img/layout/anim_alert_galaxy_soon.gif") 0 0 no-repeat; }
+
+/* crappy GIF to indicate Wreckfield presence. Just change that to something proper, please */
+#notificationbarcomponent #attack_alert.wreckField a { background: transparent url("/cdn/img/wreckfields/wreckfelder_icons.png") -22px 0 no-repeat; }
+#galaxy #notificationbarcomponent #attack_alert.wreckField a { background: transparent url("/cdn/img/layout/alert_galaxy_wreckfield.gif") 0 0 no-repeat; }
+
+#notificationbarcomponent #attack_alert .wreckFieldCountDown {
+    position: relative;
+    top:-13px;
+    left:10px;
+    font-size: 8px;
+    background-color: rgba(0,0,0,.7);
+}
+
