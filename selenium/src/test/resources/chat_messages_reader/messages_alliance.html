@@ -1,0 +1,631 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body>
+<div id="communicationmessagespage">
+    <script>
+    $("#newAllianceMsg").submit(function() {
+        var $thisObj = $(this);
+
+        if($.trim($thisObj.find("textarea[name=\"text\"]").val()).length == 0) {
+            errorBoxNotify(LocalizationStrings.error, chatLoca["TEXT_EMPTY"], LocalizationStrings.ok);
+            return false;
+        }
+
+        $.post(
+            $thisObj.attr("action"),
+            $thisObj.serialize() + "&ajax=1",
+            function(data) {
+                try {
+                    var decodedData = $.parseJSON(data);
+                    if(typeof decodedData.message != "undefined") {
+                        errorBoxNotify(
+                            LocalizationStrings.error,
+                            decodedData.message,
+                            LocalizationStrings.ok,
+                            function() {
+                                $.ajax({
+                                    url: '?page=messages',
+                                    type: 'GET',
+                                    dataType: 'html',
+                                    data: {
+                                        tab: 10,
+                                        ajax: 1
+                                    },
+                                    success: function(data) {
+                                        $('#communicationmessagespage').parent().html(data);
+                                    },
+                                    error: function(jqXHR, textStatus, errorThrown) {
+                                    }
+                                });
+                            }
+                        );
+                    }
+                } catch (e) {
+                    $("#eins").html(data);
+                }
+            }
+        );
+
+        return false;
+    });
+
+
+    </script>
+    <div class="js_accordion">
+        <h3>Nowa wiadomość sojuszu</h3>
+        <!-- the form for creating new messages (broadcasts in this case) is in a separate tpl because is is also needed for sharing reports -->
+        <form action="https://s169-pl.ogame.gameforge.com/game/index.php?page=allianceBroadcast&amp;rec=messages"
+              method="post" id="newAllianceMsg">
+            <input type="hidden" name="token" value="02049bd6fea6c822ad3971e77492b018">
+
+            <link rel="stylesheet" href="messages_alliance_files/select2.css" type="text/css">
+            <div>
+                Odbiorca:
+                <script language="javascript">
+        jQuery("#select2").select2({
+            tags: true,
+            id: function(object) {
+                return object.value;
+            }
+        });
+
+
+                </script>
+
+                <div style="margin-bottom: -10px;">
+                    <select name="empfaenger[]" multiple="multiple" id="select2" style="width: 310px;">
+                        <option value="-1" selected="selected">
+                            Wszyscy gracze
+                        </option>
+                        <option value="56">Tylko pozycja: Założyciel</option>
+                        <option value="57">Tylko pozycja: Nowy</option>
+                        <option value="121">Tylko pozycja: Młody Leniwiec</option>
+                        <option value="122">Tylko pozycja: Leniwiec</option>
+                        <option value="123">Tylko pozycja: Szef Leniwców</option>
+                    </select>
+                </div>
+                <br>
+                <button class="btn_blue js_send_msg fright ally_send_button">Wyślij</button>
+                <div class="editor_wrap">
+                    <textarea name="text" class="new_msg_textarea"></textarea>
+                </div>
+            </div>
+            <script language="javascript">
+    initBBCodeEditor(locaKeys, itemNames, false, '.new_msg_textarea', 2000, true);
+
+
+            </script>
+        </form>
+    </div>
+
+    <ul class="tab_inner ctn_with_new_msg clearfix">
+        <ul class="pagination">
+            <li class="paginator" data-tab="10" data-page="1">|&lt;&lt;</li>
+            <li class="paginator" data-tab="10" data-page="1">&lt;</li>
+            <li class="curPage" data-tab="10">1/17</li>
+            <li class="paginator" data-tab="10" data-page="2">&gt;</li>
+            <li class="paginator" data-tab="10" data-page="17">&gt;&gt;|</li>
+        </ul>
+        <li class="msg " data-msg-id="2426462">
+            <div class="msg_status"></div>
+            <div class="msg_head">
+                <span class="msg_title blue_txt">Wiadomość do sojuszu od <span
+                        title="Gracz: Ordon|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=155&quot;&gt;[1:155:10]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100802&amp;category=1&quot;&gt;21&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">Ordon</span></span>
+                <span class="fright">
+                            <a href="javascript: void(0);" class="fright">
+                <span class="icon_nf icon_refuse js_actionKill tooltip js_hideTipOnMobile" title="Usuń"></span>
+            </a>
+        
+        <span class="msg_date fright">11.07.2020 17:57:25</span>
+    </span>
+                <br>
+                <span class="msg_sender_label">Od:</span>
+                <span class="msg_sender"><span
+                        title="Gracz: Ordon|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=155&quot;&gt;[1:155:10]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100802&amp;category=1&quot;&gt;21&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">Ordon</span></span>
+            </div>
+            <span class="msg_content">
+        Napisałem. To po tym odszedł.
+    </span>
+            <div class="msg_actions clearfix">
+
+
+            </div>
+            <script type="text/javascript">
+    initOverlays();
+
+
+            </script>
+
+        </li>
+        <li class="msg " data-msg-id="2426284">
+            <div class="msg_status"></div>
+            <div class="msg_head">
+                <span class="msg_title blue_txt">Wiadomość do sojuszu od <span
+                        title="Gracz: Faster than Hamster|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=4&quot;&gt;[1:4:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100026&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100026&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100026&amp;category=1&quot;&gt;10&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">Faster than Hamster</span></span>
+                <span class="fright">
+                            <a href="javascript: void(0);" class="fright">
+                <span class="icon_nf icon_refuse js_actionKill tooltip js_hideTipOnMobile" title="Usuń"></span>
+            </a>
+        
+        <span class="msg_date fright">11.07.2020 17:55:11</span>
+    </span>
+                <br>
+                <span class="msg_sender_label">Od:</span>
+                <span class="msg_sender"><span
+                        title="Gracz: Faster than Hamster|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=4&quot;&gt;[1:4:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100026&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100026&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100026&amp;category=1&quot;&gt;10&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">Faster than Hamster</span></span>
+            </div>
+            <span class="msg_content">
+        To do niego napisz Ordon.<br><br>
+Jak dla mnie możesz otworzyć rekrutację ale dla ludzi z flota top50 najlepiej
+    </span>
+
+            <a href="javascript:void(0);" class="tooltip js_hideTipOnMobile fright"
+               onclick="reportAllyRoundMessage($(this), 2426284, 100026, 'Zgłosić tę wiadomość do operatora gry?'); return false;"
+               title="Zgłosić tę wiadomość do operatora gry?">
+                <span class="icon report icon_warning"></span>
+            </a>
+            &nbsp;
+
+            <a href="https://s169-pl.ogame.gameforge.com/game/index.php?page=chat&amp;playerId=100026"
+               class="icon_nf_link fright" title="Odpowiedź">
+                <span class="icon icon_restore"></span>
+            </a>
+            <div class="msg_actions clearfix">
+
+
+            </div>
+            <script type="text/javascript">
+    initOverlays();
+
+
+            </script>
+
+        </li>
+        <li class="msg " data-msg-id="2425935">
+            <div class="msg_status"></div>
+            <div class="msg_head">
+                <span class="msg_title blue_txt">Wiadomość do sojuszu od <span
+                        title="Gracz: MARCEL|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=79&quot;&gt;[1:79:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100416&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100416&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100416&amp;category=1&quot;&gt;9&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">MARCEL</span></span>
+                <span class="fright">
+                            <a href="javascript: void(0);" class="fright">
+                <span class="icon_nf icon_refuse js_actionKill tooltip js_hideTipOnMobile" title="Usuń"></span>
+            </a>
+        
+        <span class="msg_date fright">11.07.2020 17:51:26</span>
+    </span>
+                <br>
+                <span class="msg_sender_label">Od:</span>
+                <span class="msg_sender"><span
+                        title="Gracz: MARCEL|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=79&quot;&gt;[1:79:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100416&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100416&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100416&amp;category=1&quot;&gt;9&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">MARCEL</span></span>
+            </div>
+            <span class="msg_content">
+        Mogę otworzyć rekrutacje Co jakiś czas ktoś pyta czy może dołączyć
+    </span>
+
+            <a href="javascript:void(0);" class="tooltip js_hideTipOnMobile fright"
+               onclick="reportAllyRoundMessage($(this), 2425935, 100416, 'Zgłosić tę wiadomość do operatora gry?'); return false;"
+               title="Zgłosić tę wiadomość do operatora gry?">
+                <span class="icon report icon_warning"></span>
+            </a>
+            &nbsp;
+
+            <a href="https://s169-pl.ogame.gameforge.com/game/index.php?page=chat&amp;playerId=100416"
+               class="icon_nf_link fright" title="Odpowiedź">
+                <span class="icon icon_restore"></span>
+            </a>
+            <div class="msg_actions clearfix">
+
+
+            </div>
+            <script type="text/javascript">
+    initOverlays();
+
+
+            </script>
+
+        </li>
+        <li class="msg " data-msg-id="2425881">
+            <div class="msg_status"></div>
+            <div class="msg_head">
+                <span class="msg_title blue_txt">Wiadomość do sojuszu od <span
+                        title="Gracz: Ordon|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=155&quot;&gt;[1:155:10]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100802&amp;category=1&quot;&gt;21&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">Ordon</span></span>
+                <span class="fright">
+                            <a href="javascript: void(0);" class="fright">
+                <span class="icon_nf icon_refuse js_actionKill tooltip js_hideTipOnMobile" title="Usuń"></span>
+            </a>
+        
+        <span class="msg_date fright">11.07.2020 17:50:55</span>
+    </span>
+                <br>
+                <span class="msg_sender_label">Od:</span>
+                <span class="msg_sender"><span
+                        title="Gracz: Ordon|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=155&quot;&gt;[1:155:10]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100802&amp;category=1&quot;&gt;21&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">Ordon</span></span>
+            </div>
+            <span class="msg_content">
+        w sumie nie wiem czy coś odpisać. Używam autorefresh żeby była aktywność.<br><br>
+strasznie szkoda El. już wolałbym ja odejść bo to on tu robił sojusz.
+    </span>
+            <div class="msg_actions clearfix">
+
+
+            </div>
+            <script type="text/javascript">
+    initOverlays();
+
+
+            </script>
+
+        </li>
+        <li class="msg " data-msg-id="2425762">
+            <div class="msg_status"></div>
+            <div class="msg_head">
+                <span class="msg_title blue_txt">Wiadomość do sojuszu od <span
+                        title="Gracz: Faster than Hamster|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=4&quot;&gt;[1:4:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100026&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100026&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100026&amp;category=1&quot;&gt;10&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">Faster than Hamster</span></span>
+                <span class="fright">
+                            <a href="javascript: void(0);" class="fright">
+                <span class="icon_nf icon_refuse js_actionKill tooltip js_hideTipOnMobile" title="Usuń"></span>
+            </a>
+        
+        <span class="msg_date fright">11.07.2020 17:49:44</span>
+    </span>
+                <br>
+                <span class="msg_sender_label">Od:</span>
+                <span class="msg_sender"><span
+                        title="Gracz: Faster than Hamster|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=4&quot;&gt;[1:4:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100026&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100026&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100026&amp;category=1&quot;&gt;10&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">Faster than Hamster</span></span>
+            </div>
+            <span class="msg_content">
+        I zostaliśmy w piątkę, ale gówno...
+    </span>
+
+            <a href="javascript:void(0);" class="tooltip js_hideTipOnMobile fright"
+               onclick="reportAllyRoundMessage($(this), 2425762, 100026, 'Zgłosić tę wiadomość do operatora gry?'); return false;"
+               title="Zgłosić tę wiadomość do operatora gry?">
+                <span class="icon report icon_warning"></span>
+            </a>
+            &nbsp;
+
+            <a href="https://s169-pl.ogame.gameforge.com/game/index.php?page=chat&amp;playerId=100026"
+               class="icon_nf_link fright" title="Odpowiedź">
+                <span class="icon icon_restore"></span>
+            </a>
+            <div class="msg_actions clearfix">
+
+
+            </div>
+            <script type="text/javascript">
+    initOverlays();
+
+
+            </script>
+
+        </li>
+        <li class="msg " data-msg-id="2425486">
+            <div class="msg_status"></div>
+            <div class="msg_head">
+                <span class="msg_title blue_txt">Wiadomość do sojuszu od <span
+                        title="Gracz: Faster than Hamster|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=4&quot;&gt;[1:4:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100026&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100026&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100026&amp;category=1&quot;&gt;10&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">Faster than Hamster</span></span>
+                <span class="fright">
+                            <a href="javascript: void(0);" class="fright">
+                <span class="icon_nf icon_refuse js_actionKill tooltip js_hideTipOnMobile" title="Usuń"></span>
+            </a>
+        
+        <span class="msg_date fright">11.07.2020 17:46:45</span>
+    </span>
+                <br>
+                <span class="msg_sender_label">Od:</span>
+                <span class="msg_sender"><span
+                        title="Gracz: Faster than Hamster|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=4&quot;&gt;[1:4:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100026&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100026&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100026&amp;category=1&quot;&gt;10&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">Faster than Hamster</span></span>
+            </div>
+            <span class="msg_content">
+        Kupię dex
+    </span>
+
+            <a href="javascript:void(0);" class="tooltip js_hideTipOnMobile fright"
+               onclick="reportAllyRoundMessage($(this), 2425486, 100026, 'Zgłosić tę wiadomość do operatora gry?'); return false;"
+               title="Zgłosić tę wiadomość do operatora gry?">
+                <span class="icon report icon_warning"></span>
+            </a>
+            &nbsp;
+
+            <a href="https://s169-pl.ogame.gameforge.com/game/index.php?page=chat&amp;playerId=100026"
+               class="icon_nf_link fright" title="Odpowiedź">
+                <span class="icon icon_restore"></span>
+            </a>
+            <div class="msg_actions clearfix">
+
+
+            </div>
+            <script type="text/javascript">
+    initOverlays();
+
+
+            </script>
+
+        </li>
+        <li class="msg " data-msg-id="2424009">
+            <div class="msg_status"></div>
+            <div class="msg_head">
+                <span class="msg_title blue_txt">Wiadomość do sojuszu od <span
+                        title="Gracz: El Espanol|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=6&amp;system=42&quot;&gt;[6:42:13]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100229&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100229&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100229&amp;category=1&quot;&gt;7&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">El Espanol</span></span>
+                <span class="fright">
+                            <a href="javascript: void(0);" class="fright">
+                <span class="icon_nf icon_refuse js_actionKill tooltip js_hideTipOnMobile" title="Usuń"></span>
+            </a>
+        
+        <span class="msg_date fright">11.07.2020 17:31:57</span>
+    </span>
+                <br>
+                <span class="msg_sender_label">Od:</span>
+                <span class="msg_sender"><span
+                        title="Gracz: El Espanol|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=6&amp;system=42&quot;&gt;[6:42:13]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100229&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100229&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100229&amp;category=1&quot;&gt;7&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">El Espanol</span></span>
+            </div>
+            <span class="msg_content">
+        Given the fact that i don't like to open tickets against someone
+ that is in my ally, for using bots, i prefer to quit. Yesterday i knew 
+Ergon had one, and now Ordon answers me with actis all around after 3 
+hours. I came to Poland to see if there were less tricks, than in Spain,
+ and although i find a much more serious GO, I find players aren't. I 
+can't share allys with cheaters. Wish you best luck, and if you need 
+something you know where i am.
+    </span>
+
+            <a href="javascript:void(0);" class="tooltip js_hideTipOnMobile fright"
+               onclick="reportAllyRoundMessage($(this), 2424009, 100229, 'Zgłosić tę wiadomość do operatora gry?'); return false;"
+               title="Zgłosić tę wiadomość do operatora gry?">
+                <span class="icon report icon_warning"></span>
+            </a>
+            &nbsp;
+
+            <a href="https://s169-pl.ogame.gameforge.com/game/index.php?page=chat&amp;playerId=100229"
+               class="icon_nf_link fright" title="Odpowiedź">
+                <span class="icon icon_restore"></span>
+            </a>
+            <div class="msg_actions clearfix">
+
+
+            </div>
+            <script type="text/javascript">
+    initOverlays();
+
+
+            </script>
+
+        </li>
+        <li class="msg " data-msg-id="2416819">
+            <div class="msg_status"></div>
+            <div class="msg_head">
+                <span class="msg_title blue_txt">Wiadomość do sojuszu od <span
+                        title="Gracz: El Espanol|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=6&amp;system=42&quot;&gt;[6:42:13]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100229&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100229&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100229&amp;category=1&quot;&gt;7&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">El Espanol</span></span>
+                <span class="fright">
+                            <a href="javascript: void(0);" class="fright">
+                <span class="icon_nf icon_refuse js_actionKill tooltip js_hideTipOnMobile" title="Usuń"></span>
+            </a>
+        
+        <span class="msg_date fright">11.07.2020 16:22:23</span>
+    </span>
+                <br>
+                <span class="msg_sender_label">Od:</span>
+                <span class="msg_sender"><span
+                        title="Gracz: El Espanol|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=6&amp;system=42&quot;&gt;[6:42:13]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100229&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100229&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100229&amp;category=1&quot;&gt;7&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">El Espanol</span></span>
+            </div>
+            <span class="msg_content">
+        Ergon had a bot so i am not gonna attack him to loosemy time. 
+Now Marcel, you wil understand theg reaon of my expe. Replenish 80k lifs
+ is fucking hard. Repleneshing 12k big transport -same amount of 
+crystal- is 2 hours
+    </span>
+
+            <a href="javascript:void(0);" class="tooltip js_hideTipOnMobile fright"
+               onclick="reportAllyRoundMessage($(this), 2416819, 100229, 'Zgłosić tę wiadomość do operatora gry?'); return false;"
+               title="Zgłosić tę wiadomość do operatora gry?">
+                <span class="icon report icon_warning"></span>
+            </a>
+            &nbsp;
+
+            <a href="https://s169-pl.ogame.gameforge.com/game/index.php?page=chat&amp;playerId=100229"
+               class="icon_nf_link fright" title="Odpowiedź">
+                <span class="icon icon_restore"></span>
+            </a>
+            <div class="msg_actions clearfix">
+
+
+            </div>
+            <script type="text/javascript">
+    initOverlays();
+
+
+            </script>
+
+        </li>
+        <li class="msg " data-msg-id="2415631">
+            <div class="msg_status"></div>
+            <div class="msg_head">
+                <span class="msg_title blue_txt">Wiadomość do sojuszu od <span
+                        title="Gracz: MARCEL|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=79&quot;&gt;[1:79:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100416&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100416&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100416&amp;category=1&quot;&gt;9&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">MARCEL</span></span>
+                <span class="fright">
+                            <a href="javascript: void(0);" class="fright">
+                <span class="icon_nf icon_refuse js_actionKill tooltip js_hideTipOnMobile" title="Usuń"></span>
+            </a>
+        
+        <span class="msg_date fright">11.07.2020 16:08:38</span>
+    </span>
+                <br>
+                <span class="msg_sender_label">Od:</span>
+                <span class="msg_sender"><span
+                        title="Gracz: MARCEL|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=79&quot;&gt;[1:79:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100416&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100416&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100416&amp;category=1&quot;&gt;9&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">MARCEL</span></span>
+            </div>
+            <span class="msg_content">
+        masakra jeszcze straciłem 80k LM na expo
+    </span>
+
+            <a href="javascript:void(0);" class="tooltip js_hideTipOnMobile fright"
+               onclick="reportAllyRoundMessage($(this), 2415631, 100416, 'Zgłosić tę wiadomość do operatora gry?'); return false;"
+               title="Zgłosić tę wiadomość do operatora gry?">
+                <span class="icon report icon_warning"></span>
+            </a>
+            &nbsp;
+
+            <a href="https://s169-pl.ogame.gameforge.com/game/index.php?page=chat&amp;playerId=100416"
+               class="icon_nf_link fright" title="Odpowiedź">
+                <span class="icon icon_restore"></span>
+            </a>
+            <div class="msg_actions clearfix">
+
+
+            </div>
+            <script type="text/javascript">
+    initOverlays();
+
+
+            </script>
+
+        </li>
+        <li class="msg " data-msg-id="2415266">
+            <div class="msg_status"></div>
+            <div class="msg_head">
+                <span class="msg_title blue_txt">Wiadomość do sojuszu od <span
+                        title="Gracz: MARCEL|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=79&quot;&gt;[1:79:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100416&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100416&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100416&amp;category=1&quot;&gt;9&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">MARCEL</span></span>
+                <span class="fright">
+                            <a href="javascript: void(0);" class="fright">
+                <span class="icon_nf icon_refuse js_actionKill tooltip js_hideTipOnMobile" title="Usuń"></span>
+            </a>
+        
+        <span class="msg_date fright">11.07.2020 16:05:12</span>
+    </span>
+                <br>
+                <span class="msg_sender_label">Od:</span>
+                <span class="msg_sender"><span
+                        title="Gracz: MARCEL|&lt;table class=&quot;playerTooltip&quot;&gt;&lt;tr&gt;&lt;th&gt;Planeta matka&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=galaxy&amp;galaxy=1&amp;system=79&quot;&gt;[1:79:4]&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Akcje&lt;/th&gt;&lt;td&gt;&lt;a href=&quot;javascript:void(0)&quot;                      class=&quot;sendMail js_openChat tooltip&quot;                      data-playerId=&quot;100416&quot;                      title=&quot;Napisz wiadomość&quot;&gt;&lt;span class=&quot;icon icon_chat&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;a title=&quot;Poproś o przyjęcie do listy znajomych&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=ingame&amp;component=buddies&amp;action=7&amp;id=100416&amp;ajax=1&quot; class=&quot;overlay tooltip&quot;&gt;&lt;span class=&quot;icon icon_user&quot;&gt;&lt;/span&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;th&gt;Statystyki&lt;/th&gt;&lt;td&gt;&lt;a target=&quot;_parent&quot; href=&quot;https://s169-pl.ogame.gameforge.com/game/index.php?page=highscore&amp;searchRelId=100416&amp;category=1&quot;&gt;9&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"
+                        class="tooltipHTML tooltipCustom player advice">MARCEL</span></span>
+            </div>
+            <span class="msg_content">
+        Jestem już w domu więc mogę Wam na spokojnie odpisać. <br><br>
+Szkoda, że Ergon odszedł ale to była jego decyzja. Dla mnie to 
+dziecinada jak mi ktoś pisze, że mam kogos wyrzucić bo inaczej on 
+odchodzi.<br><br>
+Dla mnie ta gra to zabawa i nie mam zamiaru nikogo zmuszać do 
+czegokolwiek. Co do współpracy to ja zawsze chętnie coś zezłomuje ale 
+ani razu Ergon do mnie nie napisał z taką propozycją.
+    </span>
+
+            <a href="javascript:void(0);" class="tooltip js_hideTipOnMobile fright"
+               onclick="reportAllyRoundMessage($(this), 2415266, 100416, 'Zgłosić tę wiadomość do operatora gry?'); return false;"
+               title="Zgłosić tę wiadomość do operatora gry?">
+                <span class="icon report icon_warning"></span>
+            </a>
+            &nbsp;
+
+            <a href="https://s169-pl.ogame.gameforge.com/game/index.php?page=chat&amp;playerId=100416"
+               class="icon_nf_link fright" title="Odpowiedź">
+                <span class="icon icon_restore"></span>
+            </a>
+            <div class="msg_actions clearfix">
+
+
+            </div>
+            <script type="text/javascript">
+    initOverlays();
+
+
+            </script>
+
+        </li>
+        <ul class="pagination">
+            <li class="paginator" data-tab="10" data-page="1">|&lt;&lt;</li>
+            <li class="paginator" data-tab="10" data-page="1">&lt;</li>
+            <li class="curPage" data-tab="10">1/17</li>
+            <li class="paginator" data-tab="10" data-page="2">&gt;</li>
+            <li class="paginator" data-tab="10" data-page="17">&gt;&gt;|</li>
+        </ul>
+    </ul>
+    <script type="text/javascript">
+    var activeTabid = $('.ui-tabs-active a').attr('id'); //erster tab als default
+    var hasSubtabs = $('div[aria-labelledby="' + activeTabid + '"] .tab_ctn div ul.subtabs').length;
+    var activeSubtabid = '';
+
+    $('.ui-tabs-active a').each(function(){
+        activeSubtabid = $(this).attr('id');
+    });
+
+    var msgids = [];
+    var index = 0;
+
+    if (hasSubtabs > 0) {
+        $('div[aria-labelledby="' + activeSubtabid + '"] .msg_new').each(function() {
+            msgids[index] = $(this).data('msg-id');
+            index++;
+        });
+    } else {
+        $('div[aria-labelledby="' + activeTabid + '"] .msg_new').each(function() {
+            msgids[index] = $(this).data('msg-id');
+            index++;
+        });
+    }
+
+    msgids = JSON.stringify(msgids);
+
+    var msgcountUrl  = "https://s169-pl.ogame.gameforge.com/game/index.php?page=ajaxMessageCount";
+    var playerid = parseInt(100802);
+    var action = 111;
+
+    $.ajax({
+        url: msgcountUrl,
+        type: 'POST',
+        data: {
+            player: playerid,
+            action: action,
+            newMessageIds: msgids,
+            ajax: 1
+        },
+        success: function(data){
+            var message_menu_count = $('.comm_menu.messages span.new_msg_count');
+            var message_tab_count = $('.ui-tabs-active .new_msg_count');
+
+            if (message_menu_count.length > 0 && message_tab_count.length > 0) {
+                var menuCount = parseInt(message_menu_count[0].innerHTML);
+                var tabCount = parseInt(message_tab_count[0].innerHTML);
+                var newCount = menuCount - tabCount;
+
+                if (newCount > 0) {
+                    message_menu_count.val(newCount);
+                } else {
+                    message_menu_count.remove();
+                }
+            }
+
+            $('.ui-tabs-active .new_msg_count').remove();
+
+            if (hasSubtabs > 0) {
+                $('.ui-tabs-active a span:not(.icon_caption)').remove();
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+        }
+    });
+
+
+    </script>
+</div>
+</body>
+</html>
