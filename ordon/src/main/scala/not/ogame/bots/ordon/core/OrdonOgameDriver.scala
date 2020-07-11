@@ -64,6 +64,12 @@ class OrdonOgameDriver(val ogameDriver: OgameDriver[IO]) {
   def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): GalaxyPageData =
     retryCommonErrors(() => ogameDriver.readGalaxyPage(planetId, galaxy, system))
 
+  def readAllianceMessages(): List[ChatMessage] =
+    retryCommonErrors(() => ogameDriver.readAllianceMessages())
+
+  def readChatConversations(): List[ChatConversations] =
+    retryCommonErrors(() => ogameDriver.readChatConversations())
+
   @scala.annotation.tailrec
   private def retryCommonErrors[T](action: () => IO[T], attempts: Int = 4): T = {
     try {

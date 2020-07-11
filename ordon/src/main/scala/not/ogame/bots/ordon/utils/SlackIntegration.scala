@@ -16,6 +16,7 @@ class SlackIntegration {
   private val statusTokenUrl: String = getTokenUrl("slack-status-token")
   private val activityTokenUrl: String = getTokenUrl("slack-status-activity-token")
   private val alertTokenUrl: String = getTokenUrl("slack-status-alerts-token")
+  private val chatTokenUrl: String = getTokenUrl("slack-chat-token")
 
   def postMessageToSlack(message: String): Unit = {
     service.postMessage(statusTokenUrl, SlackMessage(message)).execute()
@@ -27,6 +28,10 @@ class SlackIntegration {
 
   def postAlertToSlack(message: String): Unit = {
     service.postMessage(alertTokenUrl, SlackMessage(message)).execute()
+  }
+
+  def postRelayMessageToSlack(message: String): Unit = {
+    service.postMessage(chatTokenUrl, SlackMessage(message)).execute()
   }
 
   private def getTokenUrl(tokenName: String): String = {
