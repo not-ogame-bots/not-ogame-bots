@@ -28,13 +28,20 @@ class OgameActionDriver extends OgameDriver[OgameAction] {
     liftF[OgameOp, Unit](OgameOp.BuildShip(planetId, shipType, count))
   def sendFleet(sendFleetRequest: SendFleetRequest): OgameAction[Unit] =
     liftF[OgameOp, Unit](OgameOp.SendFleet(sendFleetRequest))
+
   def returnFleet(fleetId: FleetId): OgameAction[Unit] =
     liftF[OgameOp, Unit](OgameOp.ReturnFleet(fleetId))
+
   def createOffer(planetId: PlanetId, newOffer: MyOffer): OgameAction[Unit] =
     liftF[OgameOp, Unit](OgameOp.CreateOffer(planetId, newOffer))
+
   def buildSolarSatellites(planetId: PlanetId, count: Int): OgameAction[Unit] =
     liftF[OgameOp, Unit](OgameOp.BuildSolarSatellite(planetId, count))
 
   override def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): OgameAction[GalaxyPageData] =
     liftF[OgameOp, GalaxyPageData](OgameOp.ReadGalaxyPage(planetId, galaxy, system))
+
+  override def readAllianceMessages(): OgameAction[List[ChatMessage]] = ???
+
+  override def readChatConversations(): OgameAction[List[ChatConversations]] = ???
 }

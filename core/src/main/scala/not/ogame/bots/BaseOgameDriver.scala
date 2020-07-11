@@ -38,4 +38,8 @@ abstract class BaseOgameDriver[F[_]] extends OgameDriver[F] {
   override def createOffer(planetId: PlanetId, newOffer: MyOffer): F[Unit] = ???
 
   override def readGalaxyPage(planetId: PlanetId, galaxy: Int, system: Int): F[GalaxyPageData] = ???
+
+  override def readAllianceMessages(): F[List[ChatMessage]] = ???
+
+  override def readChatConversations(): F[List[ChatConversations]] = ???
 }

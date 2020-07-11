@@ -476,4 +476,22 @@ class SeleniumOgameDriver[F[_]: Sync](credentials: Credentials, urlProvider: Url
       new GalaxyComponentReader(webDriver).readGalaxyPage()
     }
   }
+
+  override def readAllianceMessages(): F[List[ChatMessage]] = {
+    Sync[F].delay {
+      webDriver.get(
+        s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=messages&tab=10&ajax=1"
+      )
+      new ChatMessageReader(webDriver).readAllianceMessages()
+    }
+  }
+
+  override def readChatConversations(): F[List[ChatConversations]] = {
+    Sync[F].delay {
+      webDriver.get(
+        s"https://${credentials.universeId}.ogame.gameforge.com/game/index.php?page=chat"
+      )
+      new ChatMessageReader(webDriver).readChatConversations()
+    }
+  }
 }
