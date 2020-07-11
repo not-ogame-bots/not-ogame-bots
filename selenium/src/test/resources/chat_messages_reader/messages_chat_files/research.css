@@ -1,0 +1,109 @@
+#research header {
+    position: relative;
+    width: 654px;
+    height: 250px;
+    margin: 0 auto 8px;
+    background: url("/cdn/img/header/science/forschung_header.jpg");
+}
+
+#research header::after {
+    position: absolute;
+    left: -8px;
+    bottom: -2px;
+    width: 670px;
+    height: 39px;
+    background: url("/cdn/img/navigation/ecke_links.gif") bottom left no-repeat, url("/cdn/img/navigation/ecke_rechts.gif") bottom right no-repeat ;
+    content: "";
+}
+
+#research header h2 {
+    position: absolute;
+    left: 144px;
+    top: 7px;
+    font: bold 18px/22px Verdana,Arial,Helvetica,sans-serif;
+    color: #fff;
+}
+
+#research #technologies,
+#research #technologies .icons {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-between;
+}
+
+#research #technologies {
+    position: relative;
+    box-sizing: border-box;
+    width: 654px;
+    border: 2px solid #000;
+    margin: 0 auto 7px;
+    padding: 0 5px;
+    background: #0d1014;
+}
+
+#research #technologies::before,
+#research #technologies::after {
+    pointer-events: none;
+}
+
+#research #technologies::before {
+    position: absolute;
+    left: -9px;
+    top: -3px;
+    width: 668px;
+    height: 28px;
+    background: url("/cdn/img/layout/corner-top-left-s.png") bottom left no-repeat, url("/cdn/img/layout/corner-top-right-s.png") bottom right no-repeat;
+    content: "";
+}
+
+#research #technologies::after {
+    position: absolute;
+    left: -9px;
+    bottom: -4px;
+    width: 668px;
+    height: 50px;
+    background: url("/cdn/img/layout/corner-bottom-left-l.png") bottom left no-repeat, url("/cdn/img/layout/corner-bottom-right-l.png") bottom right no-repeat;
+    content: "";
+}
+
+#research #technologies_basic,
+#research #technologies_drive,
+#research #technologies_advanced,
+#research #technologies_combat {
+    margin-bottom: 7px;
+}
+
+#research #technologies h3 {
+    position: relative;
+    margin: -2px 0 5px;
+    background: url("/cdn/img/layout/headline-middle.png");
+    color: #6f9fc8;
+    font: bold 12px/27px Verdana,Arial,Helvetica,sans-serif;
+    text-align: center;
+}
+
+#research #technologies h3::before,
+#research #technologies h3::after {
+    position: absolute;
+    top: 0;
+    width: 26px;
+    height: 27px;
+    content: "";
+}
+
+#research #technologies h3::before {
+    left: -5px;
+    background: url("/cdn/img/layout/headline-left.png");
+}
+
+#research #technologies h3::after {
+    right: -5px;
+    background: url("/cdn/img/layout/headline-right.png");
+}
+
+#research #technologies_basic h3::after,
+#research #technologies_drive h3::before,
+#research #technologies_advanced h3::after,
+#research #technologies_combat h3::before {
+    background: none;
+}

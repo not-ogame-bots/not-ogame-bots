@@ -1,0 +1,129 @@
+#resourcesbarcomponent {
+    /* Positioning */
+    position: relative;
+    position: absolute; /* remove after twig done */
+    top: 33px;
+    left: 232px;
+    /* Box-Model */
+    width: 470px;
+    height: 50px;
+    float: left;
+
+    /* Typography */
+    /* Visual */
+    /* Misc */
+}
+
+#resourcesbarcomponent li .value {
+    color:#a6b8cb;
+    font: normal 9px/11px Verdana, Arial, Helvetica, sans-serif;
+    text-align:center;
+}
+
+#resourcesbarcomponent .undermark { color:#99CC00 !important;}
+#resourcesbarcomponent .overmark { color: #D43635 !important;}
+#resourcesbarcomponent .middlemark { color: #D29D00 !important;}
+#resourcesbarcomponent .disabled { color: #444444;}
+
+#resourcesbarcomponent .value font {font-size:9px;}
+
+#resourcesbarcomponent ul#resources {  list-style-type: none;}
+
+#resourcesbarcomponent ul#resources li {
+    height: 47px;
+    width: 64px;
+    text-align: center;
+}
+#resourcesbarcomponent ul#resources .resourceIcon,
+#resourcesbarcomponent ul#resources li img {
+    margin: 0 8px 2px 8px;
+    width: 48px;
+    height: 32px;
+}
+
+#resourcesbarcomponent ul#resources {
+    position: relative;
+}
+
+#resourcesbarcomponent ul#resources li img { margin-bottom: 0; }
+
+#resourcesbarcomponent ul#resources li.metal {
+    position: relative;
+    left: 0;
+}
+#resourcesbarcomponent ul#resources li.crystal {
+    position: relative;
+    left: 38px;
+}
+#resourcesbarcomponent ul#resources li.deuterium {
+    position: relative;
+    left: 76px;
+}
+#resourcesbarcomponent ul#resources li.darkmatter {
+    position: relative;
+    left: 51px;
+}
+#resourcesbarcomponent ul#resources li.energy {
+    position: relative;
+    left: 217px;
+}
+
+
+#resourcesbarcomponent ul#resources li.darkmatter a {
+    display: block;
+    height: 32px;
+    text-decoration: none;
+}
+
+#resourcesbarcomponent ul#resources li.darkmatter img {
+    position: absolute;
+    left: 0;
+    z-index: 10;
+}
+
+#resourcesbarcomponent .resourceIcon {
+    background: transparent url("/cdn/img/layout/ressourcen/spriteset.png") 0px 0px no-repeat;
+    width: 48px;
+    height: 32px;
+    float: left;
+}
+
+#resourcesbarcomponent .resourceIconSmall {
+    background: transparent url("/cdn/img/layout/ressourcen/res_tiny_sprite_20.png") 0px 0px no-repeat;
+    width: 30px;
+    height: 20px;
+    float: left;
+}
+
+
+#resourcesbarcomponent .resourceIcon.metal { background-position: 0px -160px;}
+#resourcesbarcomponent .resourceIcon.crystal { background-position: -48px -160px;}
+#resourcesbarcomponent .resourceIcon.deuterium { background-position: -96px -160px;}
+#resourcesbarcomponent .resourceIcon.energy { background-position: -144px -160px;}
+#resourcesbarcomponent .resourceIcon.darkmatter { background-position: -192px -160px;}
+
+
+#resourcesbarcomponent .resourceIconSmall.metal { background-position: 0px 0px;}
+#resourcesbarcomponent .resourceIconSmall.crystal { background-position: -30px 0px;}
+#resourcesbarcomponent .resourceIconSmall.deuterium { background-position: -60px 0px;}
+#resourcesbarcomponent .resourceIconSmall.energy { background-position: -90px 0px;}
+#resourcesbarcomponent .resourceIconSmall.darkmatter { background-position: -120px 0px;}
+
+#resourcesbarcomponent span > span.value {
+    display: block;
+    text-align: center;
+}
+
+#resourcesbarcomponent span.value {
+    position: absolute;
+    display: block;
+    text-align: center;
+    bottom: 0;
+    width: 100%;
+}
+
+#resourcesbarcomponent li {
+    float: left;
+    height: 60px;
+    width: 80px;
+}
