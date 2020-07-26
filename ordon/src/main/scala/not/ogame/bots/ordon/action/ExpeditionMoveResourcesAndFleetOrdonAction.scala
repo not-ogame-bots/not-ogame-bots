@@ -26,7 +26,7 @@ class ExpeditionMoveResourcesAndFleetOrdonAction(planet: PlayerPlanet, moon: Pla
       filters = Map(
         LightFighter -> Selector.skip,
         LargeCargoShip -> Selector.skip,
-        Destroyer -> Selector.decreaseBy(3),
+        Destroyer -> Selector.decreaseBy(7),
         EspionageProbe -> Selector.decreaseBy(50),
         Explorer -> Selector.decreaseBy(800)
       )
